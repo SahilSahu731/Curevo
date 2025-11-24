@@ -7,7 +7,7 @@ import { queryKeys } from '@/lib/queryKeys'
 import { useAuthStore } from '@/store/authStore'
 
 export default function useAuth() {
-  const setAuth = useAuthStore((s) => s.setAuth)
+  const setAuth = useAuthStore((s) => s.setUser)
   const clearAuth = useAuthStore((s) => s.logout)
   const user = useAuthStore((s) => s.user)
   const token = useAuthStore((s) => s.token)
@@ -46,8 +46,7 @@ export default function useAuth() {
       if (typeof authService.logout === 'function') {
         await authService.logout()
       }
-    } catch (err) {
-        console.log(err)
+    } catch {
       // ignore network errors on logout
     }
 
@@ -60,16 +59,17 @@ export default function useAuth() {
   const currentUserQuery = useQuery({
     queryKey: queryKeys.auth,
     queryFn: async () => {
-      const res = await authService.getMe()
+      const res = await authService.me()
       return res?.data ?? res
     },
     enabled: !!token,
     staleTime: 5 * 60 * 1000,
     onSuccess: (data) => {
       // keep Zustand in sync if backend returned fresh user
-      if (data?.user) {
-        // if token wasn't returned, preserve existing token from store
-        setAuth(data.user, data.token ?? token)
+      // `authService.me()` typically returns the `User` object (or axios response with data)
+      const userData = data?.data ?? data
+      if (userData) {
+        setAuth(userData, token)
       }
     },
   })
