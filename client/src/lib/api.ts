@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, AxiosRequestConfig } from "axios";
 import { useAuthStore } from "@/store/authStore";
 
 const api = axios.create({
@@ -24,9 +24,21 @@ api.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401) {
+      // Don't force a redirect for unauthenticated checks like `/auth/me`.
+      // Some requests (e.g. the client-side /auth/me) are expected to return 401
+      // when the user is not logged in — redirecting on those causes a reload loop.
+      const cfg = error.config as AxiosRequestConfig & { skipAuthRedirect?: boolean } | undefined
+      const requestUrl = cfg?.url ?? ''
+
+      // Logout locally to clear any stale store state
       useAuthStore.getState().logout();
-      if (typeof window !== "undefined") {
-        window.location.href = "/login";
+
+      // Only perform a hard redirect for explicit protected actions —
+      // skip redirect for /auth/me or requests that include `skipAuthRedirect` flag.
+      const skipRedirect = requestUrl.includes('/auth/me') || !!cfg?.skipAuthRedirect
+
+      if (!skipRedirect && typeof window !== 'undefined') {
+        window.location.href = '/login'
       }
     }
 

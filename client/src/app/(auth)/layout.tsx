@@ -1,11 +1,18 @@
-import React from 'react'
-import Image from 'next/image'
+"use client"
 
-export const metadata = {
-  title: 'Auth - CureVo',
-}
+import React, { useEffect } from 'react'
+import Image from 'next/image'
+import { useAuthStore } from '@/store/authStore'
+import { useRouter } from 'next/navigation'
+
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
+    const {user} = useAuthStore();
+    const router = useRouter()
+
+    useEffect(()=> {
+      if (user) router.replace('/')
+    }, [user, router])
   return (
     <div className="min-h-screen flex items-center justify-center w-full">
       <div className="max-w-6xl w-full grid grid-cols-1 md:grid-cols-2 auth-card shadow-lg overflow-hidden h-[88vh] md:h-[88vh]">

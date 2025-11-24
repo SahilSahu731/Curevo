@@ -60,10 +60,10 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <Button type="submit" disabled={login.isLoading} className="w-full">
-            {login.isLoading ? 'Signing in...' : 'Sign In'}
+          <Button type="submit" disabled={login.isPending} className="w-full">
+            {login.isPending ? 'Signing in...' : 'Sign In'}
           </Button>
-          <FormError message={String(login.error?.message ?? null)} />
+          {/* <FormError message={String(login.error?.message ?? null)} /> */}
         </div>
       </form>
 

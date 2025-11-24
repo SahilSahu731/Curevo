@@ -3,7 +3,7 @@ import { sendTokenResponse } from "../utils/generateToken.js";
 
 export const register = async (req, res) => {
   try {
-    const { name, email, password, phone, role } = req.body;
+    const { name, email, password, role } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
@@ -16,7 +16,6 @@ export const register = async (req, res) => {
       name,
       email,
       password,
-      phone,
       role,
     });
 
@@ -26,6 +25,7 @@ export const register = async (req, res) => {
         const messages = Object.values(error.errors).map((val) => val.message);
         return res.status(400).json({ success: false, error: messages });
     }
+    console.log(error)
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -55,6 +55,7 @@ export const login = async (req, res) => {
 
     sendTokenResponse(user, 200, res);
   } catch (error) {
+    console.log(error)
     res.status(500).json({ success: false, error: error.message });
   }
 };

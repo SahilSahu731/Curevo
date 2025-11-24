@@ -12,21 +12,25 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({extended:true}))
 app.use(cookieParser());
-app.use(cors());
+app.use(cors({
+    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    credentials: true
+}));
 
 //api
 app.use("/api/auth", authRoutes);
 
-// connect database
-connectDB();
-
 //test route
-app.get("/test", (req, res) => {
+app.get("/testt", (req, res) => {
   res.json({ message: "Server is working!" });
 });
 
-
-
-app.listen(PORT, () => {
+// connect database and start server
+connectDB().then(() => {
+  app.listen(PORT, () => {
     console.log(`Server is running on port : ${PORT}`)
+  })
+}).catch((error) => {
+  console.error('Failed to connect to database:', error)
+  process.exit(1)
 })
