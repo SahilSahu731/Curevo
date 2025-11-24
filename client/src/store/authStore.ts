@@ -36,7 +36,17 @@ export const useAuthStore = create<AuthState>()(
         }),
 
       logout: () => set(initialState),
+      updateUser: (updatedUser: Partial<User>) => {
+        set((state) => ({
+          user: state.user ? { ...state.user, ...updatedUser } : null,
+        }));
+      }
     }),
-    { name: "auth-store" }
+    { name: "auth-store",
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+      })
+     }
   )
 );
