@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import Input from '@/components/common/Input'
 import PasswordInput from '@/components/common/PasswordInput'
 import Button from '@/components/common/Button'
-import FormError from '@/components/common/FormError'
 import { useRegister } from '@/hooks/queries/useAuthQueries'
 import { toast } from 'react-hot-toast'
 
