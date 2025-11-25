@@ -1,11 +1,12 @@
 import React, { useState } from 'react'
+import { cn } from '@/lib/utils/cn'
 
 type Props = React.InputHTMLAttributes<HTMLInputElement> & {
   label?: string
   error?: string | boolean
 }
 
-export default function PasswordInput({ label, error, ...rest }: Props) {
+export default function PasswordInput({ label, error, className = '', ...rest }: Props) {
   const [show, setShow] = useState(false)
 
   return (
@@ -14,7 +15,7 @@ export default function PasswordInput({ label, error, ...rest }: Props) {
       <div className="mt-1 relative">
         <input
           type={show ? 'text' : 'password'}
-          className={`block w-full rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 ${error ? 'ring-2 ring-red-500' : ''}`}
+          className={cn('block w-full rounded-md px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2', error ? 'ring-2 ring-red-500' : '', className)}
           style={{ background: 'var(--panel-bg)', color: 'var(--foreground)', borderColor: 'transparent' }}
           {...rest}
         />

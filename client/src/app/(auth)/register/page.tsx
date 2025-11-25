@@ -73,7 +73,7 @@ export default function RegisterPage() {
           <Button type="submit" disabled={registerMutation.isLoading} className="w-full">
             {registerMutation.isLoading ? 'Creating account...' : 'Create account'}
           </Button>
-          <FormError message={String(registerMutation.error?.message ?? null)} />
+          {/* <FormError message={String(registerMutation.error?.message ?? null)} /> */}
         </div>
       </form>
 

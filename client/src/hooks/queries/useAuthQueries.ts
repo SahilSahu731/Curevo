@@ -35,7 +35,7 @@ export const useRegister = () => {
 
   return useMutation({
     mutationFn: (payload: FormData) => authService.register(payload),
-    onSuccess: (res: any) => {
+    onSuccess: (res) => {
       const payload = res?.data ?? res
       const token = payload?.token
       const user = payload?.data ?? payload?.user

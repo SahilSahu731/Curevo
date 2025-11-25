@@ -11,7 +11,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     const router = useRouter()
 
     useEffect(()=> {
-      if (user) router.replace('/')
+      if (user) router.push('/')
     }, [user, router])
   return (
     <div className="min-h-screen flex items-center justify-center w-full">
