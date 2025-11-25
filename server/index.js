@@ -5,6 +5,7 @@ import cors from 'cors'
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
 import authRoutes from './routes/auth.routes.js';
+import clinicRoutes from './routes/clinic.route.js';
 
 const PORT = process.env.PORT || 3000
 const app = express();
@@ -19,6 +20,7 @@ app.use(cors({
 
 //api
 app.use("/api/auth", authRoutes);
+app.use("/api/clinics", clinicRoutes)
 
 //test route
 app.get("/testt", (req, res) => {
