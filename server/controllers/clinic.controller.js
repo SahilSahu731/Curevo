@@ -126,9 +126,9 @@ export const getClinicDoctors = async (req, res) => {
     const doctors = await Doctor.find({ clinicId: req.params.id })
       .populate({
         path: 'userId',
-        select: 'name email profileImage', // Select only necessary user fields
+        select: 'name email profileImage', 
       })
-      .select('-clinicId -currentPatient'); // Exclude unnecessary fields
+      .select('-clinicId -currentPatient'); 
 
     if (doctors.length === 0) {
         // Return 200 with an empty array if the clinic exists but has no doctors
