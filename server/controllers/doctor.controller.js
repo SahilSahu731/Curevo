@@ -1,4 +1,6 @@
+import Clinic from "../models/clinic.model.js";
 import Doctor from "../models/doctor.model.js";
+import User from "../models/user.model.js";
 
 
 // Helper function to handle common Mongoose error patterns
@@ -12,6 +14,56 @@ const handleMongooseError = (res, error) => {
     return res.status(400).json({ success: false, error: `Duplicate field value: ${field} already exists.` });
   }
   res.status(500).json({ success: false, error: error.message || "Server Error" });
+};
+
+export const createDoctor = async (req, res) => {
+  try {
+    const { 
+      userId, 
+      clinicId, 
+      specialization, 
+      qualification, 
+      experience, 
+      consultationFee 
+    } = req.body;
+
+    // 1. Validation Checks
+    if (!userId || !clinicId) {
+      return res.status(400).json({ success: false, error: "userId and clinicId are required." });
+    }
+
+    // 2. Verify User Role (Must be 'doctor' or 'admin' establishing a new doctor)
+    const user = await User.findById(userId);
+    if (!user || (user.role !== 'doctor' && user.role !== 'admin')) {
+      return res.status(400).json({ success: false, error: "User not found or does not have a valid role for a doctor profile." });
+    }
+
+    // 3. Verify Clinic Existence
+    const clinic = await Clinic.findById(clinicId);
+    if (!clinic) {
+      return res.status(404).json({ success: false, error: "Clinic not found." });
+    }
+
+    // 4. Create Doctor Profile
+    const doctor = await Doctor.create({
+      userId,
+      clinicId,
+      specialization,
+      qualification,
+      experience,
+      consultationFee,
+      isAvailable: true // Default to available upon creation
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "Doctor profile created and linked successfully.",
+      data: doctor,
+    });
+
+  } catch (error) {
+    handleMongooseError(res, error);
+  }
 };
 
 export const getDoctors = async (req, res) => {
