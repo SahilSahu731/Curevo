@@ -1,5 +1,6 @@
 import Link from 'next/link';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuthStore, useIsAuthenticated } from '@/store/authStore';
 
 // Define the navigation links
 const navLinks = [
@@ -12,13 +13,28 @@ const navLinks = [
 
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
+  const isAuthenticated = useIsAuthenticated();
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   const toggleMenu = () => {
     setIsOpen(!isOpen);
   };
 
+  const toggleUserDropdown = () => {
+    setIsUserDropdownOpen(!isUserDropdownOpen);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsUserDropdownOpen(false);
+  };
+
   // Close menu on resize if it enters desktop view
   useEffect(() => {
+    console.log()
     const handleResize = () => {
       if (window.innerWidth >= 768 && isOpen) {
         setIsOpen(false);
@@ -28,90 +44,20 @@ const Navbar: React.FC = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, [isOpen]);
 
-  // The custom CSS block is included here to maintain styles and animations
-  const customStyles = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-
-    :root {
-      --primary-blue: #3B82F6;
-      --secondary-green: #10B981;
-    }
-
-    .nav-link {
-        position: relative;
-        padding: 8px 12px;
-        transition: color 0.3s ease, background-color 0.3s ease;
-    }
-
-    /* Hover Glow Effect */
-    .nav-link:hover {
-        color: var(--secondary-green);
-        background-color: rgba(59, 130, 246, 0.05);
-    }
-
-    /* Underline Slide Animation */
-    .nav-link::after {
-        content: '';
-        position: absolute;
-        left: 0;
-        bottom: -5px;
-        width: 0%;
-        height: 2px;
-        background-color: var(--secondary-green);
-        transition: width 0.3s ease-out;
-    }
-
-    .nav-link:hover::after {
-        width: 100%;
-    }
-
-    /* Mobile Menu Transition (Using CSS classes for smooth animation) */
-    .mobile-menu-container {
-        transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
-        overflow: hidden;
-        max-height: 0;
-        opacity: 0;
-    }
-    .mobile-menu-container.open {
-        max-height: 500px;
-        opacity: 1;
-    }
-
-    /* Button Hover Pulse */
-    .btn-pulse {
-        transition: all 0.3s ease;
-    }
-    .btn-pulse:hover {
-        box-shadow: 0 0 18px rgba(16, 185, 129, 0.6); /* secondary-green glow */
-        transform: translateY(-2px);
-    }
-  `;
-
-  // Custom Tailwind config script for color definition
-  const tailwindConfigScript = `
-    tailwind.config = {
-        theme: {
-            extend: {
-                colors: {
-                    'primary-blue': '#3B82F6',
-                    'secondary-green': '#10B981',
-                    'bg-light': '#F9FAFB',
-                    'text-dark': '#1F2937',
-                },
-                fontFamily: {
-                    sans: ['Inter', 'sans-serif'],
-                },
-            },
-        },
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsUserDropdownOpen(false);
+      }
     };
-  `;
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
-
+  
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: tailwindConfigScript }} />
-      <style dangerouslySetInnerHTML={{ __html: customStyles }} />
-
       <nav className="bg-gray-900 shadow-xl  sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
@@ -142,12 +88,56 @@ const Navbar: React.FC = () => {
 
             {/* Auth/Action Buttons (Desktop) */}
             <div className="hidden md:flex items-center space-x-4">
-              <a href="/login" className="px-3 py-2 text-primary-blue hover:text-secondary-green transition duration-300 font-semibold border border-transparent hover:border-primary-blue rounded-lg">
-                Sign In
-              </a>
-              <a href="/book" className="btn-pulse px-6 py-2 rounded-xl text-white font-bold bg-green-600 hover:bg-emerald-600 transition duration-300 shadow-lg shadow-secondary-green/50">
-                Book Now
-              </a>
+              {isAuthenticated ? (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={toggleUserDropdown}
+                    className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-100 transition duration-300"
+                  >
+                    <div className="w-8 h-8 bg-primary-blue rounded-full flex items-center justify-center text-white font-semibold">
+                      {user?.name?.charAt(0).toUpperCase()}
+                    </div>
+                    <svg className={`w-4 h-4 text-gray-600 transition-transform ${isUserDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  
+                  {isUserDropdownOpen && (
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                      <div className="px-4 py-2 border-b border-gray-100">
+                        <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                        <p className="text-xs text-gray-500">{user?.email}</p>
+                      </div>
+                      <Link href="/profile" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        Profile
+                      </Link>
+                      <Link href="/appointments" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        Appointments
+                      </Link>
+                      {user?.role === 'admin' && (
+                        <Link href="/admin" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                          Admin Panel
+                        </Link>
+                      )}
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <a href="/login" className="px-3 py-2 text-primary-blue hover:text-secondary-green transition duration-300 font-semibold border border-transparent hover:border-primary-blue rounded-lg">
+                    Sign In
+                  </a>
+                  <a href="/book" className="btn-pulse px-6 py-2 rounded-xl text-white font-bold bg-green-600 hover:bg-emerald-600 transition duration-300 shadow-lg shadow-secondary-green/50">
+                    Book Now
+                  </a>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -181,24 +171,83 @@ const Navbar: React.FC = () => {
           </div>
         </div>
 
-        {/* Mobile Menu Content */}
-        <div id="mobile-menu" className={`${isOpen ? 'open' : ''} mobile-menu-container md:hidden bg-white shadow-inner`}>
-          <div className="pt-2 pb-3 space-y-1 px-4 sm:px-6">
-            {navLinks.map((link) => (
-              <a 
-                key={link.name}
-                href={link.href} 
-                className="block px-3 py-2 text-base font-medium text-text-dark rounded-md hover:bg-gray-50 hover:text-primary-blue transition duration-300"
-              >
-                {link.name}
-              </a>
-            ))}
-          </div>
-          <div className="pt-4 pb-4 border-t border-gray-100">
-            <div className="px-4 space-y-2">
-              <a href="/signin" className="block w-full text-center px-4 py-2 rounded-lg text-primary-blue border border-primary-blue font-semibold hover:bg-gray-50 transition duration-300">Sign In</a>
-              <a href="/book" className="block w-full text-center btn-pulse px-4 py-2 rounded-lg text-white font-semibold bg-secondary-green hover:bg-emerald-600 transition duration-300 shadow-md">Book Appointment</a>
+        {/* Mobile Sidebar */}
+        <div className={`fixed inset-0 z-50 md:hidden ${isOpen ? 'block' : 'hidden'}`}>
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-black bg-opacity-50" onClick={toggleMenu}></div>
+          
+          {/* Sidebar */}
+          <div className={`fixed right-0 top-0 h-full w-80 bg-gray-900 shadow-xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+            {/* Header */}
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Menu</h2>
+              <button onClick={toggleMenu} className="p-2 rounded-md hover:bg-gray-800 text-white">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
+            
+            {/* User Info */}
+            {isAuthenticated && (
+              <div className="p-4 border-b border-gray-700">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 bg-secondary-green rounded-full flex items-center justify-center text-white font-semibold">
+                    {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="font-medium text-white">{user?.name}</p>
+                    <p className="text-sm text-gray-300">{user?.email}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Navigation Links */}
+            <div className="py-4">
+              {navLinks.map((link) => (
+                <a 
+                  key={link.name}
+                  href={link.href} 
+                  className="block px-4 py-3 text-base font-medium text-gray-300 hover:bg-gray-800 hover:text-secondary-green transition duration-300"
+                  onClick={toggleMenu}
+                >
+                  {link.name}
+                </a>
+              ))}
+            </div>
+            
+            {/* User Actions */}
+            {isAuthenticated ? (
+              <div className="border-t border-gray-700 py-4">
+                <Link href="/profile" className="block px-4 py-3 text-base font-medium text-gray-300 hover:bg-gray-800 hover:text-secondary-green" onClick={toggleMenu}>
+                  Profile
+                </Link>
+                <Link href="/appointments" className="block px-4 py-3 text-base font-medium text-gray-300 hover:bg-gray-800 hover:text-secondary-green" onClick={toggleMenu}>
+                  Appointments
+                </Link>
+                {user?.role === 'admin' && (
+                  <Link href="/admin" className="block px-4 py-3 text-base font-medium text-yellow-400 hover:bg-gray-800" onClick={toggleMenu}>
+                    Admin Panel
+                  </Link>
+                )}
+                <button
+                  onClick={() => { handleLogout(); toggleMenu(); }}
+                  className="block w-full text-left px-4 py-3 text-base font-medium text-red-400 hover:bg-gray-800"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="border-t border-gray-700 py-4 px-4 space-y-3">
+                <a href="/login" className="block w-full text-center px-4 py-2 rounded-lg text-primary-blue border border-primary-blue font-semibold hover:bg-gray-800 transition duration-300" onClick={toggleMenu}>
+                  Sign In
+                </a>
+                <a href="/book" className="block w-full text-center px-4 py-2 rounded-lg text-white font-semibold bg-secondary-green hover:bg-emerald-600 transition duration-300 shadow-md" onClick={toggleMenu}>
+                  Book Appointment
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </nav>

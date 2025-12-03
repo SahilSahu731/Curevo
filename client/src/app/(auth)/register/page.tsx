@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation'
 import Input from '@/components/common/Input'
 import PasswordInput from '@/components/common/PasswordInput'
 import Button from '@/components/common/Button'
-import { useRegister } from '@/hooks/queries/useAuthQueries'
-import { toast } from 'react-hot-toast'
+import { useAuth } from '@/hooks/useAuth'
 
 type FormValues = {
   name: string
@@ -20,25 +19,22 @@ type FormValues = {
 export default function RegisterPage() {
   const router = useRouter()
   const { register, handleSubmit, watch, formState } = useForm<FormValues>({ mode: 'onBlur' })
-  const registerMutation = useRegister()
+  const { register: registerUser, isLoading } = useAuth()
 
   const password = watch('password')
 
   const onSubmit = async (data: FormValues) => {
     try {
-      // Backend register expects FormData (authService.register signature)
       const fd = new FormData()
       fd.append('name', data.name)
       fd.append('email', data.email)
       fd.append('password', data.password)
       fd.append('role', data.role)
 
-      await registerMutation.mutateAsync(fd)
-      toast.success('Account created and logged in')
+      await registerUser(fd)
       router.push('/')
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Registration failed'
-      toast.error(msg)
+      // Error handling is done in the store with toast
     }
   }
 
@@ -69,10 +65,9 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <Button type="submit" disabled={registerMutation.isLoading} className="w-full">
-            {registerMutation.isLoading ? 'Creating account...' : 'Create account'}
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? 'Creating account...' : 'Create account'}
           </Button>
-          {/* <FormError message={String(registerMutation.error?.message ?? null)} /> */}
         </div>
       </form>
 

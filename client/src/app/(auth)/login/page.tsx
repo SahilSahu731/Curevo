@@ -6,8 +6,7 @@ import { useRouter } from 'next/navigation'
 import Input from '@/components/common/Input'
 import Button from '@/components/common/Button'
 import FormError from '@/components/common/FormError'
-import { useLogin } from '@/hooks/queries/useAuthQueries'
-import { toast } from 'react-hot-toast'
+import { useAuth } from '@/hooks/useAuth'
 
 type FormValues = {
   email: string
@@ -17,16 +16,14 @@ type FormValues = {
 export default function LoginPage() {
   const router = useRouter()
   const { register, handleSubmit, formState } = useForm<FormValues>({ mode: 'onBlur' })
-  const login = useLogin()
+  const { login, isLoading } = useAuth()
 
   const onSubmit = async (data: FormValues) => {
     try {
-      await login.mutateAsync(data)
-      toast.success('Logged in successfully')
+      await login(data)
       router.push('/')
     } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || 'Login failed'
-      toast.error(msg)
+      // Error handling is done in the store with toast
     }
   }
 
@@ -60,10 +57,9 @@ export default function LoginPage() {
         </div>
 
         <div>
-          <Button type="submit" disabled={login.isPending} className="w-full">
-            {login.isPending ? 'Signing in...' : 'Sign In'}
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? 'Signing in...' : 'Sign In'}
           </Button>
-          {/* <FormError message={String(login.error?.message ?? null)} /> */}
         </div>
       </form>
 

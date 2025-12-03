@@ -30,6 +30,6 @@ export const sendTokenResponse = (user, statusCode, res) => {
     .json({
       success: true,
       token,
-      data: user,
+      user,
     });
 };
