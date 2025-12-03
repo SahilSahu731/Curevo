@@ -1,3 +1,5 @@
+'use client'
+
 import Link from 'next/link';
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuthStore, useIsAuthenticated } from '@/store/authStore';
