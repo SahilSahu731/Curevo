@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { authAPI } from "@/api";
+import { authAPI } from "@/api/auth";
 import toast from "react-hot-toast";
 
 export interface User {
@@ -8,6 +8,7 @@ export interface User {
   name: string;
   email: string;
   role: "patient" | "doctor" | "admin";
+  profileImage?: string;
 }
 
 interface AuthState {

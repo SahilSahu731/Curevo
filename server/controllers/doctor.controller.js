@@ -1,7 +1,10 @@
 import Clinic from "../models/clinic.model.js";
 import Doctor from "../models/doctor.model.js";
 import User from "../models/user.model.js";
-
+import Queue from "../models/queue.model.js";
+import Appointment from "../models/appointment.model.js";
+import mongoose from "mongoose";
+import { getIO } from "../config/socket.js";
 
 // Helper function to handle common Mongoose error patterns
 const handleMongooseError = (res, error) => {
@@ -27,24 +30,20 @@ export const createDoctor = async (req, res) => {
       consultationFee 
     } = req.body;
 
-    // 1. Validation Checks
     if (!userId || !clinicId) {
       return res.status(400).json({ success: false, error: "userId and clinicId are required." });
     }
 
-    // 2. Verify User Role (Must be 'doctor' or 'admin' establishing a new doctor)
     const user = await User.findById(userId);
     if (!user || (user.role !== 'doctor' && user.role !== 'admin')) {
       return res.status(400).json({ success: false, error: "User not found or does not have a valid role for a doctor profile." });
     }
 
-    // 3. Verify Clinic Existence
     const clinic = await Clinic.findById(clinicId);
     if (!clinic) {
       return res.status(404).json({ success: false, error: "Clinic not found." });
     }
 
-    // 4. Create Doctor Profile
     const doctor = await Doctor.create({
       userId,
       clinicId,
@@ -52,7 +51,7 @@ export const createDoctor = async (req, res) => {
       qualification,
       experience,
       consultationFee,
-      isAvailable: true // Default to available upon creation
+      isAvailable: true 
     });
 
     res.status(201).json({
@@ -68,7 +67,6 @@ export const createDoctor = async (req, res) => {
 
 export const getDoctors = async (req, res) => {
   try {
-    // Fetch all doctors and populate the related user data
     const doctors = await Doctor.find({})
       .populate({
         path: 'userId',
@@ -135,7 +133,6 @@ export const updateDoctorProfile = async (req, res) => {
       runValidators: true,
     }).populate('userId', 'name email');
 
-    // Optionally update User profile name/phone/image if provided
     await User.findByIdAndUpdate(req.user.id, {
         name: req.body.name,
         phone: req.body.phone,
@@ -161,7 +158,6 @@ export const toggleAvailability = async (req, res) => {
       return res.status(404).json({ success: false, error: "Doctor profile not found." });
     }
 
-    // Toggle the boolean state
     const newAvailability = !doctor.isAvailable;
 
     doctor.isAvailable = newAvailability;
@@ -177,15 +173,111 @@ export const toggleAvailability = async (req, res) => {
   }
 };
 
+// --- Queue Management Logic ---
+
+export const callNextPatient = async (req, res) => {
+    try {
+        const doctor = await Doctor.findOne({ userId: req.user.id });
+        if (!doctor) return res.status(404).json({ success: false, error: "Doctor not found" });
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const queue = await Queue.findOne({
+            doctorId: doctor._id,
+            date: today
+        }).populate('appointmentIds').populate('emergencyQueue');
+
+        if (!queue) {
+            return res.status(404).json({ success: false, error: "No active queue for today" });
+        }
+
+        // Logic to pick next patient
+        let nextApptId = null;
+        let isEmergency = false;
+
+        if (queue.emergencyQueue.length > 0) {
+            nextApptId = queue.emergencyQueue[0]._id; // Peek
+            isEmergency = true;
+        } else if (queue.appointmentIds.length > 0) {
+            nextApptId = queue.appointmentIds[0]._id; // Peek
+        } else {
+            return res.status(200).json({ success: true, message: "Queue is empty", patient: null });
+        }
+
+        const appointment = await Appointment.findById(nextApptId).populate('patientId', 'name profileImage');
+        
+        // Update Appointment Status
+        appointment.status = 'in-progress';
+        appointment.consultationStartTime = Date.now();
+        await appointment.save();
+
+        // Update Queue: Remove from waiting list, set current token
+        if (isEmergency) {
+            queue.emergencyQueue.shift();
+        } else {
+            queue.appointmentIds.shift();
+        }
+        
+        queue.currentToken = appointment.tokenNumber; // Update current token being served
+        queue.lastUpdated = Date.now();
+        await queue.save();
+
+        // Socket Events
+        const io = getIO();
+        if (io) {
+            // Notify Patient
+            io.to(`appointment-${appointment._id}`).emit('your-turn', { appointment });
+            
+            // Update Clinic/Queue Boards
+            io.to(`clinic-${doctor.clinicId}`).emit('queue-update', {
+                queueId: queue._id,
+                doctorId: doctor._id,
+                currentToken: queue.currentToken,
+                waitingCount: queue.appointmentIds.length + queue.emergencyQueue.length
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            patient: appointment,
+            tokenNumber: appointment.tokenNumber
+        });
+
+    } catch (error) {
+        console.error("Call Next Patient Error:", error);
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
+export const completeConsultation = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { notes } = req.body;
+
+        const appointment = await Appointment.findById(id);
+        if (!appointment) return res.status(404).json({ success: false, error: "Appointment not found" });
+
+        appointment.status = 'completed';
+        appointment.notes = notes;
+        appointment.consultationEndTime = Date.now();
+        await appointment.save();
+
+        res.status(200).json({ success: true, message: "Consultation completed" });
+
+    } catch (error) {
+        console.error("Complete Consultation Error:", error);
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
 // --- Slot Generation Logic ---
 
-// Helper to convert time string (HH:MM) to minutes past midnight
 const timeToMinutes = (timeStr) => {
     const [hours, minutes] = timeStr.split(':').map(Number);
     return hours * 60 + minutes;
 };
 
-// Helper to convert minutes past midnight back to time string (HH:MM)
 const minutesToTime = (totalMinutes) => {
     const hours = Math.floor(totalMinutes / 60) % 24;
     const minutes = totalMinutes % 60;
@@ -195,7 +287,7 @@ const minutesToTime = (totalMinutes) => {
 export const getAvailableSlots = async (req, res) => {
   try {
     const { id: doctorId } = req.params;
-    const { date } = req.query; // date should be YYYY-MM-DD
+    const { date } = req.query;
 
     if (!mongoose.Types.ObjectId.isValid(doctorId)) {
         return res.status(400).json({ success: false, error: "Invalid Doctor ID format." });
@@ -207,7 +299,6 @@ export const getAvailableSlots = async (req, res) => {
     const targetDate = new Date(date);
     const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
 
-    // 1. Fetch Doctor and Clinic details
     const doctor = await Doctor.findById(doctorId).populate('clinicId');
 
     if (!doctor) {
@@ -219,7 +310,6 @@ export const getAvailableSlots = async (req, res) => {
         return res.status(404).json({ success: false, error: "Clinic is inactive or not found." });
     }
 
-    // 2. Check if doctor/clinic is working on that day
     if (!clinic.workingDays.includes(dayOfWeek)) {
         return res.status(200).json({ success: true, message: `Clinic is closed on ${dayOfWeek}.`, data: [] });
     }
@@ -232,51 +322,53 @@ export const getAvailableSlots = async (req, res) => {
         breakSlots
     } = clinic;
 
-    // Convert times to minutes past midnight
     let currentTimeMinutes = timeToMinutes(openingTime);
     const closingTimeMinutes = timeToMinutes(closingTime);
     
     const slotDuration = averageConsultationTime + (slotBufferMinutes || 0);
-    const availableSlots = [];
+    const possibleSlots = [];
 
-    // 3. Generate slots
     while (currentTimeMinutes < closingTimeMinutes) {
         const slotEndTimeMinutes = currentTimeMinutes + averageConsultationTime;
         const totalSlotEndTimeMinutes = currentTimeMinutes + slotDuration;
 
-        // Check if current slot overlaps with any break
         const isBreak = breakSlots.some(breakTime => {
             const breakStart = timeToMinutes(breakTime.startTime);
             const breakEnd = timeToMinutes(breakTime.endTime);
-            // Check if slot starts before break ends AND slot ends after break starts
             return currentTimeMinutes < breakEnd && totalSlotEndTimeMinutes > breakStart;
         });
 
         if (isBreak) {
-            // Find the next available time after the break ends
             const nextTime = Math.max(...breakSlots.map(b => timeToMinutes(b.endTime)));
             currentTimeMinutes = nextTime;
             continue; 
         }
 
-        // Check if the slot ends after closing time
         if (slotEndTimeMinutes > closingTimeMinutes) {
             break;
         }
 
-        // Slot is valid and available
-        availableSlots.push({
+        possibleSlots.push({
             time: minutesToTime(currentTimeMinutes),
             duration: averageConsultationTime,
-            isBooked: false, // This will be updated later based on existing appointments
         });
 
-        // Move to the next slot
         currentTimeMinutes = totalSlotEndTimeMinutes;
     }
 
-    // 4. (TODO: Filter out already booked slots)
-    // You would query the Appointment model for this doctor/date here and set isBooked: true
+    // Filter booked slots
+    const bookedAppointments = await Appointment.find({
+        doctorId,
+        date: targetDate,
+        status: { $ne: 'cancelled' }
+    }).select('slotTime');
+
+    const bookedTimes = bookedAppointments.map(app => app.slotTime);
+
+    const availableSlots = possibleSlots.map(slot => ({
+        ...slot,
+        isBooked: bookedTimes.includes(slot.time)
+    }));
 
     res.status(200).json({
       success: true,

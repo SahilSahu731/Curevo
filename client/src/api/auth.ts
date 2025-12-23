@@ -18,7 +18,7 @@ export const authAPI = {
   },
 
   me: async () => {
-    const response = await apiClient.get<User>("/auth/me");
-    return response.data;
+    const response = await apiClient.get<{ success: boolean; data: User }>("/auth/me");
+    return response.data.data;
   },
 };

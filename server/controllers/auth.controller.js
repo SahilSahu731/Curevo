@@ -1,5 +1,5 @@
 import User from "../models/user.model.js";
-import { sendTokenResponse } from "../utils/generateToken.js";
+import { sendTokenResponse, generateToken } from "../utils/generateToken.js";
 
 export const register = async (req, res) => {
   try {
@@ -103,5 +103,35 @@ export const updatePassword = async (req, res) => {
     sendTokenResponse(user, 200, res);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Google Callback
+export const googleCallback = async (req, res) => {
+  try {
+    // Passport middleware attaches user to req.user
+    const user = req.user;
+    const token = generateToken(user._id);
+
+    // Cookie options
+    const options = {
+      expires: new Date(
+        Date.now() + (process.env.JWT_COOKIE_EXPIRE || 30) * 24 * 60 * 60 * 1000
+      ),
+      httpOnly: true,
+      // secure: process.env.NODE_ENV === "production"
+    };
+
+    if (process.env.NODE_ENV === "production") {
+      options.secure = true;
+    }
+
+    res.cookie("token", token, options);
+
+    // Redirect to frontend
+    res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+  } catch (error) {
+    console.error(error);
+    res.status(500).redirect(`${process.env.CLIENT_URL}/login?error=Server%20Error`);
   }
 };

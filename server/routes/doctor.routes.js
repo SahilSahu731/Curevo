@@ -1,24 +1,32 @@
 import express from 'express';
 import { 
+    createDoctor, 
     getDoctors, 
     getDoctor, 
     updateDoctorProfile, 
     toggleAvailability,
     getAvailableSlots,
-    createDoctor
+    callNextPatient,
+    completeConsultation
 } from '../controllers/doctor.controller.js';
-import { authorize, protect } from '../middlewares/auth.middleware.js';
+import { protect, authorize } from '../middlewares/auth.middleware.js';
 
-const router = express.Router({ mergeParams: true });
+const router = express.Router();
 
-// --- Public Routes (No authentication needed to view doctors/slots) ---
+// Public routes
 router.get('/', getDoctors);
 router.get('/:id', getDoctor);
-router.get('/:id/slots', getAvailableSlots);
+router.get('/slots/:id', getAvailableSlots);
 
-// protected routes
-router.post('/', protect, authorize('doctor' || 'admin'), createDoctor);
-router.put('/profile', protect, authorize('doctor'), updateDoctorProfile);
-router.put('/availability', protect, authorize('doctor'), toggleAvailability);
+// Protected routes (Doctor/Admin)
+router.use(protect);
+
+router.post('/', authorize('admin', 'doctor'), createDoctor); 
+router.put('/profile', authorize('doctor'), updateDoctorProfile);
+router.patch('/availability', authorize('doctor'), toggleAvailability);
+
+// Queue Management
+router.post('/call-next', authorize('doctor'), callNextPatient);
+router.put('/complete-consultation/:id', authorize('doctor'), completeConsultation);
 
 export default router;

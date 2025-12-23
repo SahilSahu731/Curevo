@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
-import { useCurrentUser } from '@/hooks/queries/useAuthQueries'
+
 
 type Options = {
   role?: 'patient' | 'doctor' | 'admin'
@@ -14,53 +14,55 @@ type Options = {
 export default function useRequireAuth(opts: Options = {}) {
   const { role, redirectTo = '/login', redirectIfAuthenticated = false } = opts
   const router = useRouter()
-  const token = useAuthStore((s) => s.token)
-  const user = useAuthStore((s) => s.user)
+  const { token, user, isLoading, getCurrentUser } = useAuthStore()
   const [checking, setChecking] = useState(true)
 
-  // Fetch current user if token exists but user is missing
-  const currentUserQuery = useCurrentUser()
-
   useEffect(() => {
-    // only run client-side
     if (typeof window === 'undefined') return
 
-    // If user is authenticated and we want to prevent access to auth pages
-    if (redirectIfAuthenticated && token) {
-      // Redirect to dashboard (role-based)
-      if (user?.role === 'doctor') router.replace('/doctor/dashboard')
-      else router.replace('/patient/dashboard')
-      return
-    }
-
-    // If no token, redirect to login
-    if (!token) {
-      router.replace(redirectTo)
-      return
-    }
-
-    // If role is required, wait until currentUserQuery finishes
-    if (role) {
-      if (currentUserQuery.isLoading) {
-        setChecking(true)
+    const verifyAuth = async () => {
+      // 1. If no token, redirect immediately
+      if (!token) {
+        if (!redirectIfAuthenticated) {
+             router.replace(redirectTo)
+        }
+        setChecking(false)
         return
       }
 
-      const fetchedUser = currentUserQuery.data
-      const effectiveUser = user ?? fetchedUser
-      if (!effectiveUser) {
-        router.replace(redirectTo)
-        return
+      // 2. If token exists but no user (and not loading), try fetching user
+      if (!user) {
+         try {
+             await getCurrentUser();
+             // After fetch, if user is still null (e.g. invalid token), store handles logout
+             // We can re-check user here if we want, but store updates are async in React state terms
+         } catch (e) {
+             // Store handles logout on error
+             return;
+         }
       }
-      if (effectiveUser.role !== role) {
-        // Role mismatch - redirect to home
-        router.replace('/')
-        return
+      
+      // 3. Authenticated logic
+      if (redirectIfAuthenticated) {
+         if (user?.role === 'doctor') router.replace('/doctor-dashboard')
+         else if (user?.role === 'patient') router.replace('/patient-dashboard')
+         else if (user?.role === 'admin') router.replace('/admin-dashboard')
+         else router.replace('/')
+         return
       }
+
+      // 4. Role check
+      if (role && user) {
+          if (user.role !== role) {
+              router.replace('/')
+          }
+      }
+      
+      setChecking(false)
     }
 
-    setChecking(false)
-  }, [token, user, currentUserQuery.isLoading, currentUserQuery.data, role, redirectIfAuthenticated])
+    verifyAuth();
+  }, [token, user, role, redirectIfAuthenticated, redirectTo, getCurrentUser, router])
 
   return { checking, user, token }
 }
