@@ -83,7 +83,7 @@ export default function GlobalNavbar() {
                         { label: "Doctors", href: "/doctors" },
                         { label: "Clinics", href: "/clinics" },
                         { label: "Telehealth", href: "/telehealth" },
-                        { label: "Lab Tests", href: "#" },
+                        { label: "Lab Tests", href: "/lab-tests" },
                         { label: "Medicines", href: "#" }
                     ].map(item => (
                         <Link key={item.label} href={item.href} className="relative group text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-colors font-body">
