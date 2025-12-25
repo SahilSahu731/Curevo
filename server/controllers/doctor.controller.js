@@ -67,12 +67,84 @@ export const createDoctor = async (req, res) => {
 
 export const getDoctors = async (req, res) => {
   try {
-    const doctors = await Doctor.find({})
+    const { 
+        search, 
+        specialization, 
+        minFee, 
+        maxFee, 
+        sort, 
+        gender,
+        minExperience
+    } = req.query;
+
+    const query = {};
+
+    // 1. Filter by Doctor-specific fields
+    if (specialization) {
+        // Case-insensitive regex for flexibility
+        query.specialization = { $regex: specialization, $options: 'i' };
+    }
+
+    if (minFee || maxFee) {
+        query.consultationFee = {};
+        if (minFee) query.consultationFee.$gte = Number(minFee);
+        if (maxFee) query.consultationFee.$lte = Number(maxFee);
+    }
+
+    if (minExperience) {
+        query.experience = { $gte: Number(minExperience) };
+    }
+
+    // 2. Filter by User-specific fields (Name, Gender)
+    if (search || gender) {
+        const userQuery = {};
+        if (search) {
+            userQuery.name = { $regex: search, $options: 'i' };
+        }
+        if (gender) {
+            userQuery.gender = gender; // Expect exact match for enum
+        }
+
+        const matchingUsers = await User.find(userQuery).select('_id');
+        const userIds = matchingUsers.map(u => u._id);
+        
+        // Add to main query
+        query.userId = { $in: userIds };
+    }
+
+    // 3. Prepare Sort Options
+    let sortOptions = {};
+    if (sort) {
+        switch (sort) {
+            case 'fee_asc':
+                sortOptions.consultationFee = 1;
+                break;
+            case 'fee_desc':
+                sortOptions.consultationFee = -1;
+                break;
+            case 'experience_desc':
+                sortOptions.experience = -1;
+                break;
+            case 'experience_asc':
+                sortOptions.experience = 1;
+                break;
+            default:
+                sortOptions.createdAt = -1;
+        }
+    } else {
+        sortOptions.createdAt = -1; // Default new
+    }
+
+    const doctors = await Doctor.find(query)
       .populate({
         path: 'userId',
-        select: 'name email profileImage phone',
+        select: 'name email profileImage phone gender',
       })
-      .populate('clinicId', 'name');
+      .populate({
+        path: 'clinicId',
+        select: 'name address city'
+      })
+      .sort(sortOptions);
 
     res.status(200).json({
       success: true,
@@ -80,6 +152,7 @@ export const getDoctors = async (req, res) => {
       data: doctors,
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ success: false, error: "Server Error" });
   }
 };

@@ -2,6 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Stethoscope, Heart, Brain, Eye, Bone, Baby, Syringe, Pill } from "lucide-react";
+import Link from "next/link";
 
 // GFG / Fiverr Style Tile Grid
 const categories = [
@@ -23,16 +24,17 @@ export default function PopularCategories() {
                 
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                     {categories.map((cat, i) => (
-                        <motion.div 
-                            key={i}
-                            whileHover={{ y: -5, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.1)" }}
-                            className="bg-white dark:bg-slate-800 rounded-lg p-6 flex flex-col items-center justify-center gap-4 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all h-40 text-center shadow-sm"
-                        >
-                            <div className={`h-12 w-12 rounded-full flex items-center justify-center ${cat.color} bg-opacity-20`}>
-                                <cat.icon className="h-6 w-6" />
-                            </div>
-                            <span className="font-medium text-slate-700 dark:text-slate-300 font-body text-sm">{cat.name}</span>
-                        </motion.div>
+                        <Link href={`/doctors?specialization=${cat.name}`} key={i} className="contents">
+                            <motion.div 
+                                whileHover={{ y: -5, boxShadow: "0 10px 30px -10px rgba(0,0,0,0.1)" }}
+                                className="bg-white dark:bg-slate-800 rounded-lg p-6 flex flex-col items-center justify-center gap-4 border border-slate-200 dark:border-slate-700 cursor-pointer transition-all h-40 text-center shadow-sm"
+                            >
+                                <div className={`h-12 w-12 rounded-full flex items-center justify-center ${cat.color} bg-opacity-20`}>
+                                    <cat.icon className="h-6 w-6" />
+                                </div>
+                                <span className="font-medium text-slate-700 dark:text-slate-300 font-body text-sm">{cat.name}</span>
+                            </motion.div>
+                        </Link>
                     ))}
                 </div>
             </div>

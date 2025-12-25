@@ -45,7 +45,7 @@ export default function GlobalNavbar() {
         router.push('/login');
     }
 
-    const navItems = ["Doctors", "Clinics", "Telehealth", "Lab Tests", "Medicines"];
+
 
     const getInitials = (name: string) => {
         return name
@@ -79,9 +79,15 @@ export default function GlobalNavbar() {
 
                 {/* Categories (Desktop) - GFG Style */}
                 <nav className="hidden lg:flex items-center gap-8">
-                    {navItems.map(item => (
-                        <Link key={item} href="#" className="relative group text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-colors font-body">
-                            {item}
+                    {[
+                        { label: "Doctors", href: "/doctors" },
+                        { label: "Clinics", href: "#" },
+                        { label: "Telehealth", href: "#" },
+                        { label: "Lab Tests", href: "#" },
+                        { label: "Medicines", href: "#" }
+                    ].map(item => (
+                        <Link key={item.label} href={item.href} className="relative group text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-green-600 dark:hover:text-green-400 transition-colors font-body">
+                            {item.label}
                             <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-500 transition-all group-hover:w-full"></span>
                         </Link>
                     ))}

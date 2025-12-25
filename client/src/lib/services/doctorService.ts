@@ -1,8 +1,8 @@
 import api from "../api";
 
 export const doctorService = {
-  getAllDoctors: async () => {
-    const response = await api.get("/doctors");
+  getAllDoctors: async (params?: any) => {
+    const response = await api.get("/doctors", { params });
     return response.data;
   },
   

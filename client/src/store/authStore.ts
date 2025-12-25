@@ -20,6 +20,8 @@ export interface User {
     zipCode?: string;
     country?: string;
   };
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface AuthState {
