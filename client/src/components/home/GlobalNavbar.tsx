@@ -82,7 +82,7 @@ export default function GlobalNavbar() {
                     {[
                         { label: "Doctors", href: "/doctors" },
                         { label: "Clinics", href: "/clinics" },
-                        { label: "Telehealth", href: "#" },
+                        { label: "Telehealth", href: "/telehealth" },
                         { label: "Lab Tests", href: "#" },
                         { label: "Medicines", href: "#" }
                     ].map(item => (

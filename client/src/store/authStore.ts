@@ -59,7 +59,7 @@ export const useAuthStore = create<AuthState>()(
         })
       },
 
-      logout: () => set(initialState),
+      logout: () => set({ ...initialState, _hydrated: true }),
 
       login: async (credentials) => {
         try {

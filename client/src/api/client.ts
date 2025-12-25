@@ -24,7 +24,7 @@ apiClient.interceptors.response.use(
       const requestUrl = error.config?.url ?? '';
       useAuthStore.getState().logout();
       
-      const skipRedirect = requestUrl.includes('/auth/me');
+      const skipRedirect = ['/auth/me', '/auth/login', '/auth/register'].some(url => requestUrl.includes(url));
       if (!skipRedirect && typeof window !== 'undefined') {
         window.location.href = '/login';
       }

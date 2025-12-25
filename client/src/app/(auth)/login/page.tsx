@@ -29,6 +29,7 @@ export default function LoginPage() {
       await login(data)
       router.push('/')
     } catch (err: any) {
+      console.log(err)
       // Error handled by store/toast
     }
   }

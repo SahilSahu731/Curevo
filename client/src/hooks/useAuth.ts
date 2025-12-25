@@ -4,13 +4,14 @@ export const useAuth = () => {
   const { 
     user, 
     token,
-    isAuthenticated, 
     isLoading, 
     login,
     register,
     logout,
     getCurrentUser 
   } = useAuthStore();
+
+  const isAuthenticated = !!token;
 
   return {
     // User data
