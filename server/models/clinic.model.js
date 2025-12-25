@@ -12,6 +12,33 @@ const ClinicSchema = new mongoose.Schema(
       type: String,
       required: [true, "Clinic address is required"],
     },
+    city: {
+      type: String,
+      required: [true, "City is required"],
+      trim: true
+    },
+    state: {
+      type: String,
+      required: [true, "State is required"],
+      trim: true
+    },
+    zipCode: {
+      type: String,
+      required: [true, "Zip Code is required"],
+      trim: true
+    },
+    description: {
+      type: String,
+      maxlength: [2000, "Description cannot exceed 2000 characters"]
+    },
+    images: {
+      type: [String], // Array of image URLs
+      default: []
+    },
+    services: {
+      type: [String], // Array of service names
+      default: []
+    },
     phone: {
       type: String,
       required: [true, "Clinic phone is required"],
@@ -22,7 +49,7 @@ const ClinicSchema = new mongoose.Schema(
       type: String,
       required: false,
       unique: true,
-      sparse: true, // Allows null/missing values while enforcing uniqueness for non-null values
+      sparse: true, 
       match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email address"],
     },
     // --- Core Scheduling & Capacity ---

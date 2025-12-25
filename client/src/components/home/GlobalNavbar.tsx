@@ -81,7 +81,7 @@ export default function GlobalNavbar() {
                 <nav className="hidden lg:flex items-center gap-8">
                     {[
                         { label: "Doctors", href: "/doctors" },
-                        { label: "Clinics", href: "#" },
+                        { label: "Clinics", href: "/clinics" },
                         { label: "Telehealth", href: "#" },
                         { label: "Lab Tests", href: "#" },
                         { label: "Medicines", href: "#" }

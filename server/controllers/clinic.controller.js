@@ -21,6 +21,12 @@ export const createClinic = async (req, res) => {
     const { 
         name, 
         address, 
+        city,
+        state,
+        zipCode,
+        description,
+        images,
+        services,
         phone, 
         email, 
         openingTime, 
@@ -35,7 +41,13 @@ export const createClinic = async (req, res) => {
 
     const clinic = await Clinic.create({
         name, 
-        address, 
+        address,
+        city,
+        state,
+        zipCode,
+        description,
+        images,
+        services, 
         phone, 
         email, 
         openingTime, 

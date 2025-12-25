@@ -49,9 +49,20 @@ const seed = async () => {
         // 1. Seed 10 Clinics
         const clinics = [];
         for (let i = 0; i < 10; i++) {
+            const clinicCity = getRandom(cities);
             const clinic = await Clinic.create({
-                name: `${getRandom(clinicNames)} ${getRandom(cities)} ${i+1}`,
-                address: `${getRandomInt(1, 999)} Main St, ${getRandom(cities)}`,
+                name: `${getRandom(clinicNames)} ${clinicCity} ${i+1}`,
+                address: `${getRandomInt(1, 999)} Main St, ${clinicCity}`,
+                city: clinicCity,
+                state: "CA",
+                zipCode: `${getRandomInt(10000, 99999)}`,
+                description: `A premier healthcare facility in ${clinicCity} focused on providing patient-centered care.`,
+                images: [
+                    "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=600",
+                    "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&q=80&w=600", 
+                    "https://images.unsplash.com/photo-1516549655169-df83a0833860?auto=format&fit=crop&q=80&w=600"
+                ],
+                services: ["General Consultation", "Pediatrics", "Cardiology", "Emergency Care"],
                 phone: getRandomPhone(),
                 email: `clinic${i+1}@example.com`,
                 openingTime: "09:00",
