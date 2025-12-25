@@ -71,7 +71,8 @@ export const getDoctors = async (req, res) => {
       .populate({
         path: 'userId',
         select: 'name email profileImage phone',
-      });
+      })
+      .populate('clinicId', 'name');
 
     res.status(200).json({
       success: true,
@@ -380,3 +381,63 @@ export const getAvailableSlots = async (req, res) => {
     res.status(500).json({ success: false, error: "Could not process slot request." });
   }
 };
+
+export const deleteDoctor = async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ success: false, error: "Invalid Doctor ID format." });
+        }
+
+        const doctor = await Doctor.findByIdAndDelete(req.params.id);
+
+        if (!doctor) {
+            return res.status(404).json({ success: false, error: "Doctor not found" });
+        }
+
+        // Optionally, one might want to cascadingly delete or unlink related User/Appointments
+        // For now, we just remove the Doctor profile, leaving the User intact (maybe they revert to patient)
+        
+        res.status(200).json({
+            success: true,
+            data: {},
+            message: "Doctor profile deleted successfully"
+        });
+    } catch (error) {
+        handleMongooseError(res, error);
+    }
+};
+
+export const updateDoctor = async (req, res) => {
+    try {
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        return res.status(400).json({ success: false, error: "Invalid Doctor ID format." });
+      }
+
+      // Allowed fields for admin to update on the Doctor model
+      const allowedUpdates = ['specialization', 'qualification', 'experience', 'consultationFee', 'isAvailable', 'clinicId'];
+      const updates = {};
+      
+      Object.keys(req.body).forEach(key => {
+          if (allowedUpdates.includes(key)) {
+              updates[key] = req.body[key];
+          }
+      });
+      
+      const updatedDoctor = await Doctor.findByIdAndUpdate(req.params.id, updates, {
+        new: true,
+        runValidators: true,
+      }).populate('userId', 'name email').populate('clinicId', 'name');
+  
+      if (!updatedDoctor) {
+        return res.status(404).json({ success: false, error: "Doctor not found." });
+      }
+  
+      res.status(200).json({
+        success: true,
+        message: "Doctor updated successfully.",
+        data: updatedDoctor,
+      });
+    } catch (error) {
+      handleMongooseError(res, error);
+    }
+  };

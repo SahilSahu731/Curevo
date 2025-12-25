@@ -1,11 +1,10 @@
 import express from 'express'
-import { getMe, googleCallback, login, logout, register, updatePassword } from '../controllers/auth.controller.js';
+import { getMe, googleCallback, login, logout, register, updatePassword, updateDetails, updateProfileImage } from '../controllers/auth.controller.js';
 import { protect } from '../middlewares/auth.middleware.js';
 import passport from 'passport';
-import multer from 'multer'
+import upload from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
-const upload = multer()
 
 router.post("/register", upload.none(), register);
 router.post("/login", login);
@@ -24,7 +23,10 @@ router.get(
 );
 
 // --- Protected Routes ---
-router.get("/me", protect, getMe);
-router.put("/password", protect, updatePassword);
+router.use(protect); // Cleaner than adding protect to each
+router.get("/me", getMe);
+router.put("/password", updatePassword);
+router.put("/updatedetails", updateDetails);
+router.put("/updateimage", upload.single('image'), updateProfileImage);
 
 export default router;

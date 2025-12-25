@@ -9,6 +9,17 @@ export interface User {
   email: string;
   role: "patient" | "doctor" | "admin";
   profileImage?: string;
+  phone?: string;
+  gender?: "male" | "female" | "other";
+  dateOfBirth?: string;
+  bio?: string;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    zipCode?: string;
+    country?: string;
+  };
 }
 
 interface AuthState {

@@ -106,8 +106,72 @@ export const updatePassword = async (req, res) => {
   }
 };
 
+// ... existing code
+
+// Update User Details
+export const updateDetails = async (req, res) => {
+  try {
+    const fieldsToUpdate = {
+      name: req.body.name,
+      email: req.body.email, // keeping email updatable for now, though often restricted
+      phone: req.body.phone,
+      address: req.body.address,
+      gender: req.body.gender,
+      dateOfBirth: req.body.dateOfBirth,
+      bio: req.body.bio
+    };
+
+    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+      new: true,
+      runValidators: true,
+    });
+
+    res.status(200).json({
+      success: true,
+      data: user,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+// Update Profile Image
+export const updateProfileImage = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, error: "No image file provided" });
+        }
+
+        const b64 = Buffer.from(req.file.buffer).toString("base64");
+        let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+        
+        // Import cloudinary dynamically or from config
+        const cloudinary = (await import("../config/cloudinary.js")).default;
+
+        const result = await cloudinary.uploader.upload(dataURI, {
+            folder: "curevo/profiles",
+            resource_type: "auto"
+        });
+
+        const user = await User.findByIdAndUpdate(req.user.id, {
+            profileImage: result.secure_url
+        }, { new: true });
+
+        res.status(200).json({
+            success: true,
+            data: user,
+            message: "Profile image updated successfully"
+        });
+
+    } catch (error) {
+        console.error("Upload Error:", error);
+        res.status(500).json({ success: false, error: "Image upload failed" });
+    }
+};
+
 // Google Callback
 export const googleCallback = async (req, res) => {
+// ... existing code
   try {
     // Passport middleware attaches user to req.user
     const user = req.user;

@@ -145,7 +145,30 @@ export const getClinicDoctors = async (req, res) => {
       count: doctors.length,
       data: doctors,
     });
+
   } catch (error) {
     res.status(500).json({ success: false, error: error.message || "Server Error" });
   }
+};
+
+export const deleteClinic = async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ success: false, error: "Invalid Clinic ID format." });
+        }
+
+        const clinic = await Clinic.findByIdAndDelete(req.params.id);
+
+        if (!clinic) {
+            return res.status(404).json({ success: false, error: "Clinic not found" });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {},
+            message: "Clinic deleted successfully"
+        });
+    } catch (error) {
+        handleMongooseError(res, error);
+    }
 };

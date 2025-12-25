@@ -7,7 +7,9 @@ import {
     toggleAvailability,
     getAvailableSlots,
     callNextPatient,
-    completeConsultation
+    completeConsultation,
+    deleteDoctor,
+    updateDoctor
 } from '../controllers/doctor.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
 
@@ -24,6 +26,10 @@ router.use(protect);
 router.post('/', authorize('admin', 'doctor'), createDoctor); 
 router.put('/profile', authorize('doctor'), updateDoctorProfile);
 router.patch('/availability', authorize('doctor'), toggleAvailability);
+
+// Admin Management
+router.delete('/:id', authorize('admin'), deleteDoctor);
+router.put('/:id', authorize('admin'), updateDoctor);
 
 // Queue Management
 router.post('/call-next', authorize('doctor'), callNextPatient);

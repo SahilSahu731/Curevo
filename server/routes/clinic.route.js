@@ -4,7 +4,8 @@ import {
     getClinic, 
     createClinic, 
     updateClinic, 
-    getClinicDoctors 
+    getClinicDoctors,
+    deleteClinic 
 } from '../controllers/clinic.controller.js';
 import { authorize, protect } from '../middlewares/auth.middleware.js';
 
@@ -16,5 +17,6 @@ router.get('/:id/doctors', getClinicDoctors);
 
 router.post('/', protect, authorize('admin'), createClinic);
 router.put('/:id', protect, authorize('admin'), updateClinic);
+router.delete('/:id', protect, authorize('admin'), deleteClinic);
 
 export default router;

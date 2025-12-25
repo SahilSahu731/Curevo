@@ -20,6 +20,24 @@ const UserSchema = new mongoose.Schema(
       sparse: true,
       match: [/^\+?[1-9]\d{1,14}$/, "Please provide a valid phone number"]
     },
+    address: {
+      street: String,
+      city: String,
+      state: String,
+      zipCode: String,
+      country: String
+    },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"]
+    },
+    dateOfBirth: {
+      type: Date
+    },
+    bio: {
+      type: String,
+      maxlength: [500, "Bio cannot vary more than 500 characters"]
+    },
     password: { 
       type: String, 
       required: false, 

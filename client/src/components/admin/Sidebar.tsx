@@ -3,12 +3,12 @@
 import Link from "next/link";
 import {
   Users,
-  Briefcase,
+  Stethoscope,
   Calendar,
   BarChart,
   LayoutDashboard,
   Settings,
-  Hospital,
+  Building2,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils/cn";
@@ -16,37 +16,37 @@ import { cn } from "@/lib/utils/cn";
 const navLinks = [
   {
     name: "Dashboard",
-    href: "/admin/dashboard",
+    href: "/admin-dashboard",
     icon: LayoutDashboard,
   },
   {
     name: "Users",
-    href: "/admin/users",
+    href: "/admin-dashboard/users",
     icon: Users,
   },
   {
     name: "Doctors",
-    href: "/admin/doctors",
-    icon: Briefcase,
+    href: "/admin-dashboard/doctors",
+    icon: Stethoscope,
   },
   {
     name: "Appointments",
-    href: "/admin/appointments",
+    href: "/admin-dashboard/appointments",
     icon: Calendar,
   },
   {
     name: "Clinics",
-    href: "/admin/clinics",
-    icon: Hospital,
+    href: "/admin-dashboard/clinics",
+    icon: Building2,
   },
   {
     name: "Analytics",
-    href: "/admin/analytics",
+    href: "/admin-dashboard/analytics",
     icon: BarChart,
   },
   {
-    name: "Manage",
-    href: "/admin/manage",
+    name: "Settings",
+    href: "/admin-dashboard/settings",
     icon: Settings,
   },
 ];
@@ -55,9 +55,9 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <div className="hidden min-h-screen md:flex flex-col w-72 bg-gray-900 text-white">
-      <div className="flex items-center justify-center h-20 border-b border-gray-700">
-        <h1 className="text-2xl font-bold">Admin Panel</h1>
+    <div className="hidden min-h-screen md:flex flex-col w-72 bg-zinc-950 text-white border-r border-zinc-800">
+      <div className="flex items-center justify-center h-20 border-b border-zinc-800">
+        <h1 className="text-2xl font-bold tracking-tight">Admin Portal</h1>
       </div>
       <div className="flex-1 overflow-y-auto">
         <nav className="flex flex-col p-4 space-y-2">
@@ -66,8 +66,8 @@ export default function Sidebar() {
               key={link.name}
               href={link.href}
               className={cn(
-                "flex items-center p-3 rounded-lg hover:bg-gray-800 transition-colors",
-                pathname === link.href ? "bg-gray-800" : ""
+                "flex items-center p-3 rounded-lg hover:bg-zinc-800 transition-colors text-zinc-400 hover:text-white",
+                pathname === link.href ? "bg-zinc-900 text-emerald-400" : ""
               )}
             >
               <link.icon className="w-5 h-5 mr-3" />

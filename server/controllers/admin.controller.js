@@ -3,7 +3,10 @@ import Doctor from "../models/doctor.model.js";
 import Clinic from "../models/clinic.model.js";
 import Appointment from "../models/appointment.model.js";
 
+// ... (existing imports)
+
 export const getDashboardStats = async (req, res) => {
+    // ... (existing logic)
     try {
         const totalPatients = await User.countDocuments({ role: 'patient' });
         const totalDoctors = await Doctor.countDocuments();
@@ -29,6 +32,65 @@ export const getDashboardStats = async (req, res) => {
 
     } catch (error) {
         console.error("Admin Stats Error:", error);
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
+export const getAllUsers = async (req, res) => {
+    try {
+        const users = await User.find({}).select('-password').sort({ createdAt: -1 });
+        res.status(200).json({ success: true, count: users.length, data: users });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
+export const updateUser = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const updates = req.body;
+        
+        // Prevent password update via this route for simplicity, or handle hashing if needed.
+        // For now, let's exclude password updates here.
+        delete updates.password;
+
+        const user = await User.findByIdAndUpdate(id, updates, { new: true, runValidators: true }).select('-password');
+        
+        if (!user) return res.status(404).json({ success: false, error: "User not found" });
+
+        res.status(200).json({ success: true, message: "User updated successfully", data: user });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message || "Server Error" });
+    }
+};
+
+export const deleteUser = async (req, res) => {
+    try {
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) return res.status(404).json({ success: false, error: "User not found" });
+        
+        // Optional: Cleanup related data (Appointments, Doctor profile if any)
+        
+        res.status(200).json({ success: true, message: "User deleted successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
+export const getUserAppointments = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const appointments = await Appointment.find({ patientId: id })
+            .populate('doctorId', 'userId')
+            .populate({
+                path: 'doctorId',
+                populate: { path: 'userId', select: 'name' }
+            })
+            .populate('clinicId', 'name address')
+            .sort({ date: -1 });
+
+        res.status(200).json({ success: true, count: appointments.length, data: appointments });
+    } catch (error) {
         res.status(500).json({ success: false, error: "Server Error" });
     }
 };

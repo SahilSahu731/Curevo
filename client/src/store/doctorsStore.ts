@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { doctorsAPI, Doctor } from "@/api";
+import { doctorsAPI, Doctor } from "@/api/doctors";
 import toast from "react-hot-toast";
 
 interface DoctorsState {

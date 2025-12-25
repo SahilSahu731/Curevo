@@ -14,13 +14,16 @@ type Options = {
 export default function useRequireAuth(opts: Options = {}) {
   const { role, redirectTo = '/login', redirectIfAuthenticated = false } = opts
   const router = useRouter()
-  const { token, user, isLoading, getCurrentUser } = useAuthStore()
+  const { token, user, isLoading, getCurrentUser, _hydrated } = useAuthStore()
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const verifyAuth = async () => {
+      // 0. Wait for hydration
+      if (!_hydrated) return; 
+
       // 1. If no token, redirect immediately
       if (!token) {
         if (!redirectIfAuthenticated) {
@@ -62,7 +65,7 @@ export default function useRequireAuth(opts: Options = {}) {
     }
 
     verifyAuth();
-  }, [token, user, role, redirectIfAuthenticated, redirectTo, getCurrentUser, router])
+  }, [token, user, role, redirectIfAuthenticated, redirectTo, getCurrentUser, router, _hydrated])
 
   return { checking, user, token }
 }

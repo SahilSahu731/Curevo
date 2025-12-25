@@ -5,14 +5,15 @@ import useRequireAuth from '@/hooks/useRequireAuth';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { Separator } from '@/components/ui/separator';
+import { PageLoader } from '@/components/common/Loader';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     const { checking } = useRequireAuth({ role: 'admin' });
 
     if (checking) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="animate-pulse">Loading Admin Console...</div>
+            <div className="min-h-screen flex items-center justify-center bg-background">
+                <PageLoader text="Verifying admin privileges..." />
             </div>
         );
     }

@@ -8,13 +8,12 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useState } from "react";
-import { Plus, Building2, Loader2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Pencil, Building2, Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -32,6 +31,7 @@ const formSchema = z.object({
   closingTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format (HH:MM)"),
   averageConsultationTime: z.coerce.number().min(5, "Must be at least 5 minutes"),
   workingDays: z.array(z.string()).min(1, "Select at least one working day"),
+  isActive: z.boolean().default(true),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -40,8 +40,13 @@ const WORKING_DAYS = [
     "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"
 ];
 
-export function CreateClinicDialog() {
-    const [open, setOpen] = useState(false);
+interface EditClinicDialogProps {
+  clinic: any;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export function EditClinicDialog({ clinic, open, onOpenChange }: EditClinicDialogProps) {
     const queryClient = useQueryClient();
     
     const { register, handleSubmit, formState: { errors, isSubmitting }, reset, setValue, watch, trigger } = useForm<FormValues>({
@@ -54,21 +59,35 @@ export function CreateClinicDialog() {
             openingTime: "09:00",
             closingTime: "17:00",
             averageConsultationTime: 15,
-            workingDays: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            workingDays: [],
+            isActive: true,
         }
     });
+
+    useEffect(() => {
+        if (clinic && open) {
+            setValue("name", clinic.name);
+            setValue("email", clinic.email || "");
+            setValue("phone", clinic.phone);
+            setValue("address", clinic.address);
+            setValue("openingTime", clinic.openingTime);
+            setValue("closingTime", clinic.closingTime);
+            setValue("averageConsultationTime", clinic.averageConsultationTime);
+            setValue("workingDays", clinic.workingDays);
+            setValue("isActive", clinic.isActive);
+        }
+    }, [clinic, open, setValue]);
 
     const selectedDays = watch("workingDays");
 
     const onSubmit = async (values: FormValues) => {
         try {
-            await clinicService.createClinic(values);
-            toast.success("Clinic created successfully");
-            setOpen(false);
-            reset();
+            await clinicService.updateClinic(clinic._id, values);
+            toast.success("Clinic updated successfully");
+            onOpenChange(false);
             queryClient.invalidateQueries({ queryKey: ['clinics'] });
         } catch (error: any) {
-            toast.error(error.response?.data?.error || "Failed to create clinic");
+            toast.error(error.response?.data?.error || "Failed to update clinic");
         }
     };
 
@@ -82,46 +101,41 @@ export function CreateClinicDialog() {
     };
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm hover:shadow transition-all">
-                    <Plus className="h-4 w-4" /> Register Clinic
-                </Button>
-            </DialogTrigger>
+        <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto dark:bg-zinc-950 dark:border-zinc-800">
                 <form onSubmit={handleSubmit(onSubmit)}>
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2 text-zinc-900 dark:text-zinc-50">
-                            <Building2 className="h-5 w-5 text-emerald-600 dark:text-emerald-500" />
-                            Register New Clinic
+                            <Pencil className="h-5 w-5 text-emerald-600 dark:text-emerald-500" />
+                            Edit Clinic Details
                         </DialogTitle>
                         <DialogDescription className="text-zinc-500 dark:text-zinc-400">
-                            Onboard a new medical facility to the platform.
+                            Update the information for {clinic?.name || "this facility"}.
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-6 py-4">
                          <div className="space-y-2">
                             <Label htmlFor="name" className="text-zinc-900 dark:text-zinc-200">Clinic Name</Label>
-                            <Input id="name" placeholder="e.g. City Care Medical Center" {...register("name")} className="dark:bg-zinc-900/50 dark:border-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-emerald-500/20" />
+                            <Input id="name" {...register("name")} className="dark:bg-zinc-900/50 dark:border-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-emerald-500/20" />
                             {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name.message}</p>}
                          </div>
                          
                          <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="email" className="text-zinc-900 dark:text-zinc-200">Business Email</Label>
-                                <Input id="email" placeholder="contact@clinic.com" {...register("email")} className="dark:bg-zinc-900/50 dark:border-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-emerald-500/20" />
+                                <Input id="email" {...register("email")} className="dark:bg-zinc-900/50 dark:border-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-emerald-500/20" />
                                 {errors.email && <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="phone" className="text-zinc-900 dark:text-zinc-200">Phone Number</Label>
-                                <Input id="phone" placeholder="+1 (555) 000-0000" {...register("phone")} className="dark:bg-zinc-900/50 dark:border-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-emerald-500/20" />
+                                <Input id="phone" {...register("phone")} className="dark:bg-zinc-900/50 dark:border-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-emerald-500/20" />
                                 {errors.phone && <p className="text-sm text-red-500 mt-1">{errors.phone.message}</p>}
                             </div>
                          </div>
 
                          <div className="space-y-2">
                             <Label htmlFor="address" className="text-zinc-900 dark:text-zinc-200">Address</Label>
-                            <Textarea id="address" placeholder="123 Medical Drive, Suite 100..." {...register("address")} className="dark:bg-zinc-900/50 dark:border-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-emerald-500/20 resize-none min-h-[80px]" />
+                            <Textarea id="address" {...register("address")} className="dark:bg-zinc-900/50 dark:border-zinc-800 dark:text-zinc-100 dark:placeholder-zinc-500 dark:focus:ring-emerald-500/20 resize-none min-h-[80px]" />
                             {errors.address && <p className="text-sm text-red-500 mt-1">{errors.address.message}</p>}
                          </div>
 
@@ -149,13 +163,13 @@ export function CreateClinicDialog() {
                                 {WORKING_DAYS.map((day) => (
                                     <div key={day} className="flex items-center space-x-2">
                                         <Checkbox 
-                                            id={`day-${day}`} 
+                                            id={`edit-day-${day}`} 
                                             checked={selectedDays?.includes(day)}
                                             onCheckedChange={() => toggleDay(day)}
                                             className="dark:border-zinc-600 dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600 dark:data-[state=checked]:text-white"
                                         />
                                         <label
-                                            htmlFor={`day-${day}`}
+                                            htmlFor={`edit-day-${day}`}
                                             className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer text-zinc-700 dark:text-zinc-300"
                                         >
                                             {day.slice(0, 3)}
@@ -165,12 +179,24 @@ export function CreateClinicDialog() {
                             </div>
                             {errors.workingDays && <p className="text-sm text-red-500 mt-1">{errors.workingDays.message}</p>}
                          </div>
+
+                         <div className="flex items-center space-x-2 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 dark:bg-zinc-900/30">
+                            <Checkbox 
+                                id="isActive" 
+                                checked={watch("isActive")}
+                                onCheckedChange={(checked) => setValue("isActive", checked as boolean)}
+                                className="dark:border-zinc-600 dark:data-[state=checked]:bg-emerald-600 dark:data-[state=checked]:border-emerald-600 dark:data-[state=checked]:text-white"
+                            />
+                            <Label htmlFor="isActive" className="text-zinc-900 dark:text-zinc-200 cursor-pointer">
+                                Facility is currently active and operational
+                            </Label>
+                        </div>
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={() => setOpen(false)} className="dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800">Cancel</Button>
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="dark:bg-zinc-900 dark:border-zinc-800 dark:text-zinc-300 dark:hover:bg-zinc-800">Cancel</Button>
                         <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700 text-white dark:bg-emerald-600 dark:hover:bg-emerald-700 dark:text-white shadow-sm" disabled={isSubmitting}>
                             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Register Facility
+                            Update Facility
                         </Button>
                     </DialogFooter>
                 </form>
