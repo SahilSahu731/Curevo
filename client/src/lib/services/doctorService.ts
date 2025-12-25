@@ -24,5 +24,15 @@ export const doctorService = {
   deleteDoctor: async (id: string) => {
       const response = await api.delete(`/doctors/${id}`);
       return response.data;
+  },
+
+  getReviews: async (doctorId: string) => {
+      const response = await api.get(`/reviews/${doctorId}`);
+      return response.data;
+  },
+
+  createReview: async (reviewData: any) => {
+      const response = await api.post(`/reviews`, reviewData);
+      return response.data;
   }
 };

@@ -16,6 +16,7 @@ import doctorRoutes from './routes/doctor.routes.js';
 import patientRoutes from './routes/patient.routes.js';
 import queueRoutes from './routes/queue.routes.js';
 import adminRoutes from './routes/admin.routes.js';
+import reviewRoutes from './routes/review.routes.js';
 
 const PORT = process.env.PORT || 5000;
 const app = express();
@@ -47,6 +48,7 @@ app.use("/api/doctors", doctorRoutes);
 app.use("/api/patients", patientRoutes); 
 app.use("/api/queue", queueRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 // Test route
 app.get("/test", (req, res) => {
