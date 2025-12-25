@@ -44,6 +44,11 @@ const AppointmentSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    consultationType: {
+      type: String,
+      enum: ['in-person', 'video'],
+      default: 'in-person',
+    },
     estimatedWaitTime: {
       type: Number, // In minutes, calculated by the system
     },

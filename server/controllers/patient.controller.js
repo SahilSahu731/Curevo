@@ -7,7 +7,7 @@ import mongoose from "mongoose";
 
 export const bookAppointment = async (req, res) => {
     try {
-        const { doctorId, clinicId, date, slotTime, symptoms, priority } = req.body;
+        const { doctorId, clinicId, date, slotTime, symptoms, priority, consultationType } = req.body;
         const patientId = req.user.id; // From auth middleware
 
         if (!doctorId || !clinicId || !date || !slotTime) {
@@ -37,6 +37,7 @@ export const bookAppointment = async (req, res) => {
             tokenNumber,
             symptoms,
             priority: priority || 'normal',
+            consultationType: consultationType || 'in-person',
             status: 'booked'
         });
 

@@ -108,6 +108,23 @@ export default function DoctorProfilePage() {
             router.push('/login?redirect=/doctors/' + id);
             return;
         }
+        // Redirect to booking page with doctor info
+        const params = new URLSearchParams({
+            doctorId: id,
+            doctorName: doctor?.userId?.name || '',
+            specialization: doctor?.specialization || '',
+            fee: doctor?.consultationFee?.toString() || '0',
+            clinicId: doctor?.clinicId?._id || ''
+        });
+        router.push(`/book?${params.toString()}`);
+    };
+
+    const handleQuickBook = () => {
+        if (!user) {
+            toast.error("Please login to book an appointment");
+            router.push('/login?redirect=/doctors/' + id);
+            return;
+        }
         if (!date || !selectedSlot) {
             toast.error("Please select a date and time slot");
             return;
@@ -476,13 +493,20 @@ export default function DoctorProfilePage() {
                                         </div>
                                     )}
                                 </CardContent>
-                                <CardFooter className="pt-0 pb-6">
+                                <CardFooter className="pt-0 pb-6 flex flex-col gap-2">
                                     <Button 
                                         className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-12 text-lg shadow-lg shadow-emerald-500/20"
                                         disabled={!date || !selectedSlot || bookMutation.isPending}
+                                        onClick={handleQuickBook}
+                                    >
+                                        {bookMutation.isPending ? "Confirming..." : "Quick Book"}
+                                    </Button>
+                                    <Button 
+                                        variant="outline"
+                                        className="w-full"
                                         onClick={handleBook}
                                     >
-                                        {bookMutation.isPending ? "Confirming..." : "Book Appointment"}
+                                        Full Booking Experience
                                     </Button>
                                 </CardFooter>
                             </Card>

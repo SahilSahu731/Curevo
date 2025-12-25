@@ -1,8 +1,10 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { doctorService } from "@/lib/services/doctorService";
 import { 
     Search, 
@@ -12,16 +14,13 @@ import {
     Clock, 
     ArrowRight,
     Star,
-    DollarSign
+    X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
     Card, 
     CardContent, 
-    CardHeader, 
-    CardTitle,
-    CardFooter 
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
@@ -34,13 +33,12 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// --- Mock Specializations (In real app, fetch from DB) ---
+// --- Specializations (In real app, fetch from DB) ---
 const SPECIALIZATIONS = [
   "All",
   "General Medicine", 
@@ -55,27 +53,49 @@ const SPECIALIZATIONS = [
   "ENT"
 ];
 
-export default function DoctorsPage() {
-    // --- State ---
-    const [search, setSearch] = useState("");
-    const [specialization, setSpecialization] = useState("All");
-    const [feeRange, setFeeRange] = useState([0, 500]);
-    const [gender, setGender] = useState<string | undefined>(undefined);
-    const [sort, setSort] = useState("recommended");
+function DoctorsPageContent() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    
+    // Initialize state from URL params - using semantic param names
+    const [name, setName] = useState(searchParams.get("name") || "");
+    const [specialization, setSpecialization] = useState(searchParams.get("specialization") || "All");
+    const [feeRange, setFeeRange] = useState([
+        parseInt(searchParams.get("minFee") || "0"), 
+        parseInt(searchParams.get("maxFee") || "500")
+    ]);
+    const [gender, setGender] = useState<string | undefined>(searchParams.get("gender") || undefined);
+    const [sort, setSort] = useState(searchParams.get("sort") || "recommended");
+    const [location, setLocation] = useState(searchParams.get("location") || "");
 
     // Debounce search
-    const [debouncedSearch, setDebouncedSearch] = useState(search);
+    const [debouncedName, setDebouncedName] = useState(name);
     
     useEffect(() => {
-        const timer = setTimeout(() => setDebouncedSearch(search), 500);
+        const timer = setTimeout(() => setDebouncedName(name), 500);
         return () => clearTimeout(timer);
-    }, [search]);
+    }, [name]);
 
-    // --- Query ---
+    // Update URL when filters change
+    useEffect(() => {
+        const params = new URLSearchParams();
+        if (debouncedName) params.set("name", debouncedName);
+        if (specialization && specialization !== "All") params.set("specialization", specialization);
+        if (feeRange[0] > 0) params.set("minFee", feeRange[0].toString());
+        if (feeRange[1] < 500) params.set("maxFee", feeRange[1].toString());
+        if (gender) params.set("gender", gender);
+        if (sort && sort !== "recommended") params.set("sort", sort);
+        if (location) params.set("location", location);
+        
+        const newUrl = params.toString() ? `?${params.toString()}` : "";
+        router.replace(`/doctors${newUrl}`, { scroll: false });
+    }, [debouncedName, specialization, feeRange, gender, sort, location, router]);
+
+    // --- Query - send 'search' to backend (backend expects 'search' for doctor name) ---
     const { data: doctorsData, isLoading } = useQuery({
-        queryKey: ['doctors', debouncedSearch, specialization, feeRange, gender, sort],
+        queryKey: ['doctors', debouncedName, specialization, feeRange, gender, sort, location],
         queryFn: () => doctorService.getAllDoctors({
-            search: debouncedSearch || undefined,
+            search: debouncedName || undefined, // Backend uses 'search' for name filter
             specialization: specialization === "All" ? undefined : specialization,
             minFee: feeRange[0],
             maxFee: feeRange[1],
@@ -87,22 +107,24 @@ export default function DoctorsPage() {
     const doctors = doctorsData?.data || [];
 
     const clearFilters = () => {
-        setSearch("");
+        setName("");
         setSpecialization("All");
         setFeeRange([0, 500]);
         setGender(undefined);
         setSort("recommended");
+        setLocation("");
+        router.replace("/doctors", { scroll: false });
     };
+
+    const hasActiveFilters = name || specialization !== "All" || feeRange[0] > 0 || feeRange[1] < 500 || gender || sort !== "recommended" || location;
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 pb-20">
-            {/* --- Hero Section --- */}
             {/* --- Hero Section --- */}
             <div className="relative overflow-hidden bg-slate-900 text-white py-24 mb-10">
                 {/* Abstract Background Elements */}
                 <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-emerald-500/20 blur-3xl"></div>
                 <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-blue-500/20 blur-3xl"></div>
-                <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10"></div> {/* Optional grid pattern if available, or just keeping it clean */}
                 
                 <div className="container mx-auto max-w-7xl px-6 relative z-10 text-center">
                     <motion.div
@@ -120,6 +142,28 @@ export default function DoctorsPage() {
                             Book appointments with top-rated doctors across various specializations. 
                             Prioritize your health with our seamless, premium experience.
                         </p>
+                        
+                        {/* Show active search query */}
+                        {(searchParams.get("name") || searchParams.get("specialization")) && (
+                            <div className="mt-6 flex flex-wrap justify-center gap-2">
+                                {searchParams.get("name") && (
+                                    <Badge className="bg-white/10 text-white border-white/20 px-3 py-1">
+                                        Doctor: "{searchParams.get("name")}"
+                                        <button onClick={() => setName("")} className="ml-2 hover:text-red-300">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </Badge>
+                                )}
+                                {searchParams.get("specialization") && searchParams.get("specialization") !== "All" && (
+                                    <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 px-3 py-1">
+                                        {searchParams.get("specialization")}
+                                        <button onClick={() => setSpecialization("All")} className="ml-2 hover:text-red-300">
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </Badge>
+                                )}
+                            </div>
+                        )}
                     </motion.div>
                 </div>
             </div>
@@ -130,82 +174,104 @@ export default function DoctorsPage() {
                     {/* --- Sidebar Filters --- */}
                     <div className="lg:col-span-1 space-y-6">
                         <Card className="border-none shadow-md sticky top-24">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Filter className="h-5 w-5" /> Filters
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-6">
-                                {/* Search */}
-                                <div className="space-y-2">
-                                    <Label>Search</Label>
-                                    <div className="relative">
-                                        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                        <Input 
-                                            placeholder="Doctor name..." 
-                                            className="pl-9"
-                                            value={search}
-                                            onChange={(e) => setSearch(e.target.value)}
+                            <div className="p-6">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="flex items-center gap-2 text-lg font-bold">
+                                        <Filter className="h-5 w-5" /> Filters
+                                    </h3>
+                                    {hasActiveFilters && (
+                                        <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-muted-foreground hover:text-destructive">
+                                            Clear All
+                                        </Button>
+                                    )}
+                                </div>
+                                
+                                <div className="space-y-6">
+                                    {/* Doctor Name Search */}
+                                    <div className="space-y-2">
+                                        <Label>Doctor Name</Label>
+                                        <div className="relative">
+                                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input 
+                                                placeholder="Search by name..." 
+                                                className="pl-9"
+                                                value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Location */}
+                                    <div className="space-y-2">
+                                        <Label>Location</Label>
+                                        <div className="relative">
+                                            <MapPin className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                            <Input 
+                                                placeholder="City or Zip..." 
+                                                className="pl-9"
+                                                value={location}
+                                                onChange={(e) => setLocation(e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Specialization */}
+                                    <div className="space-y-2">
+                                        <Label>Specialization</Label>
+                                        <Select value={specialization} onValueChange={setSpecialization}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Select Specialization" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {SPECIALIZATIONS.map((spec) => (
+                                                    <SelectItem key={spec} value={spec}>
+                                                        {spec}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    {/* Fee Range */}
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between items-center">
+                                            <Label>Consultation Fee</Label>
+                                            <span className="text-xs text-muted-foreground font-medium">
+                                                ${feeRange[0]} - ${feeRange[1]}
+                                            </span>
+                                        </div>
+                                        <Slider 
+                                            defaultValue={[0, 500]} 
+                                            max={1000} 
+                                            step={10} 
+                                            value={feeRange}
+                                            onValueChange={setFeeRange}
+                                            className="py-4"
                                         />
                                     </div>
-                                </div>
 
-                                {/* Specialization */}
-                                <div className="space-y-2">
-                                    <Label>Specialization</Label>
-                                    <Select value={specialization} onValueChange={setSpecialization}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select Specialization" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {SPECIALIZATIONS.map((spec) => (
-                                                <SelectItem key={spec} value={spec}>
-                                                    {spec}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                {/* Fee Range */}
-                                <div className="space-y-4">
-                                    <div className="flex justify-between items-center">
-                                        <Label>Consultation Fee</Label>
-                                        <span className="text-xs text-muted-foreground font-medium">
-                                            ${feeRange[0]} - ${feeRange[1]}
-                                        </span>
+                                    {/* Gender */}
+                                    <div className="space-y-2">
+                                        <Label>Doctor Gender</Label>
+                                        <Select value={gender || "any"} onValueChange={(v) => setGender(v === "any" ? undefined : v)}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Any Gender" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="any">Any Gender</SelectItem>
+                                                <SelectItem value="male">Male</SelectItem>
+                                                <SelectItem value="female">Female</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                    <Slider 
-                                        defaultValue={[0, 500]} 
-                                        max={1000} 
-                                        step={10} 
-                                        value={feeRange}
-                                        onValueChange={setFeeRange}
-                                        className="py-4"
-                                    />
-                                </div>
 
-                                {/* Gender */}
-                                <div className="space-y-2">
-                                    <Label>Doctor Gender</Label>
-                                    <Select value={gender || "any"} onValueChange={(v) => setGender(v === "any" ? undefined : v)}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Any Gender" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="any">Any Gender</SelectItem>
-                                            <SelectItem value="male">Male</SelectItem>
-                                            <SelectItem value="female">Female</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <Separator />
+                                    
+                                    <Button variant="secondary" className="w-full" onClick={clearFilters}>
+                                        Reset Filters
+                                    </Button>
                                 </div>
-
-                                <Separator />
-                                
-                                <Button variant="secondary" className="w-full" onClick={clearFilters}>
-                                    Reset Filters
-                                </Button>
-                            </CardContent>
+                            </div>
                         </Card>
                     </div>
 
@@ -338,10 +404,15 @@ function DoctorCard({ doctor }: { doctor: any }) {
 
                             <Separator className="my-4" />
 
-                            <div className="flex items-center justify-between">
-                                <Link href={`/doctors/${doctor._id}`} className="w-full">
+                            <div className="flex items-center justify-between gap-4">
+                                <Link href={`/doctors/${doctor._id}`} className="flex-1">
+                                    <Button variant="outline" className="w-full">
+                                        View Profile
+                                    </Button>
+                                </Link>
+                                <Link href={`/book?doctorId=${doctor._id}&doctorName=${encodeURIComponent(doctor.userId?.name || '')}&specialization=${encodeURIComponent(doctor.specialization || '')}&fee=${doctor.consultationFee}&clinicId=${doctor.clinicId?._id || ''}`} className="flex-1">
                                     <Button className="w-full group bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-black dark:hover:bg-zinc-200">
-                                        View Profile & Schedule
+                                        Book Now
                                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
                                     </Button>
                                 </Link>
@@ -351,5 +422,13 @@ function DoctorCard({ doctor }: { doctor: any }) {
                 </CardContent>
             </Card>
         </motion.div>
+    );
+}
+
+export default function DoctorsPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-8 h-8 animate-spin" /></div>}>
+            <DoctorsPageContent />
+        </Suspense>
     );
 }
