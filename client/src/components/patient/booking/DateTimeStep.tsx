@@ -84,10 +84,10 @@ export default function DateTimeStep() {
                             {slotsData.data.map((slot: any) => (
                                 <Button
                                     key={slot.time}
-                                    variant={slotTime === slot.time ? "default" : "outline"}
+                                    variant={slotTime === slot.time ? "default" : slot.isBooked ? "destructive" : "outline"}
                                     disabled={slot.isBooked}
                                     onClick={() => setSlot(slot.time)}
-                                    className={`w-full ${slot.isBooked ? 'opacity-50 cursor-not-allowed bg-gray-100' : ''}`}
+                                    className={`w-full ${slot.isBooked ? 'bg-red-50 text-red-500 border-red-200 hover:bg-red-100 opacity-100 cursor-not-allowed' : ''}`}
                                 >
                                     {slot.time}
                                 </Button>

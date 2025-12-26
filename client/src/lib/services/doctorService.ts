@@ -34,5 +34,20 @@ export const doctorService = {
   createReview: async (reviewData: any) => {
       const response = await api.post(`/reviews`, reviewData);
       return response.data;
+  },
+
+  getDoctorAppointments: async (params?: { date?: string, status?: string }) => {
+      const response = await api.get('/doctors/appointments', { params });
+      return response.data;
+  },
+
+  callNextPatient: async () => {
+      const response = await api.post('/doctors/call-next');
+      return response.data;
+  },
+
+  completeConsultation: async (appointmentId: string, notes: string) => {
+      const response = await api.put(`/doctors/complete-consultation/${appointmentId}`, { notes });
+      return response.data;
   }
 };

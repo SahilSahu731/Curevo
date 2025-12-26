@@ -164,7 +164,7 @@ export default function DoctorProfilePage() {
                             animate={{ scale: 1, opacity: 1 }}
                             className="relative shrink-0 mx-auto md:mx-0"
                         >
-                            <div className="p-1 rounded-full bg-gradient-to-tr from-emerald-400 to-blue-500">
+                            <div className="p-1 rounded-full bg-linear-to-tr from-emerald-400 to-blue-500">
                                 <Avatar className="h-32 w-32 md:h-40 md:w-40 border-4 border-white dark:border-black">
                                     <AvatarImage src={doctor.userId?.profileImage} alt={doctor.userId?.name} className="object-cover" />
                                     <AvatarFallback className="text-4xl font-bold bg-zinc-100 dark:bg-zinc-800 text-zinc-500">
@@ -465,11 +465,12 @@ export default function DoctorProfilePage() {
                                                             key={slot.time}
                                                             disabled={slot.isBooked}
                                                             onClick={() => setSelectedSlot(slot.time)}
+                                                            title={slot.isBooked ? "Already Booked" : "Available"}
                                                             className={`text-xs py-2 px-1 rounded-lg border font-medium transition-all ${
                                                                 selectedSlot === slot.time
                                                                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-md transform scale-105'
                                                                 : slot.isBooked
-                                                                    ? 'bg-zinc-100 text-zinc-300 cursor-not-allowed border-zinc-100 decoration-slice line-through'
+                                                                    ? 'bg-red-50 text-red-500 border-red-100 cursor-not-allowed decoration-red-500/30'
                                                                     : 'bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 hover:border-emerald-500 hover:text-emerald-500'
                                                             }`}
                                                         >
@@ -571,7 +572,7 @@ function SimilarDoctors({ specialization, currentDoctorId }: { specialization: s
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {similar.map((doc: any) => (
                     <Card key={doc._id} className="group hover:shadow-xl transition-all duration-300 border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 overflow-hidden cursor-pointer" onClick={() => router.push(`/doctors/${doc._id}`)}>
-                        <div className="aspect-[4/3] bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
+                        <div className="aspect-4/3 bg-zinc-100 dark:bg-zinc-800 relative overflow-hidden">
                             <Avatar className="h-full w-full rounded-none">
                                 <AvatarImage src={doc.userId?.profileImage} className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-500" />
                                 <AvatarFallback className="text-4xl rounded-none bg-zinc-200 dark:bg-zinc-800 text-zinc-400">{doc.userId?.name?.[0]}</AvatarFallback>

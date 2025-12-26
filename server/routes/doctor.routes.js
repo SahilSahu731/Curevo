@@ -9,7 +9,8 @@ import {
     callNextPatient,
     completeConsultation,
     deleteDoctor,
-    updateDoctor
+    updateDoctor,
+    getDoctorAppointments
 } from '../controllers/doctor.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
 
@@ -34,5 +35,6 @@ router.put('/:id', authorize('admin'), updateDoctor);
 // Queue Management
 router.post('/call-next', authorize('doctor'), callNextPatient);
 router.put('/complete-consultation/:id', authorize('doctor'), completeConsultation);
+router.get('/appointments', authorize('doctor'), getDoctorAppointments);
 
 export default router;

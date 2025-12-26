@@ -94,3 +94,42 @@ export const getUserAppointments = async (req, res) => {
         res.status(500).json({ success: false, error: "Server Error" });
     }
 };
+
+export const getAllAppointments = async (req, res) => {
+    try {
+        const { page = 1, limit = 10, status, date } = req.query;
+        const query = {};
+
+        if (status && status !== 'all') query.status = status;
+        if (date) {
+            const queryDate = new Date(date);
+            const startOfDay = new Date(queryDate.setHours(0, 0, 0, 0));
+            const endOfDay = new Date(queryDate.setHours(23, 59, 59, 999));
+            query.date = { $gte: startOfDay, $lte: endOfDay };
+        }
+
+        const appointments = await Appointment.find(query)
+            .populate('patientId', 'name email')
+            .populate({
+                path: 'doctorId',
+                populate: { path: 'userId', select: 'name' }
+            })
+            .populate('clinicId', 'name')
+            .sort({ date: -1 })
+            .limit(limit * 1)
+            .skip((page - 1) * limit);
+
+        const count = await Appointment.countDocuments(query);
+
+        res.status(200).json({
+            success: true,
+            totalPages: Math.ceil(count / limit),
+            currentPage: page,
+            count,
+            data: appointments
+        });
+    } catch (error) {
+        console.error("Admin All Appointments Error:", error);
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};

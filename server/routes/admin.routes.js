@@ -4,7 +4,8 @@ import {
     getAllUsers, 
     updateUser, 
     deleteUser, 
-    getUserAppointments 
+    getUserAppointments,
+    getAllAppointments
 } from '../controllers/admin.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
 
@@ -18,5 +19,6 @@ router.get('/users', getAllUsers);
 router.put('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);
 router.get('/users/:id/appointments', getUserAppointments);
+router.get('/appointments', getAllAppointments);
 
 export default router;

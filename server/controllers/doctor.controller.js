@@ -371,7 +371,7 @@ export const getAvailableSlots = async (req, res) => {
     }
 
     const targetDate = new Date(date);
-    const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
 
     const doctor = await Doctor.findById(doctorId).populate('clinicId');
 
@@ -430,10 +430,14 @@ export const getAvailableSlots = async (req, res) => {
         currentTimeMinutes = totalSlotEndTimeMinutes;
     }
 
-    // Filter booked slots
+    // Filter booked slots using a range to cover the entire day (UTC)
+    const startOfDay = new Date(date);
+    const endOfDay = new Date(date);
+    endOfDay.setDate(endOfDay.getDate() + 1);
+
     const bookedAppointments = await Appointment.find({
         doctorId,
-        date: targetDate,
+        date: { $gte: startOfDay, $lt: endOfDay },
         status: { $ne: 'cancelled' }
     }).select('slotTime');
 
@@ -514,3 +518,39 @@ export const updateDoctor = async (req, res) => {
       handleMongooseError(res, error);
     }
   };
+
+export const getDoctorAppointments = async (req, res) => {
+    try {
+        const doctor = await Doctor.findOne({ userId: req.user.id });
+        if (!doctor) {
+            return res.status(404).json({ success: false, error: "Doctor profile not found" });
+        }
+
+        const { date, status } = req.query;
+        let query = { doctorId: doctor._id };
+
+        if (date) {
+            const queryDate = new Date(date);
+            const startOfDay = new Date(queryDate.setHours(0, 0, 0, 0));
+            const endOfDay = new Date(queryDate.setHours(23, 59, 59, 999));
+            query.date = { $gte: startOfDay, $lte: endOfDay };
+        }
+
+        if (status) {
+            query.status = status;
+        }
+
+        const appointments = await Appointment.find(query)
+            .populate('patientId', 'name email phone profileImage gender age') // Populate patient details
+            .sort({ date: 1, tokenNumber: 1 });
+
+        res.status(200).json({
+            success: true,
+            count: appointments.length,
+            data: appointments
+        });
+    } catch (error) {
+        console.error("Get Doctor Appointments Error:", error);
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
