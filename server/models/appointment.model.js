@@ -28,7 +28,7 @@ const AppointmentSchema = new mongoose.Schema(
     tokenNumber: {
       type: Number,
       required: true,
-      unique: true, // Ensures a unique token number for the day/system
+      // unique: true constraint removed - using compound index instead
     },
     status: {
       type: String,
@@ -74,6 +74,7 @@ const AppointmentSchema = new mongoose.Schema(
 // Compound index for quick fetching of today's appointments for a doctor/clinic
 AppointmentSchema.index({ doctorId: 1, date: 1 });
 AppointmentSchema.index({ patientId: 1, date: -1 }); // Patient history sort by newest
+AppointmentSchema.index({ clinicId: 1, doctorId: 1, date: 1, tokenNumber: 1 }, { unique: true }); // Ensure unique token per doctor/clinic/day
 
 const Appointment = mongoose.models.Appointment || mongoose.model("Appointment", AppointmentSchema);
 export default Appointment;
