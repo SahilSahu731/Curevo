@@ -71,7 +71,7 @@ export default function ClinicDetailsPage() {
     if (isClinicLoading) return <ClinicSkeleton />;
     if (!clinic) return <div className="min-h-screen flex items-center justify-center">Clinic not found</div>;
 
-    // Derived State / Mocks
+    // Derived fallback data
     const rating = 4.8; 
     const reviewCount = 320;
     const services = clinic.services && clinic.services.length > 0 ? clinic.services : [

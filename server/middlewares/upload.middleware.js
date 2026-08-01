@@ -3,12 +3,19 @@ import multer from 'multer';
 // Configure multer to store files in memory
 const storage = multer.memoryStorage();
 
-// File filter (optional, to allow only images)
+const allowedMimeTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+    'application/pdf',
+]);
+
 const fileFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image')) {
+    if (allowedMimeTypes.has(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error('Not an image! Please upload only images.'), false);
+        cb(new Error('Unsupported file type. Upload an image or PDF.'), false);
     }
 };
 

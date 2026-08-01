@@ -1,13 +1,14 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { 
     Users, 
     Building2, 
     Stethoscope, 
     Activity,
     AlertCircle,
-    CheckCircle2
+    CheckCircle2,
+    MessageSquare
 } from "lucide-react";
 import { 
     Card, 
@@ -17,22 +18,36 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { adminService } from "@/lib/services/adminService";
+import { toast } from "sonner";
 
 export default function AdminDashboard() {
-    const { user } = useAuthStore();
+    const queryClient = useQueryClient();
+    const { data, isLoading } = useQuery({
+        queryKey: ["admin-dashboard"],
+        queryFn: adminService.getDashboardStats,
+    });
 
-    // Mock System Stats
+    const reviewMutation = useMutation({
+        mutationFn: ({ doctorId, status }: { doctorId: string; status: "approved" | "rejected" }) =>
+            adminService.reviewDoctorVerification(doctorId, { status }),
+        onSuccess: () => {
+            toast.success("Verification updated");
+            queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
+            queryClient.invalidateQueries({ queryKey: ["admin-doctor-verifications"] });
+        },
+        onError: () => toast.error("Failed to update verification"),
+    });
+
+    const statsData = data?.stats || {};
+    const pendingDoctors = data?.pendingDoctors || [];
+    const recentFeedback = data?.recentFeedback || [];
+
     const stats = [
-        { title: "Total Users", value: "2,543", icon: Users, change: "+12%", color: "text-blue-500" },
-        { title: "Active Clinics", value: "45", icon: Building2, change: "+3", color: "text-emerald-500" },
-        { title: "Verified Doctors", value: "128", icon: Stethoscope, change: "+5", color: "text-purple-500" },
-        { title: "Total Appointments", value: "12,403", icon: Activity, change: "+8%", color: "text-amber-500" },
-    ];
-
-    const recentActions = [
-        { user: "Dr. Smith", action: "Registered a new clinic", time: "2 hours ago", status: "pending" },
-        { user: "Jane Doe", action: "Reported an issue", time: "4 hours ago", status: "resolved" },
-        { user: "Clinic LifeCare", action: "Updated details", time: "5 hours ago", status: "approved" },
+        { title: "Patients", value: statsData.patients || 0, icon: Users, sub: "registered patients", color: "text-blue-500" },
+        { title: "Active Clinics", value: statsData.clinics || 0, icon: Building2, sub: "clinics in network", color: "text-emerald-500" },
+        { title: "Verified Doctors", value: statsData.verifiedDoctors || 0, icon: Stethoscope, sub: `${statsData.pendingVerifications || 0} pending`, color: "text-purple-500" },
+        { title: "Appointments", value: statsData.totalAppointments || 0, icon: Activity, sub: `${statsData.todayAppointments || 0} today`, color: "text-amber-500" },
     ];
 
     return (
@@ -44,7 +59,7 @@ export default function AdminDashboard() {
                     <p className="text-muted-foreground">System overview and management controls.</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">System Logs</Button>
+                    <Button variant="outline">Open Feedback: {statsData.openFeedback || 0}</Button>
                     <Button>Generate Report</Button>
                 </div>
             </div>
@@ -58,12 +73,8 @@ export default function AdminDashboard() {
                             <stat.icon className={`h-4 w-4 ${stat.color}`} />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{stat.value}</div>
-                            <p className="text-xs text-muted-foreground">
-                                <span className={stat.change.startsWith('+') ? "text-emerald-500" : "text-red-500"}>
-                                    {stat.change}
-                                </span> from last month
-                            </p>
+                            <div className="text-2xl font-bold">{isLoading ? "..." : stat.value}</div>
+                            <p className="text-xs text-muted-foreground">{stat.sub}</p>
                         </CardContent>
                     </Card>
                 ))}
@@ -73,22 +84,22 @@ export default function AdminDashboard() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 <Card className="col-span-2">
                     <CardHeader>
-                         <CardTitle>Recent System Activity</CardTitle>
+                         <CardTitle>Recent Feedback & Complaints</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="space-y-4">
-                            {recentActions.map((item, i) => (
-                                <div key={i} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                            {recentFeedback.length ? recentFeedback.map((item: any) => (
+                                <div key={item._id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                                     <div className="flex items-center gap-3">
-                                        <div className={`h-2 w-2 rounded-full ${item.status === 'pending' ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                        <MessageSquare className="h-4 w-4 text-primary" />
                                         <div>
-                                            <p className="text-sm font-medium">{item.user}</p>
-                                            <p className="text-xs text-muted-foreground">{item.action}</p>
+                                            <p className="text-sm font-medium">{item.subject}</p>
+                                            <p className="text-xs text-muted-foreground">{item.userId?.name} • {item.category}</p>
                                         </div>
                                     </div>
-                                    <span className="text-xs text-muted-foreground font-mono">{item.time}</span>
+                                    <Badge variant="outline" className="capitalize">{item.status}</Badge>
                                 </div>
-                            ))}
+                            )) : <div className="py-8 text-center text-sm text-muted-foreground">No feedback yet.</div>}
                         </div>
                     </CardContent>
                 </Card>
@@ -98,27 +109,25 @@ export default function AdminDashboard() {
                         <CardTitle>Pending Verifications</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                         <div className="flex items-center justify-between p-3 border rounded-lg">
-                             <div className="flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-amber-500" />
-                                <div>
-                                    <p className="text-sm font-bold">Dr. Emily Stone</p>
-                                    <p className="text-xs text-muted-foreground">License verification</p>
+                         {pendingDoctors.length ? pendingDoctors.map((doctor: any) => (
+                            <div key={doctor._id} className="space-y-3 rounded-lg border p-3">
+                                <div className="flex items-center gap-2">
+                                    <AlertCircle className="h-4 w-4 text-amber-500" />
+                                    <div>
+                                        <p className="text-sm font-bold">{doctor.userId?.name}</p>
+                                        <p className="text-xs text-muted-foreground">{doctor.verification?.licenseNumber}</p>
+                                    </div>
                                 </div>
-                             </div>
-                             <Button size="sm" variant="outline">Review</Button>
-                         </div>
-                         <div className="flex items-center justify-between p-3 border rounded-lg">
-                             <div className="flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-amber-500" />
-                                <div>
-                                    <p className="text-sm font-bold">City Care Clinic</p>
-                                    <p className="text-xs text-muted-foreground">Registration</p>
+                                <div className="flex gap-2">
+                                    <Button size="sm" className="flex-1" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate({ doctorId: doctor._id, status: "approved" })}>
+                                        <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
+                                    </Button>
+                                    <Button size="sm" variant="outline" className="flex-1" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate({ doctorId: doctor._id, status: "rejected" })}>
+                                        Reject
+                                    </Button>
                                 </div>
-                             </div>
-                             <Button size="sm" variant="outline">Review</Button>
-                         </div>
-                         <Button variant="ghost" className="w-full text-xs">View All Pending</Button>
+                            </div>
+                         )) : <div className="py-8 text-center text-sm text-muted-foreground">No pending doctors.</div>}
                     </CardContent>
                 </Card>
             </div>

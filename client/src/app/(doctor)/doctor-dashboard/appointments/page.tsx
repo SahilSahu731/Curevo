@@ -61,6 +61,20 @@ export default function DoctorAppointments() {
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
     const [statusFilter, setStatusFilter] = useState("all");
+    const [availability, setAvailability] = useState({
+        days: [] as string[],
+        startTime: "09:00",
+        endTime: "17:00",
+        slotDuration: 30,
+    });
+    const [blockSlot, setBlockSlot] = useState({
+        date: new Date().toISOString().split('T')[0],
+        startTime: "13:00",
+        endTime: "14:00",
+        reason: "",
+    });
+    const [blockedSlots, setBlockedSlots] = useState<any[]>([]);
+    const [savingSchedule, setSavingSchedule] = useState(false);
 
     const fetchAppointments = async () => {
         try {
@@ -83,6 +97,68 @@ export default function DoctorAppointments() {
     useEffect(() => {
         fetchAppointments();
     }, [selectedDate, statusFilter]);
+
+    useEffect(() => {
+        const fetchAvailability = async () => {
+            try {
+                const data = await doctorService.getAvailability();
+                if (data.success) {
+                    const defaults = data.data.clinicDefaults;
+                    const saved = data.data.availability || {};
+                    setAvailability({
+                        days: saved.days?.length ? saved.days : (defaults?.workingDays || []),
+                        startTime: saved.startTime || defaults?.openingTime || "09:00",
+                        endTime: saved.endTime || defaults?.closingTime || "17:00",
+                        slotDuration: saved.slotDuration || defaults?.averageConsultationTime || 30,
+                    });
+                    setBlockedSlots(data.data.blockedSlots || []);
+                }
+            } catch (error) {
+                console.error("Failed to fetch availability", error);
+            }
+        };
+
+        fetchAvailability();
+    }, []);
+
+    const weekDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+    const toggleDay = (day: string) => {
+        setAvailability((current) => ({
+            ...current,
+            days: current.days.includes(day)
+                ? current.days.filter((item) => item !== day)
+                : [...current.days, day],
+        }));
+    };
+
+    const handleSaveSchedule = async () => {
+        try {
+            setSavingSchedule(true);
+            await doctorService.updateAvailability({
+                availability,
+                blockedSlots: [
+                    ...blockedSlots.map((slot) => ({
+                        date: slot.date,
+                        startTime: slot.startTime,
+                        endTime: slot.endTime,
+                        reason: slot.reason,
+                    })),
+                    ...(blockSlot.reason.trim() ? [blockSlot] : []),
+                ],
+            });
+            toast.success("Schedule updated");
+            if (blockSlot.reason.trim()) {
+                setBlockedSlots((slots) => [...slots, blockSlot]);
+                setBlockSlot({ ...blockSlot, reason: "" });
+            }
+            fetchAppointments();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || "Failed to update schedule");
+        } finally {
+            setSavingSchedule(false);
+        }
+    };
 
     // Group by status for quick stats
     const stats = {
@@ -132,6 +208,74 @@ export default function DoctorAppointments() {
                     </div>
                 </div>
             </div>
+
+            <Card className="border-none shadow-sm">
+                <CardHeader>
+                    <CardTitle>Availability</CardTitle>
+                    <CardDescription>Set weekly hours and block time away from the agenda.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-wrap gap-2">
+                        {weekDays.map((day) => (
+                            <Button
+                                key={day}
+                                type="button"
+                                variant={availability.days.includes(day) ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => toggleDay(day)}
+                            >
+                                {day.slice(0, 3)}
+                            </Button>
+                        ))}
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-4">
+                        <Input
+                            type="time"
+                            value={availability.startTime}
+                            onChange={(event) => setAvailability({ ...availability, startTime: event.target.value })}
+                        />
+                        <Input
+                            type="time"
+                            value={availability.endTime}
+                            onChange={(event) => setAvailability({ ...availability, endTime: event.target.value })}
+                        />
+                        <Input
+                            type="number"
+                            min={5}
+                            value={availability.slotDuration}
+                            onChange={(event) => setAvailability({ ...availability, slotDuration: Number(event.target.value) })}
+                        />
+                        <Button onClick={handleSaveSchedule} disabled={savingSchedule}>
+                            {savingSchedule ? "Saving..." : "Save Hours"}
+                        </Button>
+                    </div>
+                    <div className="grid gap-3 md:grid-cols-5">
+                        <Input
+                            type="date"
+                            value={blockSlot.date}
+                            onChange={(event) => setBlockSlot({ ...blockSlot, date: event.target.value })}
+                        />
+                        <Input
+                            type="time"
+                            value={blockSlot.startTime}
+                            onChange={(event) => setBlockSlot({ ...blockSlot, startTime: event.target.value })}
+                        />
+                        <Input
+                            type="time"
+                            value={blockSlot.endTime}
+                            onChange={(event) => setBlockSlot({ ...blockSlot, endTime: event.target.value })}
+                        />
+                        <Input
+                            value={blockSlot.reason}
+                            onChange={(event) => setBlockSlot({ ...blockSlot, reason: event.target.value })}
+                            placeholder="Block reason"
+                        />
+                        <Button variant="outline" onClick={handleSaveSchedule} disabled={savingSchedule || !blockSlot.reason.trim()}>
+                            Block Slot
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
 
             <Card className="border-none shadow-sm bg-muted/30">
                 <CardHeader className="bg-card rounded-t-xl border-b px-6 py-4">

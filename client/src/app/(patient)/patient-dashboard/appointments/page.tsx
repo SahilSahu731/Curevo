@@ -11,7 +11,8 @@ import {
     X,
     Filter,
     Calendar,
-    ArrowUpDown
+    ArrowUpDown,
+    Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -37,6 +38,7 @@ import { patientService } from "@/lib/services/patientService";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 interface Appointment {
     _id: string;
@@ -54,7 +56,8 @@ interface Appointment {
     slotTime: string;
     tokenNumber: number;
     status: string;
-    type: string;
+    consultationType?: "in-person" | "video";
+    telehealthUrl?: string;
 }
 
 export default function PatientAppointments() {
@@ -184,9 +187,23 @@ export default function PatientAppointments() {
                                             Cancel Appointment
                                         </Button>
                                     )}
+                                    {appt.status === 'waiting' && (
+                                        <Button asChild className="w-full">
+                                            <Link href={`/queue/${appt._id}`}>
+                                                <Activity className="mr-2 h-4 w-4" /> Track Queue
+                                            </Link>
+                                        </Button>
+                                    )}
+                                    {appt.consultationType === 'video' && appt.telehealthUrl && ['booked', 'waiting', 'in-progress'].includes(appt.status) && (
+                                        <Button asChild variant="outline" className="w-full">
+                                            <a href={appt.telehealthUrl} target="_blank" rel="noreferrer">
+                                                <Video className="mr-2 h-4 w-4" /> Join Video
+                                            </a>
+                                        </Button>
+                                    )}
                                     {appt.status === 'completed' && (
-                                        <Button variant="outline" className="w-full">
-                                            View Subscription / Prescription
+                                        <Button asChild variant="outline" className="w-full">
+                                            <Link href="/patient-dashboard/records">View Prescription</Link>
                                         </Button>
                                     )}
                                 </CardFooter>

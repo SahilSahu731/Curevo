@@ -20,20 +20,8 @@ export default function QueueTrackingPage() {
 
     const { data: appointmentData } = useQuery({
         queryKey: ['appointment', id],
-        queryFn: async () => {
-             // We can use getMyAppointments but that returns a list.
-             // We need single appointment.
-             // I didn't create getAppointment(id) in service.
-             // But getQueuePosition checks existence.
-             // Let's assume we fetch appointments and find it, or add getAppointment.
-             // I'll add a quick fetcher here or rely on the queue position API to verify existence first.
-             // Actually, I can use the position API to get limited info.
-             // But I want doctor name etc.
-             // I'll assume we can use `getMyAppointments` filtered by ID on client if not too heavy, OR just show position.
-             // Best: Add `getAppointment` endpoint. I'll just show Position for now.
-             return null; 
-        },
-        enabled: false // Skipping for now to focus on Queue Stats
+        queryFn: () => appointmentService.getAppointment(id),
+        enabled: !!id
     });
 
     const { data: queueStats, isLoading, error } = useQuery({
@@ -47,21 +35,40 @@ export default function QueueTrackingPage() {
         if (socket && id) {
             socket.emit('join-queue', id);
             
-            socket.on('queue-update', () => {
+            const refreshQueue = () => {
                 queryClient.invalidateQueries({ queryKey: ['queue-position', id] });
-            });
+                queryClient.invalidateQueries({ queryKey: ['appointment', id] });
+            };
 
-            socket.on('your-turn', () => {
-                toast.success("It's your turn! Please proceed to the doctor's room.", { duration: 10000, icon: '🔔' });
-                queryClient.invalidateQueries({ queryKey: ['queue-position', id] });
-            });
+            const patientCalled = () => {
+                toast.success("It's your turn. Please proceed to the doctor's room.", { duration: 10000 });
+                if ("Notification" in window && Notification.permission === "granted") {
+                    new Notification("Curevo queue update", {
+                        body: "It's your turn. Please proceed to the doctor's room.",
+                    });
+                }
+                refreshQueue();
+            };
+
+            socket.on('queue-update', refreshQueue);
+            socket.on('queue_updated', refreshQueue);
+            socket.on('your-turn', patientCalled);
+            socket.on('patient_called', patientCalled);
 
             return () => {
-                socket.off('queue-update');
-                socket.off('your-turn');
+                socket.off('queue-update', refreshQueue);
+                socket.off('queue_updated', refreshQueue);
+                socket.off('your-turn', patientCalled);
+                socket.off('patient_called', patientCalled);
             }
         }
     }, [socket, connect, id, queryClient]);
+
+    useEffect(() => {
+        if ("Notification" in window && Notification.permission === "default") {
+            Notification.requestPermission();
+        }
+    }, []);
 
     if (isLoading) return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin h-8 w-8 text-blue-600" /></div>;
     
@@ -88,6 +95,7 @@ export default function QueueTrackingPage() {
     
     // Status logic
     const { position, waitTime, patientsAhead } = queueStats;
+    const appointment = appointmentData?.data;
 
     // Visual Percentage (Arbitrary for "feeling" of progress, usually based on initial position vs current)
     // We don't have initial position easily.
@@ -99,7 +107,9 @@ export default function QueueTrackingPage() {
              <div className="w-full max-w-md space-y-6">
                 <div className="text-center space-y-2">
                     <h1 className="text-2xl font-bold text-gray-900">Live Queue Tracker</h1>
-                    <p className="text-gray-500">Real-time updates from the clinic</p>
+                    <p className="text-gray-500">
+                        {appointment?.doctorId?.userId?.name ? `Dr. ${appointment.doctorId.userId.name}` : "Real-time updates from the clinic"}
+                    </p>
                 </div>
 
                 <Card className="border-none shadow-xl overflow-hidden relative">
@@ -144,7 +154,7 @@ export default function QueueTrackingPage() {
                             <div className="text-center">
                                 <p className="text-xs text-uppercase text-gray-400 font-bold tracking-wider mb-1">STATUS</p>
                                 <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-                                    In Queue
+                                    Token #{appointment?.tokenNumber || "-"}
                                 </Badge>
                             </div>
                          </div>

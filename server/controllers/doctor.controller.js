@@ -3,8 +3,11 @@ import Doctor from "../models/doctor.model.js";
 import User from "../models/user.model.js";
 import Queue from "../models/queue.model.js";
 import Appointment from "../models/appointment.model.js";
+import MedicalRecord from "../models/medicalRecord.model.js";
+import Review from "../models/review.model.js";
 import mongoose from "mongoose";
 import { getIO } from "../config/socket.js";
+import { removeFromQueue } from "../utils/queueManager.js";
 
 // Helper function to handle common Mongoose error patterns
 const handleMongooseError = (res, error) => {
@@ -17,6 +20,18 @@ const handleMongooseError = (res, error) => {
     return res.status(400).json({ success: false, error: `Duplicate field value: ${field} already exists.` });
   }
   res.status(500).json({ success: false, error: error.message || "Server Error" });
+};
+
+const getStartOfDay = (value = new Date()) => {
+    const date = new Date(value);
+    date.setHours(0, 0, 0, 0);
+    return date;
+};
+
+const getEndOfDay = (value = new Date()) => {
+    const date = new Date(value);
+    date.setHours(23, 59, 59, 999);
+    return date;
 };
 
 export const createDoctor = async (req, res) => {
@@ -74,7 +89,9 @@ export const getDoctors = async (req, res) => {
         maxFee, 
         sort, 
         gender,
-        minExperience
+        minExperience,
+        location,
+        minRating
     } = req.query;
 
     const query = {};
@@ -93,6 +110,19 @@ export const getDoctors = async (req, res) => {
 
     if (minExperience) {
         query.experience = { $gte: Number(minExperience) };
+    }
+
+    if (location) {
+        const matchingClinics = await Clinic.find({
+            $or: [
+                { name: { $regex: location, $options: 'i' } },
+                { city: { $regex: location, $options: 'i' } },
+                { state: { $regex: location, $options: 'i' } },
+                { zipCode: { $regex: location, $options: 'i' } },
+                { address: { $regex: location, $options: 'i' } },
+            ]
+        }).select('_id');
+        query.clinicId = { $in: matchingClinics.map((clinic) => clinic._id) };
     }
 
     // 2. Filter by User-specific fields (Name, Gender)
@@ -135,7 +165,7 @@ export const getDoctors = async (req, res) => {
         sortOptions.createdAt = -1; // Default new
     }
 
-    const doctors = await Doctor.find(query)
+    let doctors = await Doctor.find(query)
       .populate({
         path: 'userId',
         select: 'name email profileImage phone gender',
@@ -145,6 +175,30 @@ export const getDoctors = async (req, res) => {
         select: 'name address city'
       })
       .sort(sortOptions);
+
+    const reviewStats = await Review.aggregate([
+        { $match: { doctorId: { $in: doctors.map((doctor) => doctor._id) } } },
+        { $group: { _id: '$doctorId', averageRating: { $avg: '$rating' }, reviewCount: { $sum: 1 } } }
+    ]);
+    const statsByDoctor = new Map(reviewStats.map((stat) => [stat._id.toString(), stat]));
+
+    doctors = doctors.map((doctor) => {
+        const doctorObject = doctor.toObject();
+        const stats = statsByDoctor.get(doctor._id.toString());
+        doctorObject.ratingStats = {
+            averageRating: stats ? Number(stats.averageRating.toFixed(1)) : 0,
+            reviewCount: stats?.reviewCount || 0,
+        };
+        return doctorObject;
+    });
+
+    if (minRating) {
+        doctors = doctors.filter((doctor) => doctor.ratingStats.averageRating >= Number(minRating));
+    }
+
+    if (sort === 'rating_desc') {
+        doctors.sort((a, b) => b.ratingStats.averageRating - a.ratingStats.averageRating);
+    }
 
     res.status(200).json({
       success: true,
@@ -166,20 +220,37 @@ export const getDoctor = async (req, res) => {
     const doctor = await Doctor.findById(req.params.id)
       .populate({
         path: 'userId',
-        select: 'name email profileImage phone',
+        select: 'name email profileImage phone bio',
       })
       .populate({
         path: 'clinicId',
-        select: 'name address phone',
+        select: 'name address city state phone',
       });
 
     if (!doctor) {
       return res.status(404).json({ success: false, error: "Doctor profile not found" });
     }
 
+    const stats = await Review.aggregate([
+      { $match: { doctorId: doctor._id } },
+      { $group: { _id: '$doctorId', averageRating: { $avg: '$rating' }, reviewCount: { $sum: 1 } } }
+    ]);
+
+    const completedConsultations = await Appointment.countDocuments({
+      doctorId: doctor._id,
+      status: 'completed',
+    });
+
+    const data = doctor.toObject();
+    data.ratingStats = {
+      averageRating: stats[0] ? Number(stats[0].averageRating.toFixed(1)) : 0,
+      reviewCount: stats[0]?.reviewCount || 0,
+    };
+    data.completedConsultations = completedConsultations;
+
     res.status(200).json({
       success: true,
-      data: doctor,
+      data,
     });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message || "Server Error" });
@@ -297,19 +368,28 @@ export const callNextPatient = async (req, res) => {
         queue.lastUpdated = Date.now();
         await queue.save();
 
+        doctor.currentPatient = appointment._id;
+        await doctor.save();
+
         // Socket Events
         const io = getIO();
         if (io) {
             // Notify Patient
             io.to(`appointment-${appointment._id}`).emit('your-turn', { appointment });
+            io.to(`appointment-${appointment._id}`).emit('patient_called', { appointment });
             
             // Update Clinic/Queue Boards
-            io.to(`clinic-${doctor.clinicId}`).emit('queue-update', {
+            const payload = {
                 queueId: queue._id,
                 doctorId: doctor._id,
+                clinicId: doctor.clinicId,
                 currentToken: queue.currentToken,
                 waitingCount: queue.appointmentIds.length + queue.emergencyQueue.length
-            });
+            };
+            io.to(`clinic-${doctor.clinicId}`).emit('queue-update', payload);
+            io.to(`doctor-${doctor._id}`).emit('queue-update', payload);
+            io.to(`clinic-${doctor.clinicId}`).emit('queue_updated', payload);
+            io.to(`doctor-${doctor._id}`).emit('queue_updated', payload);
         }
 
         res.status(200).json({
@@ -327,21 +407,186 @@ export const callNextPatient = async (req, res) => {
 export const completeConsultation = async (req, res) => {
     try {
         const { id } = req.params;
-        const { notes } = req.body;
+        const { notes, diagnosis, prescription, prescriptionText, treatmentPlan, followUpDate } = req.body;
 
         const appointment = await Appointment.findById(id);
         if (!appointment) return res.status(404).json({ success: false, error: "Appointment not found" });
+
+        const doctor = await Doctor.findOne({ userId: req.user.id });
+        if (!doctor) return res.status(404).json({ success: false, error: "Doctor profile not found" });
+        if (appointment.doctorId.toString() !== doctor._id.toString()) {
+            return res.status(403).json({ success: false, error: "Not authorized for this appointment" });
+        }
 
         appointment.status = 'completed';
         appointment.notes = notes;
         appointment.consultationEndTime = Date.now();
         await appointment.save();
 
-        res.status(200).json({ success: true, message: "Consultation completed" });
+        let medicalRecord = null;
+        if (diagnosis?.trim()) {
+            medicalRecord = await MedicalRecord.findOneAndUpdate(
+                { appointmentId: appointment._id },
+                {
+                    patientId: appointment.patientId,
+                    doctorId: appointment.doctorId,
+                    appointmentId: appointment._id,
+                    diagnosis,
+                    symptoms: appointment.symptoms,
+                    prescription: Array.isArray(prescription)
+                        ? prescription
+                        : (prescriptionText || '').split('\n').map((line) => line.trim()).filter(Boolean).map((line) => {
+                            const [medicine, dosage = '', frequency = '', duration = '', instructions = ''] = line.split('|').map((part) => part.trim());
+                            return { medicine, dosage, frequency, duration, instructions };
+                        }),
+                    treatmentPlan,
+                    doctorNotes: notes,
+                    followUpDate: followUpDate || undefined,
+                },
+                { new: true, upsert: true, runValidators: true }
+            );
+        }
+
+        if (doctor?.currentPatient?.toString() === appointment._id.toString()) {
+            doctor.currentPatient = null;
+            await doctor.save();
+        }
+
+        res.status(200).json({ success: true, message: "Consultation completed", medicalRecord });
 
     } catch (error) {
         console.error("Complete Consultation Error:", error);
         res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
+export const submitVerification = async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ userId: req.user.id });
+    if (!doctor) {
+      return res.status(404).json({ success: false, error: "Doctor profile not found." });
+    }
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: "Medical license file is required." });
+    }
+
+    const { licenseNumber } = req.body;
+    if (!licenseNumber?.trim()) {
+      return res.status(400).json({ success: false, error: "License number is required." });
+    }
+
+    const b64 = Buffer.from(req.file.buffer).toString("base64");
+    const dataURI = `data:${req.file.mimetype};base64,${b64}`;
+    const cloudinary = (await import("../config/cloudinary.js")).default;
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: "curevo/licenses",
+      resource_type: "auto",
+    });
+
+    doctor.verification = {
+      status: "pending",
+      licenseNumber: licenseNumber.trim(),
+      licenseFileUrl: result.secure_url,
+      submittedAt: new Date(),
+      notes: "",
+    };
+    await doctor.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Medical license submitted for verification.",
+      data: doctor.verification,
+    });
+  } catch (error) {
+    console.error("Verification Upload Error:", error);
+    res.status(500).json({ success: false, error: "Verification upload failed" });
+  }
+};
+
+export const getMyVerification = async (req, res) => {
+  try {
+    const doctor = await Doctor.findOne({ userId: req.user.id }).select("verification");
+    if (!doctor) return res.status(404).json({ success: false, error: "Doctor profile not found." });
+    res.status(200).json({ success: true, data: doctor.verification });
+  } catch (error) {
+    res.status(500).json({ success: false, error: "Server Error" });
+  }
+};
+
+export const markPatientAbsent = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const doctor = await Doctor.findOne({ userId: req.user.id });
+        if (!doctor) return res.status(404).json({ success: false, error: "Doctor profile not found" });
+
+        const appointment = await Appointment.findById(id);
+        if (!appointment) return res.status(404).json({ success: false, error: "Appointment not found" });
+        if (appointment.doctorId.toString() !== doctor._id.toString()) {
+            return res.status(403).json({ success: false, error: "Not authorized for this appointment" });
+        }
+
+        appointment.status = 'no-show';
+        await appointment.save();
+        await removeFromQueue(appointment);
+
+        if (doctor.currentPatient?.toString() === appointment._id.toString()) {
+            doctor.currentPatient = null;
+            await doctor.save();
+        }
+
+        res.status(200).json({ success: true, message: "Patient marked absent", appointment });
+    } catch (error) {
+        console.error("Mark Absent Error:", error);
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
+export const getAvailability = async (req, res) => {
+    try {
+        const doctor = await Doctor.findOne({ userId: req.user.id })
+            .populate('clinicId', 'workingDays openingTime closingTime averageConsultationTime');
+        if (!doctor) return res.status(404).json({ success: false, error: "Doctor profile not found" });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                availability: doctor.availability || {},
+                blockedSlots: doctor.blockedSlots || [],
+                clinicDefaults: doctor.clinicId
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
+export const updateAvailability = async (req, res) => {
+    try {
+        const doctor = await Doctor.findOne({ userId: req.user.id });
+        if (!doctor) return res.status(404).json({ success: false, error: "Doctor profile not found" });
+
+        const { availability, blockedSlots } = req.body;
+        if (availability) {
+            doctor.availability = {
+                days: availability.days,
+                startTime: availability.startTime,
+                endTime: availability.endTime,
+                slotDuration: availability.slotDuration,
+            };
+        }
+        if (Array.isArray(blockedSlots)) {
+            doctor.blockedSlots = blockedSlots.map((slot) => ({
+                date: getStartOfDay(slot.date),
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                reason: slot.reason || '',
+            }));
+        }
+
+        await doctor.save();
+        res.status(200).json({ success: true, message: "Availability updated", data: doctor });
+    } catch (error) {
+        handleMongooseError(res, error);
     }
 };
 
@@ -396,14 +641,23 @@ export const getAvailableSlots = async (req, res) => {
         breakSlots
     } = clinic;
 
-    let currentTimeMinutes = timeToMinutes(openingTime);
-    const closingTimeMinutes = timeToMinutes(closingTime);
+    const workingDays = doctor.availability?.days?.length ? doctor.availability.days : clinic.workingDays;
+    if (!workingDays.includes(dayOfWeek)) {
+        return res.status(200).json({ success: true, message: `Doctor is unavailable on ${dayOfWeek}.`, data: [] });
+    }
+
+    const effectiveStartTime = doctor.availability?.startTime || openingTime;
+    const effectiveEndTime = doctor.availability?.endTime || closingTime;
+    const effectiveDuration = doctor.availability?.slotDuration || averageConsultationTime;
+
+    let currentTimeMinutes = timeToMinutes(effectiveStartTime);
+    const closingTimeMinutes = timeToMinutes(effectiveEndTime);
     
-    const slotDuration = averageConsultationTime + (slotBufferMinutes || 0);
+    const slotDuration = effectiveDuration + (slotBufferMinutes || 0);
     const possibleSlots = [];
 
     while (currentTimeMinutes < closingTimeMinutes) {
-        const slotEndTimeMinutes = currentTimeMinutes + averageConsultationTime;
+        const slotEndTimeMinutes = currentTimeMinutes + effectiveDuration;
         const totalSlotEndTimeMinutes = currentTimeMinutes + slotDuration;
 
         const isBreak = breakSlots.some(breakTime => {
@@ -424,29 +678,42 @@ export const getAvailableSlots = async (req, res) => {
 
         possibleSlots.push({
             time: minutesToTime(currentTimeMinutes),
-            duration: averageConsultationTime,
+            duration: effectiveDuration,
         });
 
         currentTimeMinutes = totalSlotEndTimeMinutes;
     }
 
     // Filter booked slots using a range to cover the entire day (UTC)
-    const startOfDay = new Date(date);
-    const endOfDay = new Date(date);
-    endOfDay.setDate(endOfDay.getDate() + 1);
+    const startOfDay = getStartOfDay(date);
+    const endOfDay = getEndOfDay(date);
 
     const bookedAppointments = await Appointment.find({
         doctorId,
-        date: { $gte: startOfDay, $lt: endOfDay },
-        status: { $ne: 'cancelled' }
+        date: { $gte: startOfDay, $lte: endOfDay },
+        status: { $nin: ['cancelled', 'no-show'] }
     }).select('slotTime');
 
     const bookedTimes = bookedAppointments.map(app => app.slotTime);
+    const blockedForDay = (doctor.blockedSlots || []).filter((blockedSlot) => {
+        const blockedDate = getStartOfDay(blockedSlot.date);
+        return blockedDate.getTime() === startOfDay.getTime();
+    });
 
-    const availableSlots = possibleSlots.map(slot => ({
-        ...slot,
-        isBooked: bookedTimes.includes(slot.time)
-    }));
+    const availableSlots = possibleSlots.map(slot => {
+        const slotStart = timeToMinutes(slot.time);
+        const slotEnd = slotStart + slot.duration;
+        const blockedSlot = blockedForDay.find((blocked) => (
+            slotStart < timeToMinutes(blocked.endTime) && slotEnd > timeToMinutes(blocked.startTime)
+        ));
+
+        return {
+            ...slot,
+            isBooked: bookedTimes.includes(slot.time) || Boolean(blockedSlot),
+            isBlocked: Boolean(blockedSlot),
+            blockReason: blockedSlot?.reason,
+        };
+    });
 
     res.status(200).json({
       success: true,

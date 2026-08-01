@@ -30,5 +30,25 @@ export const adminService = {
   getUserAppointments: async (userId: string) => {
       const response = await api.get(`/admin/users/${userId}/appointments`);
       return response.data;
+  },
+
+  getDoctorVerifications: async (status = "pending") => {
+      const response = await api.get("/admin/doctor-verifications", { params: { status } });
+      return response.data;
+  },
+
+  reviewDoctorVerification: async (doctorId: string, data: { status: "approved" | "rejected"; notes?: string }) => {
+      const response = await api.patch(`/admin/doctor-verifications/${doctorId}`, data);
+      return response.data;
+  },
+
+  getFeedback: async (params?: { status?: string; category?: string }) => {
+      const response = await api.get("/admin/feedback", { params });
+      return response.data;
+  },
+
+  updateFeedback: async (id: string, data: { status?: string; priority?: string; adminResponse?: string }) => {
+      const response = await api.patch(`/admin/feedback/${id}`, data);
+      return response.data;
   }
 };

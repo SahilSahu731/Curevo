@@ -3,11 +3,13 @@ import { getMe, googleCallback, login, logout, register, updatePassword, updateD
 import { protect } from '../middlewares/auth.middleware.js';
 import passport from 'passport';
 import upload from '../middlewares/upload.middleware.js';
+import { validate } from '../middlewares/validate.middleware.js';
+import { authSchemas } from '../validations/schemas.js';
 
 const router = express.Router();
 
-router.post("/register", upload.none(), register);
-router.post("/login", login);
+router.post("/register", upload.none(), validate(authSchemas.register), register);
+router.post("/login", validate(authSchemas.login), login);
 router.get("/logout", logout);
 
 // --- Google Auth Routes ---

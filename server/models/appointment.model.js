@@ -49,6 +49,14 @@ const AppointmentSchema = new mongoose.Schema(
       enum: ['in-person', 'video'],
       default: 'in-person',
     },
+    telehealthRoomId: {
+      type: String,
+      trim: true,
+    },
+    telehealthUrl: {
+      type: String,
+      trim: true,
+    },
     estimatedWaitTime: {
       type: Number, // In minutes, calculated by the system
     },

@@ -67,6 +67,7 @@ function DoctorsPageContent() {
     const [gender, setGender] = useState<string | undefined>(searchParams.get("gender") || undefined);
     const [sort, setSort] = useState(searchParams.get("sort") || "recommended");
     const [location, setLocation] = useState(searchParams.get("location") || "");
+    const [minRating, setMinRating] = useState(searchParams.get("minRating") || "any");
 
     // Debounce search
     const [debouncedName, setDebouncedName] = useState(name);
@@ -86,21 +87,24 @@ function DoctorsPageContent() {
         if (gender) params.set("gender", gender);
         if (sort && sort !== "recommended") params.set("sort", sort);
         if (location) params.set("location", location);
+        if (minRating !== "any") params.set("minRating", minRating);
         
         const newUrl = params.toString() ? `?${params.toString()}` : "";
         router.replace(`/doctors${newUrl}`, { scroll: false });
-    }, [debouncedName, specialization, feeRange, gender, sort, location, router]);
+    }, [debouncedName, specialization, feeRange, gender, sort, location, minRating, router]);
 
     // --- Query - send 'search' to backend (backend expects 'search' for doctor name) ---
     const { data: doctorsData, isLoading } = useQuery({
-        queryKey: ['doctors', debouncedName, specialization, feeRange, gender, sort, location],
+        queryKey: ['doctors', debouncedName, specialization, feeRange, gender, sort, location, minRating],
         queryFn: () => doctorService.getAllDoctors({
             search: debouncedName || undefined, // Backend uses 'search' for name filter
             specialization: specialization === "All" ? undefined : specialization,
             minFee: feeRange[0],
             maxFee: feeRange[1],
             gender: gender,
-            sort: sort === 'recommended' ? undefined : sort
+            sort: sort === 'recommended' ? undefined : sort,
+            location: location || undefined,
+            minRating: minRating === "any" ? undefined : minRating,
         })
     });
 
@@ -113,10 +117,11 @@ function DoctorsPageContent() {
         setGender(undefined);
         setSort("recommended");
         setLocation("");
+        setMinRating("any");
         router.replace("/doctors", { scroll: false });
     };
 
-    const hasActiveFilters = name || specialization !== "All" || feeRange[0] > 0 || feeRange[1] < 500 || gender || sort !== "recommended" || location;
+    const hasActiveFilters = name || specialization !== "All" || feeRange[0] > 0 || feeRange[1] < 500 || gender || sort !== "recommended" || location || minRating !== "any";
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 pb-20">
@@ -265,6 +270,21 @@ function DoctorsPageContent() {
                                         </Select>
                                     </div>
 
+                                    <div className="space-y-2">
+                                        <Label>Minimum Rating</Label>
+                                        <Select value={minRating} onValueChange={setMinRating}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Any Rating" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="any">Any Rating</SelectItem>
+                                                <SelectItem value="4">4+ Stars</SelectItem>
+                                                <SelectItem value="3">3+ Stars</SelectItem>
+                                                <SelectItem value="2">2+ Stars</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
                                     <Separator />
                                     
                                     <Button variant="secondary" className="w-full" onClick={clearFilters}>
@@ -295,6 +315,7 @@ function DoctorsPageContent() {
                                         <SelectItem value="fee_desc">Price: High to Low</SelectItem>
                                         <SelectItem value="experience_desc">Experience: High</SelectItem>
                                         <SelectItem value="experience_asc">Experience: Low</SelectItem>
+                                        <SelectItem value="rating_desc">Rating: High</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -338,6 +359,9 @@ function DoctorsPageContent() {
 
 // --- Specific Doctor Card Component ---
 function DoctorCard({ doctor }: { doctor: any }) {
+    const averageRating = doctor.ratingStats?.averageRating || 0;
+    const reviewCount = doctor.ratingStats?.reviewCount || 0;
+
     return (
         <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -396,8 +420,8 @@ function DoctorCard({ doctor }: { doctor: any }) {
                                          <div className="p-1.5 bg-secondary rounded-full">
                                             <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
                                         </div>
-                                        <span className="text-foreground font-medium">4.9</span>
-                                        <span className="text-xs">(120 Reviews)</span>
+                                        <span className="text-foreground font-medium">{averageRating || "New"}</span>
+                                        <span className="text-xs">({reviewCount} Reviews)</span>
                                     </div>
                                 </div>
                             </div>

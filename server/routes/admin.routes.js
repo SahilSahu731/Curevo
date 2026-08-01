@@ -5,9 +5,14 @@ import {
     updateUser, 
     deleteUser, 
     getUserAppointments,
-    getAllAppointments
+    getAllAppointments,
+    getDoctorVerifications,
+    reviewDoctorVerification
 } from '../controllers/admin.controller.js';
+import { getAllFeedback, updateFeedback } from '../controllers/feedback.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
+import { validate } from '../middlewares/validate.middleware.js';
+import { feedbackSchemas, verificationSchemas } from '../validations/schemas.js';
 
 const router = express.Router();
 
@@ -20,5 +25,9 @@ router.put('/users/:id', updateUser);
 router.delete('/users/:id', deleteUser);
 router.get('/users/:id/appointments', getUserAppointments);
 router.get('/appointments', getAllAppointments);
+router.get('/doctor-verifications', getDoctorVerifications);
+router.patch('/doctor-verifications/:id', validate(verificationSchemas.review), reviewDoctorVerification);
+router.get('/feedback', getAllFeedback);
+router.patch('/feedback/:id', validate(feedbackSchemas.update), updateFeedback);
 
 export default router;

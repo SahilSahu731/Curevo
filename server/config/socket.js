@@ -26,6 +26,52 @@ export const initSocket = (server) => {
       console.log(`Socket ${socket.id} joined clinic-${clinicId}`);
     });
 
+    socket.on("join-doctor", (doctorId) => {
+      socket.join(`doctor-${doctorId}`);
+      console.log(`Socket ${socket.id} joined doctor-${doctorId}`);
+    });
+
+    socket.on("join-telehealth-room", async ({ roomId, name } = {}) => {
+      if (!roomId) return;
+      const room = `telehealth-${roomId}`;
+      socket.join(room);
+      const participants = await io.in(room).fetchSockets();
+
+      socket.to(room).emit("telehealth-peer-joined", {
+        socketId: socket.id,
+        name: name || "Guest",
+      });
+      socket.emit("telehealth-room-state", {
+        roomId,
+        participantCount: participants.length,
+      });
+    });
+
+    socket.on("telehealth-offer", ({ roomId, offer } = {}) => {
+      if (roomId && offer) {
+        socket.to(`telehealth-${roomId}`).emit("telehealth-offer", { offer, from: socket.id });
+      }
+    });
+
+    socket.on("telehealth-answer", ({ roomId, answer } = {}) => {
+      if (roomId && answer) {
+        socket.to(`telehealth-${roomId}`).emit("telehealth-answer", { answer, from: socket.id });
+      }
+    });
+
+    socket.on("telehealth-ice-candidate", ({ roomId, candidate } = {}) => {
+      if (roomId && candidate) {
+        socket.to(`telehealth-${roomId}`).emit("telehealth-ice-candidate", { candidate, from: socket.id });
+      }
+    });
+
+    socket.on("leave-telehealth-room", ({ roomId } = {}) => {
+      if (roomId) {
+        socket.leave(`telehealth-${roomId}`);
+        socket.to(`telehealth-${roomId}`).emit("telehealth-peer-left", { socketId: socket.id });
+      }
+    });
+
     socket.on("disconnect", () => {
       console.log("Client disconnected", socket.id);
     });

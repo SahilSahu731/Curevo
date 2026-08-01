@@ -1,9 +1,18 @@
 import Appointment from "../models/appointment.model.js";
-import Doctor from "../models/doctor.model.js";
-import Clinic from "../models/clinic.model.js";
 import { generateToken } from "../utils/tokenGenerator.js";
-import { addToQueue } from "../utils/queueManager.js";
-import mongoose from "mongoose";
+import { addToQueue, removeFromQueue } from "../utils/queueManager.js";
+
+const getStartOfDay = (value = new Date()) => {
+    const dateValue = new Date(value);
+    dateValue.setHours(0, 0, 0, 0);
+    return dateValue;
+};
+
+const getEndOfDay = (value = new Date()) => {
+    const dateValue = new Date(value);
+    dateValue.setHours(23, 59, 59, 999);
+    return dateValue;
+};
 
 export const bookAppointment = async (req, res) => {
     try {
@@ -14,12 +23,13 @@ export const bookAppointment = async (req, res) => {
             return res.status(400).json({ success: false, error: "Missing required fields" });
         }
 
-        const checkDate = new Date(date);
+        const checkDate = getStartOfDay(date);
         const existing = await Appointment.findOne({
             doctorId,
-            date: checkDate,
+            clinicId,
+            date: { $gte: getStartOfDay(checkDate), $lte: getEndOfDay(checkDate) },
             slotTime,
-            status: { $ne: 'cancelled' }
+            status: { $nin: ['cancelled', 'no-show'] }
         });
 
         if (existing) {
@@ -41,10 +51,10 @@ export const bookAppointment = async (req, res) => {
             status: 'booked'
         });
 
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        if (checkDate.getTime() === today.getTime()) {
-            await addToQueue(appointment._id);
+        if (appointment.consultationType === 'video') {
+            appointment.telehealthRoomId = `curevo-${appointment._id}`;
+            appointment.telehealthUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/telehealth/room/${appointment.telehealthRoomId}`;
+            await appointment.save();
         }
 
         res.status(201).json({
@@ -109,10 +119,8 @@ export const checkIn = async (req, res) => {
             return res.status(403).json({ success: false, error: "Not authorized" });
         }
 
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const apptDate = new Date(appointment.date);
-        apptDate.setHours(0,0,0,0);
+        const today = getStartOfDay();
+        const apptDate = getStartOfDay(appointment.date);
 
         if (apptDate.getTime() !== today.getTime()) {
              return res.status(400).json({ success: false, error: "Can only check-in on the day of appointment" });
@@ -152,23 +160,11 @@ export const cancelAppointment = async (req, res) => {
         appointment.status = 'cancelled';
         await appointment.save();
 
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        const apptDate = new Date(appointment.date);
-        apptDate.setHours(0,0,0,0);
+        const today = getStartOfDay();
+        const apptDate = getStartOfDay(appointment.date);
 
         if (apptDate.getTime() === today.getTime()) {
-             const Queue = mongoose.model("Queue"); // Use model getter
-             await Queue.updateOne(
-                { 
-                    doctorId: appointment.doctorId, 
-                    clinicId: appointment.clinicId, 
-                    date: today 
-                },
-                { 
-                    $pull: { appointmentIds: appointment._id, emergencyQueue: appointment._id } 
-                }
-            );
+             await removeFromQueue(appointment);
         }
 
         res.status(200).json({ success: true, message: "Appointment cancelled successfully" });

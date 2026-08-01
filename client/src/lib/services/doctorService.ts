@@ -46,8 +46,36 @@ export const doctorService = {
       return response.data;
   },
 
-  completeConsultation: async (appointmentId: string, notes: string) => {
-      const response = await api.put(`/doctors/complete-consultation/${appointmentId}`, { notes });
+  completeConsultation: async (appointmentId: string, payload: string | Record<string, unknown>) => {
+      const body = typeof payload === "string" ? { notes: payload } : payload;
+      const response = await api.put(`/doctors/complete-consultation/${appointmentId}`, body);
+      return response.data;
+  },
+
+  markPatientAbsent: async (appointmentId: string) => {
+      const response = await api.patch(`/doctors/mark-absent/${appointmentId}`);
+      return response.data;
+  },
+
+  getAvailability: async () => {
+      const response = await api.get('/doctors/availability/schedule');
+      return response.data;
+  },
+
+  updateAvailability: async (data: any) => {
+      const response = await api.put('/doctors/availability/schedule', data);
+      return response.data;
+  },
+
+  getMyVerification: async () => {
+      const response = await api.get('/doctors/verification/me');
+      return response.data;
+  },
+
+  submitVerification: async (data: FormData) => {
+      const response = await api.post('/doctors/verification/license', data, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+      });
       return response.data;
   }
 };

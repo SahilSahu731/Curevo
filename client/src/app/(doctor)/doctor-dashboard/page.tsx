@@ -12,7 +12,9 @@ import {
     UserPlus,
     Play,
     CheckCircle,
-    User
+    User,
+    UserX,
+    Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -32,6 +34,7 @@ import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { Textarea } from "@/components/ui/textarea";
+import { useSocketStore } from "@/store/socketStore";
 
 interface Patient {
     _id: string;
@@ -43,13 +46,17 @@ interface Patient {
 
 interface Appointment {
     _id: string;
+    doctorId?: {
+        _id: string;
+    };
     patientId: Patient;
     date: string;
     slotTime: string;
     tokenNumber: number;
     status: string;
-    type: string;
+    consultationType?: "in-person" | "video";
     symptoms?: string;
+    telehealthUrl?: string;
 }
 
 export default function DoctorDashboard() {
@@ -64,6 +71,11 @@ export default function DoctorDashboard() {
     const [loading, setLoading] = useState(true);
     const [processingQueue, setProcessingQueue] = useState(false);
     const [consultationNotes, setConsultationNotes] = useState("");
+    const [diagnosis, setDiagnosis] = useState("");
+    const [prescriptionText, setPrescriptionText] = useState("");
+    const [treatmentPlan, setTreatmentPlan] = useState("");
+    const [followUpDate, setFollowUpDate] = useState("");
+    const { socket, connect } = useSocketStore();
 
     const fetchTodayAppointments = async () => {
         try {
@@ -97,6 +109,28 @@ export default function DoctorDashboard() {
         fetchTodayAppointments();
     }, []);
 
+    useEffect(() => {
+        connect();
+    }, [connect]);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const activeDoctorId = appointments[0]?.doctorId?._id;
+        if (activeDoctorId) {
+            socket.emit("join-doctor", activeDoctorId);
+        }
+
+        const refresh = () => fetchTodayAppointments();
+        socket.on("queue_updated", refresh);
+        socket.on("queue-update", refresh);
+
+        return () => {
+            socket.off("queue_updated", refresh);
+            socket.off("queue-update", refresh);
+        };
+    }, [socket, appointments]);
+
     const handleCallNext = async () => {
         try {
             setProcessingQueue(true);
@@ -120,13 +154,39 @@ export default function DoctorDashboard() {
         if (!currentPatient) return;
         try {
             setProcessingQueue(true);
-            await doctorService.completeConsultation(currentPatient._id, consultationNotes);
+            await doctorService.completeConsultation(currentPatient._id, {
+                notes: consultationNotes,
+                diagnosis,
+                prescriptionText,
+                treatmentPlan,
+                followUpDate: followUpDate || undefined,
+            });
             toast.success("Consultation completed");
             setConsultationNotes("");
+            setDiagnosis("");
+            setPrescriptionText("");
+            setTreatmentPlan("");
+            setFollowUpDate("");
             setCurrentPatient(null);
             await fetchTodayAppointments();
         } catch (error: any) {
             toast.error(error.response?.data?.error || "Failed to complete consultation");
+        } finally {
+            setProcessingQueue(false);
+        }
+    };
+
+    const handleMarkAbsent = async (appointmentId: string) => {
+        try {
+            setProcessingQueue(true);
+            await doctorService.markPatientAbsent(appointmentId);
+            toast.success("Patient marked absent");
+            if (currentPatient?._id === appointmentId) {
+                setCurrentPatient(null);
+            }
+            await fetchTodayAppointments();
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || "Failed to mark absent");
         } finally {
             setProcessingQueue(false);
         }
@@ -214,6 +274,11 @@ export default function DoctorDashboard() {
                                             <div className="text-right">
                                                 <p className="font-mono text-2xl font-bold text-primary">Token #{currentPatient.tokenNumber}</p>
                                                 <p className="text-xs text-muted-foreground">{currentPatient.slotTime}</p>
+                                                {currentPatient.consultationType === "video" && (
+                                                    <Badge variant="outline" className="mt-1">
+                                                        <Video className="mr-1 h-3 w-3" /> Video
+                                                    </Badge>
+                                                )}
                                             </div>
                                         </div>
                                      </div>
@@ -225,13 +290,54 @@ export default function DoctorDashboard() {
                                 </div>
 
                                 <div>
-                                    <label className="text-sm font-medium mb-2 block">Consultation Notes (Private)</label>
+                                    <label className="text-sm font-medium mb-2 block">Diagnosis</label>
                                     <Textarea 
-                                        placeholder="Enter diagnosis, prescription notes, or remarks..." 
-                                        className="h-32 resize-none"
-                                        value={consultationNotes}
-                                        onChange={(e) => setConsultationNotes(e.target.value)}
+                                        placeholder="Primary diagnosis and clinical impression..." 
+                                        className="h-24 resize-none"
+                                        value={diagnosis}
+                                        onChange={(e) => setDiagnosis(e.target.value)}
                                     />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Prescription</label>
+                                    <Textarea 
+                                        placeholder="One medicine per line: Medicine | Dosage | Frequency | Duration | Instructions" 
+                                        className="h-28 resize-none"
+                                        value={prescriptionText}
+                                        onChange={(e) => setPrescriptionText(e.target.value)}
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="text-sm font-medium mb-2 block">Treatment Plan</label>
+                                    <Textarea 
+                                        placeholder="Lifestyle guidance, tests, referrals, or next steps..." 
+                                        className="h-24 resize-none"
+                                        value={treatmentPlan}
+                                        onChange={(e) => setTreatmentPlan(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className="grid gap-4 md:grid-cols-[1fr_180px]">
+                                    <div>
+                                        <label className="text-sm font-medium mb-2 block">Consultation Notes (Private)</label>
+                                        <Textarea 
+                                            placeholder="Additional private remarks..." 
+                                            className="h-24 resize-none"
+                                            value={consultationNotes}
+                                            onChange={(e) => setConsultationNotes(e.target.value)}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium mb-2 block">Follow-up Date</label>
+                                        <input
+                                            type="date"
+                                            value={followUpDate}
+                                            onChange={(e) => setFollowUpDate(e.target.value)}
+                                            className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         ) : (
@@ -244,14 +350,32 @@ export default function DoctorDashboard() {
                     </CardContent>
                     <CardFooter className="flex justify-end gap-3 border-t pt-4">
                         {currentPatient ? (
-                            <Button 
-                                className="bg-emerald-600 hover:bg-emerald-700 w-full md:w-auto" 
-                                onClick={handleComplete}
-                                disabled={processingQueue}
-                            >
-                                {processingQueue ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
-                                Complete Consultation
-                            </Button>
+                            <>
+                                {currentPatient.consultationType === "video" && currentPatient.telehealthUrl && (
+                                    <Button variant="outline" asChild className="w-full md:w-auto">
+                                        <a href={currentPatient.telehealthUrl} target="_blank" rel="noreferrer">
+                                            <Video className="h-4 w-4 mr-2" /> Open Video
+                                        </a>
+                                    </Button>
+                                )}
+                                <Button 
+                                    variant="outline"
+                                    className="w-full md:w-auto text-red-600 hover:text-red-700" 
+                                    onClick={() => handleMarkAbsent(currentPatient._id)}
+                                    disabled={processingQueue}
+                                >
+                                    <UserX className="h-4 w-4 mr-2" />
+                                    Mark Absent
+                                </Button>
+                                <Button 
+                                    className="bg-emerald-600 hover:bg-emerald-700 w-full md:w-auto" 
+                                    onClick={handleComplete}
+                                    disabled={processingQueue}
+                                >
+                                    {processingQueue ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <CheckCircle className="h-4 w-4 mr-2" />}
+                                    Complete Consultation
+                                </Button>
+                            </>
                         ) : (
                              <Button 
                                 className="w-full md:w-auto" 
@@ -306,6 +430,14 @@ export default function DoctorDashboard() {
                                             <Badge variant={patient.status === 'waiting' ? 'secondary' : 'outline'}>
                                                 {patient.status}
                                             </Badge>
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="ml-2 h-8 text-red-600 hover:text-red-700"
+                                                onClick={() => handleMarkAbsent(patient._id)}
+                                            >
+                                                <UserX className="h-4 w-4" />
+                                            </Button>
                                         </div>
                                     </motion.div>
                                 ))}

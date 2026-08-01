@@ -2,6 +2,7 @@ import User from "../models/user.model.js";
 import Doctor from "../models/doctor.model.js";
 import Clinic from "../models/clinic.model.js";
 import Appointment from "../models/appointment.model.js";
+import Feedback from "../models/feedback.model.js";
 
 // ... (existing imports)
 
@@ -12,12 +13,40 @@ export const getDashboardStats = async (req, res) => {
         const totalDoctors = await Doctor.countDocuments();
         const totalClinics = await Clinic.countDocuments();
         const totalAppointments = await Appointment.countDocuments();
+        const pendingVerifications = await Doctor.countDocuments({ 'verification.status': 'pending' });
+        const verifiedDoctors = await Doctor.countDocuments({ 'verification.status': 'approved' });
+        const openFeedback = await Feedback.countDocuments({ status: { $in: ['open', 'in-review'] } });
 
         const today = new Date();
         today.setHours(0,0,0,0);
+        const weekStart = new Date(today);
+        weekStart.setDate(weekStart.getDate() - 6);
         const todayAppointments = await Appointment.countDocuments({
-            date: today
+            date: { $gte: today }
         });
+
+        const appointmentsByStatus = await Appointment.aggregate([
+            { $group: { _id: '$status', count: { $sum: 1 } } }
+        ]);
+        const usageByDay = await Appointment.aggregate([
+            { $match: { createdAt: { $gte: weekStart } } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+                    count: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+        const recentFeedback = await Feedback.find({})
+            .populate('userId', 'name email role')
+            .sort({ createdAt: -1 })
+            .limit(5);
+        const pendingDoctors = await Doctor.find({ 'verification.status': 'pending' })
+            .populate('userId', 'name email profileImage')
+            .populate('clinicId', 'name')
+            .sort({ 'verification.submittedAt': 1 })
+            .limit(5);
 
         res.status(200).json({
             success: true,
@@ -26,13 +55,68 @@ export const getDashboardStats = async (req, res) => {
                 doctors: totalDoctors,
                 clinics: totalClinics,
                 totalAppointments,
-                todayAppointments
-            }
+                todayAppointments,
+                pendingVerifications,
+                verifiedDoctors,
+                openFeedback,
+                appointmentsByStatus: appointmentsByStatus.reduce((acc, item) => {
+                    acc[item._id] = item.count;
+                    return acc;
+                }, {}),
+                usageByDay
+            },
+            recentFeedback,
+            pendingDoctors
         });
 
     } catch (error) {
         console.error("Admin Stats Error:", error);
         res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
+export const getDoctorVerifications = async (req, res) => {
+    try {
+        const { status = 'pending' } = req.query;
+        const query = status === 'all' ? {} : { 'verification.status': status };
+        const doctors = await Doctor.find(query)
+            .populate('userId', 'name email profileImage phone')
+            .populate('clinicId', 'name address city')
+            .populate('verification.reviewedBy', 'name email')
+            .sort({ 'verification.submittedAt': -1 });
+
+        res.status(200).json({ success: true, count: doctors.length, data: doctors });
+    } catch (error) {
+        res.status(500).json({ success: false, error: "Server Error" });
+    }
+};
+
+export const reviewDoctorVerification = async (req, res) => {
+    try {
+        const { status, notes } = req.body;
+        const doctor = await Doctor.findById(req.params.id);
+        if (!doctor) return res.status(404).json({ success: false, error: "Doctor not found" });
+
+        doctor.verification.status = status;
+        doctor.verification.notes = notes;
+        doctor.verification.reviewedAt = Date.now();
+        doctor.verification.reviewedBy = req.user.id;
+        if (status === 'approved') {
+            doctor.isAvailable = true;
+        }
+        await doctor.save();
+
+        const populated = await Doctor.findById(doctor._id)
+            .populate('userId', 'name email profileImage phone')
+            .populate('clinicId', 'name address city');
+
+        res.status(200).json({
+            success: true,
+            message: `Doctor verification ${status}`,
+            data: populated
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message || "Server Error" });
     }
 };
 

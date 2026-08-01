@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { doctorService } from "@/lib/services/doctorService";
+import { adminService } from "@/lib/services/adminService";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -48,6 +49,16 @@ export default function DoctorsManagementPage() {
              toast.error("Failed to delete doctor profile");
              setIsDeleteOpen(false);
         }
+    });
+
+    const reviewMutation = useMutation({
+        mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) =>
+            adminService.reviewDoctorVerification(id, { status }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['doctors'] });
+            toast.success("Verification updated");
+        },
+        onError: () => toast.error("Failed to update verification")
     });
 
     const handleEdit = (doctor: any) => {
@@ -156,7 +167,8 @@ export default function DoctorsManagementPage() {
                             </div>
 
                             <div className="flex items-center justify-between pt-4 border-t border-zinc-100 dark:border-zinc-800/50">
-                                <Badge variant="outline" className={`h-6 border-0 px-2 gap-1.5 ${
+                                <div className="flex flex-col gap-2">
+                                <Badge variant="outline" className={`h-6 w-fit border-0 px-2 gap-1.5 ${
                                     doctor.isAvailable 
                                     ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400' 
                                     : 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400'
@@ -171,11 +183,36 @@ export default function DoctorsManagementPage() {
                                         </>
                                     )}
                                 </Badge>
+                                <Badge variant="outline" className={`h-6 w-fit capitalize ${
+                                    doctor.verification?.status === 'approved' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
+                                    doctor.verification?.status === 'pending' ? 'border-amber-200 bg-amber-50 text-amber-700' :
+                                    doctor.verification?.status === 'rejected' ? 'border-red-200 bg-red-50 text-red-700' :
+                                    'border-zinc-200 bg-zinc-50 text-zinc-600'
+                                }`}>
+                                    Verification: {doctor.verification?.status || 'not-submitted'}
+                                </Badge>
+                                </div>
                                 
                                 <span className="text-xs text-zinc-400 dark:text-zinc-500">
                                     {doctor.qualification}
                                 </span>
                             </div>
+
+                            {doctor.verification?.status === 'pending' && (
+                                <div className="mt-4 grid grid-cols-3 gap-2">
+                                    {doctor.verification?.licenseFileUrl && (
+                                        <Button variant="outline" size="sm" asChild>
+                                            <a href={doctor.verification.licenseFileUrl} target="_blank" rel="noreferrer">License</a>
+                                        </Button>
+                                    )}
+                                    <Button size="sm" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate({ id: doctor._id, status: "approved" })}>
+                                        Approve
+                                    </Button>
+                                    <Button size="sm" variant="outline" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate({ id: doctor._id, status: "rejected" })}>
+                                        Reject
+                                    </Button>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 ))}

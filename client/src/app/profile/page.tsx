@@ -12,7 +12,9 @@ import {
     Loader2,
     User as UserIcon,
     HeartPulse,
-    Activity
+    Activity,
+    FileCheck,
+    Upload
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -26,8 +28,9 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { updateProfileImage } from "@/lib/services/authService";
+import { doctorService } from "@/lib/services/doctorService";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -42,6 +45,7 @@ import { format } from "date-fns";
 
 export default function ProfilePage() {
     const { user, setUser } = useAuthStore();
+    const queryClient = useQueryClient();
     const [isEditOpen, setIsEditOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     
@@ -49,6 +53,16 @@ export default function ProfilePage() {
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [licenseFile, setLicenseFile] = useState<File | null>(null);
+    const [licenseNumber, setLicenseNumber] = useState("");
+
+    const { data: verificationData } = useQuery({
+        queryKey: ["doctor-verification-me"],
+        queryFn: doctorService.getMyVerification,
+        enabled: user?.role === "doctor",
+    });
+
+    const verification = verificationData?.data;
 
     const getInitials = (name: string) => {
         return name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'U';
@@ -63,6 +77,19 @@ export default function ProfilePage() {
         },
         onError: () => {
             toast.error("Failed to update profile photo");
+        }
+    });
+
+    const verificationMutation = useMutation({
+        mutationFn: doctorService.submitVerification,
+        onSuccess: () => {
+            toast.success("License submitted for admin review");
+            setLicenseFile(null);
+            setLicenseNumber("");
+            queryClient.invalidateQueries({ queryKey: ["doctor-verification-me"] });
+        },
+        onError: (error: any) => {
+            toast.error(error.response?.data?.error || "License upload failed");
         }
     });
 
@@ -88,6 +115,17 @@ export default function ProfilePage() {
             formData.append('image', selectedFile);
             imageMutation.mutate(formData);
         }
+    };
+
+    const handleVerificationSubmit = () => {
+        if (!licenseFile || !licenseNumber.trim()) {
+            toast.error("License number and file are required");
+            return;
+        }
+        const formData = new FormData();
+        formData.append("licenseNumber", licenseNumber);
+        formData.append("license", licenseFile);
+        verificationMutation.mutate(formData);
     };
 
     const triggerFileInput = () => {
@@ -217,6 +255,38 @@ export default function ProfilePage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {user?.role === "doctor" && (
+                        <Card className="shadow-lg border-l-4 border-l-emerald-500">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-base flex items-center justify-between">
+                                    <span className="flex items-center gap-2"><FileCheck className="w-4 h-4 text-emerald-500" /> Doctor Verification</span>
+                                    <Badge variant="outline" className="capitalize">{verification?.status || "not-submitted"}</Badge>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                {verification?.notes && (
+                                    <p className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">{verification.notes}</p>
+                                )}
+                                <input
+                                    value={licenseNumber}
+                                    onChange={(event) => setLicenseNumber(event.target.value)}
+                                    placeholder="Medical license number"
+                                    className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
+                                />
+                                <input
+                                    type="file"
+                                    accept="image/*,application/pdf"
+                                    onChange={(event) => setLicenseFile(event.target.files?.[0] || null)}
+                                    className="block w-full text-sm"
+                                />
+                                <Button className="w-full" onClick={handleVerificationSubmit} disabled={verificationMutation.isPending}>
+                                    <Upload className="mr-2 h-4 w-4" />
+                                    {verificationMutation.isPending ? "Submitting..." : "Submit License"}
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    )}
                 </div>
             </div>
 

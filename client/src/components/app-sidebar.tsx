@@ -41,20 +41,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   const doctorItems = [
     { title: "Dashboard", url: "/doctor-dashboard", icon: Home },
-    { title: "Queue Management", url: "/doctor-dashboard/queue", icon: Clock },
-    { title: "Patients", url: "/doctor-dashboard/patients", icon: Users },
+    { title: "Queue Management", url: "/doctor-dashboard", icon: Clock },
+    { title: "Patients", url: "/doctor-dashboard/appointments", icon: Users },
     { title: "Appointments", url: "/doctor-dashboard/appointments", icon: Calendar },
     { title: "Profile", url: "/profile", icon: User },
-    { title: "Settings", url: "/doctor-dashboard/settings", icon: Settings },
+    { title: "Settings", url: "/profile", icon: Settings },
   ]
 
   const patientItems = [
     { title: "Home", url: "/patient-dashboard", icon: Home },
     { title: "My Appointments", url: "/patient-dashboard/appointments", icon: Calendar },
-    { title: "Find Doctors", url: "/search", icon: Search },
+    { title: "Find Doctors", url: "/doctors", icon: Search },
     { title: "Medical Records", url: "/patient-dashboard/records", icon: Activity },
+    { title: "Feedback", url: "/patient-dashboard/feedback", icon: Inbox },
     { title: "Profile", url: "/profile", icon: User },
-    { title: "Settings", url: "/patient-dashboard/settings", icon: Settings },
+    { title: "Settings", url: "/profile", icon: Settings },
   ]
 
   const adminItems = [
@@ -62,8 +63,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     { title: "Clinics", url: "/admin-dashboard/clinics", icon: Building2 },
     { title: "Doctors", url: "/admin-dashboard/doctors", icon: Stethoscope },
     { title: "Users", url: "/admin-dashboard/users", icon: Users },
+    { title: "Feedback", url: "/admin-dashboard/feedback", icon: Inbox },
     { title: "Profile", url: "/profile", icon: User },
-    { title: "Settings", url: "/admin-dashboard/settings", icon: Settings },
+    { title: "Settings", url: "/profile", icon: Settings },
   ]
   
   let items = patientItems;

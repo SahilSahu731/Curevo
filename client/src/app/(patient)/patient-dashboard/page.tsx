@@ -9,7 +9,8 @@ import {
     Stethoscope,
     Clock,
     X,
-    CheckCircle
+    CheckCircle,
+    Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -27,6 +28,7 @@ import { patientService } from "@/lib/services/patientService";
 import { format } from "date-fns";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
+import Link from "next/link";
 
 interface Appointment {
     _id: string;
@@ -44,7 +46,8 @@ interface Appointment {
     slotTime: string;
     tokenNumber: number;
     status: string;
-    type: string;
+    consultationType?: "in-person" | "video";
+    telehealthUrl?: string;
 }
 
 export default function PatientDashboard() {
@@ -168,6 +171,20 @@ export default function PatientDashboard() {
                                     <CheckCircle className="mr-2 h-4 w-4" /> Check In
                                 </Button>
                              )}
+                             {nextAppointment.status === 'waiting' && (
+                                <Button asChild variant="secondary" className="w-full md:w-auto font-bold text-primary">
+                                    <Link href={`/queue/${nextAppointment._id}`}>
+                                        <Activity className="mr-2 h-4 w-4" /> Track Queue
+                                    </Link>
+                                </Button>
+                             )}
+                             {nextAppointment.consultationType === 'video' && nextAppointment.telehealthUrl && (
+                                <Button asChild variant="secondary" className="w-full md:w-auto font-bold text-primary">
+                                    <a href={nextAppointment.telehealthUrl} target="_blank" rel="noreferrer">
+                                        <Video className="mr-2 h-4 w-4" /> Join Video
+                                    </a>
+                                </Button>
+                             )}
                              <Button 
                                 variant="destructive" 
                                 className="w-full md:w-auto bg-red-500/20 hover:bg-red-500/30 text-white border border-red-500/20"
@@ -179,7 +196,7 @@ export default function PatientDashboard() {
                     )}
                 </Card>
 
-                {/* Status/Process Section (Using mock for now or static) */}
+                {/* Status/Process Section */}
                 <div className="grid gap-4">
                     <Card>
                         <CardHeader className="pb-2">
@@ -250,12 +267,25 @@ export default function PatientDashboard() {
                                         <Activity className="h-4 w-4 text-muted-foreground" />
                                         <span>Token: #{appt.tokenNumber}</span>
                                     </div>
+                                    {appt.consultationType === 'video' && (
+                                        <div className="flex items-center text-sm gap-2">
+                                            <Video className="h-4 w-4 text-muted-foreground" />
+                                            <span>Video consultation</span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {appt.status === 'booked' && (
                                     <div className="mt-4 flex gap-2">
                                         <Button variant="outline" size="sm" className="w-full text-red-500 hover:text-red-600 hover:bg-red-50" onClick={() => handleCancel(appt._id)}>
                                             Cancel
+                                        </Button>
+                                    </div>
+                                )}
+                                {appt.status === 'waiting' && (
+                                    <div className="mt-4">
+                                        <Button asChild size="sm" className="w-full">
+                                            <Link href={`/queue/${appt._id}`}>Track Live Queue</Link>
                                         </Button>
                                     </div>
                                 )}

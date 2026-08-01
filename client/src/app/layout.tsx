@@ -14,8 +14,35 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SmartQueue - Real-time Clinic Queue Management",
-  description: "Transform Your Clinic Experience with Real-Time Queue Management",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
+  title: {
+    default: "Curevo SmartQueue - Real-time Medical OS",
+    template: "%s | Curevo",
+  },
+  description: "Book doctors, track live clinic queues, manage telehealth visits, and access prescriptions from one secure healthcare dashboard.",
+  keywords: ["clinic queue management", "doctor appointments", "telehealth", "medical records", "Curevo"],
+  authors: [{ name: "Curevo" }],
+  creator: "Curevo",
+  publisher: "Curevo",
+  openGraph: {
+    title: "Curevo SmartQueue",
+    description: "Real-time queue, appointment, telehealth, and medical records platform for modern clinics.",
+    url: "/",
+    siteName: "Curevo",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Curevo SmartQueue",
+    description: "Real-time medical OS for clinics, doctors, and patients.",
+  },
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

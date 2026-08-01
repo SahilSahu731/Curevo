@@ -147,10 +147,11 @@ export default function DoctorProfilePage() {
         return <div className="min-h-screen flex items-center justify-center">Doctor not found</div>;
     }
 
-    // Mock Data Generator roughly based on doctor info
-    const languages = ["English", "Spanish", "French"].slice(0, Math.floor(Math.random() * 3) + 1);
-    const successRate = 96 + Math.floor(Math.random() * 4);
-    const patientsServed = 1000 + (doctor.experience * 150);
+    const languages = doctor.languages?.length ? doctor.languages : ["English"];
+    const averageRating = doctor.ratingStats?.averageRating || 0;
+    const reviewCount = doctor.ratingStats?.reviewCount || 0;
+    const successRate = reviewCount > 0 ? Math.round((averageRating / 5) * 100) : 0;
+    const patientsServed = doctor.completedConsultations || 0;
 
     return (
         <div className="min-h-screen bg-zinc-50/50 dark:text-white dark:bg-black font-body mb-20">
@@ -221,10 +222,10 @@ export default function DoctorProfilePage() {
                                  <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800"></div>
                                  <div className="text-center md:text-left">
                                      <div className="flex items-center gap-1">
-                                        <p className="text-2xl font-bold text-zinc-900 dark:text-white">4.9</p>
+                                        <p className="text-2xl font-bold text-zinc-900 dark:text-white">{averageRating || "New"}</p>
                                         <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
                                      </div>
-                                     <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Rating</p>
+                                     <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">{reviewCount} Reviews</p>
                                  </div>
                              </div>
                          </div>
@@ -578,7 +579,7 @@ function SimilarDoctors({ specialization, currentDoctorId }: { specialization: s
                                 <AvatarFallback className="text-4xl rounded-none bg-zinc-200 dark:bg-zinc-800 text-zinc-400">{doc.userId?.name?.[0]}</AvatarFallback>
                             </Avatar>
                             <div className="absolute top-3 right-3 bg-white/90 dark:bg-black/80 backdrop-blur-sm px-2 py-1 rounded-md text-xs font-bold flex items-center gap-1 shadow-sm">
-                                <Star className="w-3 h-3 text-amber-500 fill-amber-500" /> 4.9
+                                <Star className="w-3 h-3 text-amber-500 fill-amber-500" /> {doc.ratingStats?.averageRating || "New"}
                             </div>
                         </div>
                         <CardContent className="p-5">

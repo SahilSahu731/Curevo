@@ -42,6 +42,63 @@ const DoctorSchema = new mongoose.Schema(
       ref: 'Appointment',
       default: null, // Tracks the appointment ID of the patient currently being consulted
     },
+    verification: {
+      status: {
+        type: String,
+        enum: ['not-submitted', 'pending', 'approved', 'rejected'],
+        default: 'not-submitted',
+        index: true,
+      },
+      licenseNumber: {
+        type: String,
+        trim: true,
+      },
+      licenseFileUrl: {
+        type: String,
+        trim: true,
+      },
+      submittedAt: Date,
+      reviewedAt: Date,
+      reviewedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      notes: {
+        type: String,
+        trim: true,
+      },
+    },
+    availability: {
+      days: {
+        type: [String],
+        enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+        default: undefined,
+      },
+      startTime: {
+        type: String,
+        default: undefined,
+      },
+      endTime: {
+        type: String,
+        default: undefined,
+      },
+      slotDuration: {
+        type: Number,
+        min: 5,
+        default: undefined,
+      },
+    },
+    blockedSlots: {
+      type: [
+        {
+          date: { type: Date, required: true },
+          startTime: { type: String, required: true },
+          endTime: { type: String, required: true },
+          reason: { type: String, trim: true },
+        }
+      ],
+      default: [],
+    },
   },
   { timestamps: true }
 );
