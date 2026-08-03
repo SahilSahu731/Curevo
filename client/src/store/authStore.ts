@@ -33,6 +33,7 @@ interface AuthState {
   logout: () => void;
   login: (credentials: { email: string; password: string }) => Promise<void>;
   register: (data: FormData) => Promise<void>;
+  completeGoogleAuth: (token: string) => Promise<User>;
   getCurrentUser: () => Promise<void>;
   updateUser: (updatedUser: Partial<User>) => void;
   _hydrated: boolean;
@@ -89,12 +90,26 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
+      completeGoogleAuth: async (token) => {
+        try {
+          set({ isLoading: true });
+          const user = await authAPI.me(token);
+          get().setUser(user, token);
+          toast.success("Signed in with Google!");
+          return user;
+        } catch {
+          set({ isLoading: false });
+          toast.error("Google sign-in could not be completed");
+          throw new Error("Google sign-in could not be completed");
+        }
+      },
+
       getCurrentUser: async () => {
         try {
           const user = await authAPI.me();
           const { token } = get();
           get().setUser(user, token);
-        } catch (error) {
+        } catch {
           get().logout();
         }
       },

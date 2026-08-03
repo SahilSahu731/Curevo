@@ -192,8 +192,8 @@ export const googleCallback = async (req, res) => {
 
     res.cookie("token", token, options);
 
-    // Redirect to frontend
-    res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+    // The fragment is not sent in HTTP requests and is removed by the client immediately.
+    res.redirect(`${process.env.CLIENT_URL}/auth/callback#token=${encodeURIComponent(token)}`);
   } catch (error) {
     console.error(error);
     res.status(500).redirect(`${process.env.CLIENT_URL}/login?error=Server%20Error`);

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Loader2, Chrome } from 'lucide-react'
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton'
+import { Loader2 } from 'lucide-react'
 
 type FormValues = {
   email: string
@@ -22,14 +23,11 @@ export default function LoginPage() {
   const router = useRouter()
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({ mode: 'onBlur' })
   const { login, isLoading } = useAuth()
-  const [githubLoading, setGithubLoading] = useState(false)
-
   const onSubmit = async (data: FormValues) => {
     try {
       await login(data)
       router.push('/')
-    } catch (err: any) {
-      console.log(err)
+    } catch {
       // Error handled by store/toast
     }
   }
@@ -44,10 +42,7 @@ export default function LoginPage() {
       </div>
 
       <div className="space-y-4">
-        <Button variant="outline" className="w-full h-11 font-medium relative bg-card text-foreground hover:bg-muted border-input" disabled={isLoading || githubLoading} onClick={() => setGithubLoading(true)}>
-            {githubLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Chrome className="h-4 w-4 mr-2" />}
-            Continue with Google
-        </Button>
+        <GoogleAuthButton disabled={isLoading}>Continue with Google</GoogleAuthButton>
       </div>
 
       <div className="relative">
@@ -55,7 +50,7 @@ export default function LoginPage() {
           <Separator className="w-full bg-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground font-medium">Or continue with</span>
+          <span className="auth-divider-label px-2 text-muted-foreground font-medium">Or continue with</span>
         </div>
       </div>
 
@@ -66,7 +61,7 @@ export default function LoginPage() {
             id="email"
             type="email"
             placeholder="name@example.com"
-            className="h-11 bg-input/50 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
+            className="auth-input h-11 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
             disabled={isLoading}
             {...register('email', { required: 'Email is required' })}
           />
@@ -81,7 +76,7 @@ export default function LoginPage() {
           <Input
             id="password"
             type="password"
-            className="h-11 bg-input/50 border-input text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
+            className="auth-input h-11 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
             placeholder="••••••••"
             disabled={isLoading}
             {...register('password', { required: 'Password is required' })}

@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { HeartPulse, Check, Shield, Zap, UserCheck } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { ThemeToggle } from '@/components/common/ThemeToggle'
+import './auth.css'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
     const isAuthenticated = useIsAuthenticated();
@@ -97,7 +98,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             </div>
 
             {/* Right Side: Form Container - Optimized for Dark/Light Mode */}
-            <div className="relative flex flex-col justify-center items-center p-6 md:p-12 bg-background transition-colors duration-300">
+            <div className="auth-form-panel relative flex flex-col items-center justify-start px-6 pb-10 pt-28 transition-colors duration-300 md:px-12 lg:justify-center lg:py-12">
                 <div className="absolute top-6 right-6 z-20">
                      <ThemeToggle />
                 </div>
@@ -112,7 +113,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                     </Link>
                 </div>
 
-                <div className="w-full max-w-[400px] animate-in fade-in zoom-in-95 duration-500">
+                <div className="auth-form-content w-full max-w-[400px] animate-in fade-in zoom-in-95 duration-500">
                      {/* The form background needs to be clean in both modes. 
                          We rely on 'bg-background' of the parent, but we can wrap form content 
                          if we want a card look, or keep it clean. Keeping it clean is more modern. */}

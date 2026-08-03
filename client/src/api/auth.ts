@@ -17,8 +17,10 @@ export const authAPI = {
     return response.data;
   },
 
-  me: async () => {
-    const response = await apiClient.get<{ success: boolean; data: User }>("/auth/me");
+  me: async (token?: string) => {
+    const response = await apiClient.get<{ success: boolean; data: User }>("/auth/me", {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
     return response.data.data;
   },
 };

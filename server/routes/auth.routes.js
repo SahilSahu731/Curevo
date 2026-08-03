@@ -20,7 +20,10 @@ router.get(
 
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login", session: false }),
+  passport.authenticate("google", {
+    failureRedirect: `${process.env.CLIENT_URL}/login?error=google_auth_failed`,
+    session: false,
+  }),
   googleCallback
 );
 

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -10,7 +10,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-import { Loader2, User, Stethoscope, Chrome } from 'lucide-react'
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton'
+import { Loader2, User, Stethoscope } from 'lucide-react'
 
 type FormValues = {
   name: string
@@ -27,8 +28,6 @@ export default function RegisterPage() {
       defaultValues: { role: 'patient' }
   })
   const { register: registerUser, isLoading } = useAuth()
-  const [githubLoading, setGithubLoading] = useState(false)
-
   // Watch role for conditional UI
   const selectedRole = watch('role');
 
@@ -44,14 +43,9 @@ export default function RegisterPage() {
 
       await registerUser(fd)
       router.push('/')
-    } catch (err: any) {
+    } catch {
        // handled by store
     }
-  }
-
-  const handleGoogleSignup = () => {
-      setGithubLoading(true);
-      window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/google`;
   }
 
   return (
@@ -64,16 +58,7 @@ export default function RegisterPage() {
       </div>
 
       <div className="space-y-4">
-        <Button 
-            variant="outline" 
-            type="button"
-            className="w-full h-11 font-medium relative bg-card text-foreground hover:bg-muted border-input" 
-            disabled={isLoading || githubLoading} 
-            onClick={handleGoogleSignup}
-        >
-            {githubLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Chrome className="h-4 w-4 mr-2" />}
-            Sign up with Google
-        </Button>
+        <GoogleAuthButton disabled={isLoading}>Sign up with Google</GoogleAuthButton>
       </div>
 
       <div className="relative">
@@ -81,7 +66,7 @@ export default function RegisterPage() {
           <Separator className="w-full bg-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-background px-2 text-muted-foreground font-medium">Or continue with email</span>
+          <span className="auth-divider-label px-2 text-muted-foreground font-medium">Or continue with email</span>
         </div>
       </div>
 
@@ -90,7 +75,7 @@ export default function RegisterPage() {
         {/* Role Selection Cards */}
         <div className="grid grid-cols-2 gap-4">
             <div 
-                className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center gap-2 transition-all ${selectedRole === 'patient' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/50'}`}
+                className={`auth-role-option cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center gap-2 transition-all ${selectedRole === 'patient' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/50'}`}
                 onClick={() => setValue('role', 'patient')}
             >
                 <div className={`p-2 rounded-full transition-colors ${selectedRole === 'patient' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
@@ -103,7 +88,7 @@ export default function RegisterPage() {
             </div>
 
             <div 
-                className={`cursor-pointer rounded-xl border-2 p-4 flex flex-col items-center gap-2 transition-all ${selectedRole === 'doctor' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/50'}`}
+                className={`auth-role-option cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center gap-2 transition-all ${selectedRole === 'doctor' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/50'}`}
                 onClick={() => setValue('role', 'doctor')}
             >
                 <div className={`p-2 rounded-full transition-colors ${selectedRole === 'doctor' ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'}`}>
@@ -122,26 +107,26 @@ export default function RegisterPage() {
 
         <div className="space-y-2">
           <Label htmlFor="name" className="text-foreground">Full Name</Label>
-          <Input id="name" placeholder="John Doe" className="h-11 bg-input/50 border-input text-foreground focus-visible:ring-primary" {...register('name', { required: 'Name is required' })} />
+          <Input id="name" placeholder="John Doe" className="auth-input h-11 text-foreground focus-visible:ring-primary" {...register('name', { required: 'Name is required' })} />
           {errors.name && <span className="text-xs text-destructive">{errors.name.message}</span>}
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="email" className="text-foreground">Email</Label>
-          <Input id="email" type="email" placeholder="name@example.com" className="h-11 bg-input/50 border-input text-foreground focus-visible:ring-primary" {...register('email', { required: 'Email is required' })} />
+          <Input id="email" type="email" placeholder="name@example.com" className="auth-input h-11 text-foreground focus-visible:ring-primary" {...register('email', { required: 'Email is required' })} />
           {errors.email && <span className="text-xs text-destructive">{errors.email.message}</span>}
         </div>
 
         <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="password" className="text-foreground">Password</Label>
-              <Input id="password" type="password" className="h-11 bg-input/50 border-input text-foreground focus-visible:ring-primary" {...register('password', { required: 'Required', minLength: { value: 8, message: 'Min 8 chars' } })} />
+              <Input id="password" type="password" className="auth-input h-11 text-foreground focus-visible:ring-primary" {...register('password', { required: 'Required', minLength: { value: 8, message: 'Min 8 chars' } })} />
               {errors.password && <span className="text-xs text-destructive">{errors.password.message}</span>}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="confirm" className="text-foreground">Confirm Password</Label>
-              <Input id="confirm" type="password" className="h-11 bg-input/50 border-input text-foreground focus-visible:ring-primary" {...register('confirmPassword', { validate: val => val === password || 'Mismatch' })} />
+              <Input id="confirm" type="password" className="auth-input h-11 text-foreground focus-visible:ring-primary" {...register('confirmPassword', { validate: val => val === password || 'Mismatch' })} />
               {errors.confirmPassword && <span className="text-xs text-destructive">{errors.confirmPassword.message}</span>}
             </div>
         </div>
