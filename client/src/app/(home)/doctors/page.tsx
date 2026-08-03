@@ -37,6 +37,10 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ListPagination } from "@/components/common/ListPagination";
+
+const DOCTORS_PER_PAGE = 10;
+const MAX_FEE = 2000;
 
 // --- Specializations (In real app, fetch from DB) ---
 const SPECIALIZATIONS = [
@@ -62,12 +66,13 @@ function DoctorsPageContent() {
     const [specialization, setSpecialization] = useState(searchParams.get("specialization") || "All");
     const [feeRange, setFeeRange] = useState([
         parseInt(searchParams.get("minFee") || "0"), 
-        parseInt(searchParams.get("maxFee") || "500")
+        parseInt(searchParams.get("maxFee") || String(MAX_FEE))
     ]);
     const [gender, setGender] = useState<string | undefined>(searchParams.get("gender") || undefined);
     const [sort, setSort] = useState(searchParams.get("sort") || "recommended");
     const [location, setLocation] = useState(searchParams.get("location") || "");
     const [minRating, setMinRating] = useState(searchParams.get("minRating") || "any");
+    const [currentPage, setCurrentPage] = useState(1);
 
     // Debounce search
     const [debouncedName, setDebouncedName] = useState(name);
@@ -83,7 +88,7 @@ function DoctorsPageContent() {
         if (debouncedName) params.set("name", debouncedName);
         if (specialization && specialization !== "All") params.set("specialization", specialization);
         if (feeRange[0] > 0) params.set("minFee", feeRange[0].toString());
-        if (feeRange[1] < 500) params.set("maxFee", feeRange[1].toString());
+        if (feeRange[1] < MAX_FEE) params.set("maxFee", feeRange[1].toString());
         if (gender) params.set("gender", gender);
         if (sort && sort !== "recommended") params.set("sort", sort);
         if (location) params.set("location", location);
@@ -109,19 +114,29 @@ function DoctorsPageContent() {
     });
 
     const doctors = doctorsData?.data || [];
+    const totalPages = Math.ceil(doctors.length / DOCTORS_PER_PAGE);
+    const displayPage = Math.min(currentPage, Math.max(totalPages, 1));
+    const pageStart = (displayPage - 1) * DOCTORS_PER_PAGE;
+    const visibleDoctors = doctors.slice(pageStart, pageStart + DOCTORS_PER_PAGE);
+
+    const changePage = (page: number) => {
+        setCurrentPage(page);
+        document.getElementById("doctor-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
 
     const clearFilters = () => {
         setName("");
         setSpecialization("All");
-        setFeeRange([0, 500]);
+        setFeeRange([0, MAX_FEE]);
         setGender(undefined);
         setSort("recommended");
         setLocation("");
         setMinRating("any");
+        setCurrentPage(1);
         router.replace("/doctors", { scroll: false });
     };
 
-    const hasActiveFilters = name || specialization !== "All" || feeRange[0] > 0 || feeRange[1] < 500 || gender || sort !== "recommended" || location || minRating !== "any";
+    const hasActiveFilters = name || specialization !== "All" || feeRange[0] > 0 || feeRange[1] < MAX_FEE || gender || sort !== "recommended" || location || minRating !== "any";
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-zinc-950 pb-20">
@@ -154,7 +169,7 @@ function DoctorsPageContent() {
                                 {searchParams.get("name") && (
                                     <Badge className="bg-white/10 text-white border-white/20 px-3 py-1">
                                         Doctor: "{searchParams.get("name")}"
-                                        <button onClick={() => setName("")} className="ml-2 hover:text-red-300">
+                                        <button onClick={() => { setName(""); setCurrentPage(1); }} className="ml-2 hover:text-red-300">
                                             <X className="w-3 h-3" />
                                         </button>
                                     </Badge>
@@ -162,7 +177,7 @@ function DoctorsPageContent() {
                                 {searchParams.get("specialization") && searchParams.get("specialization") !== "All" && (
                                     <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 px-3 py-1">
                                         {searchParams.get("specialization")}
-                                        <button onClick={() => setSpecialization("All")} className="ml-2 hover:text-red-300">
+                                        <button onClick={() => { setSpecialization("All"); setCurrentPage(1); }} className="ml-2 hover:text-red-300">
                                             <X className="w-3 h-3" />
                                         </button>
                                     </Badge>
@@ -201,7 +216,7 @@ function DoctorsPageContent() {
                                                 placeholder="Search by name..." 
                                                 className="pl-9"
                                                 value={name}
-                                                onChange={(e) => setName(e.target.value)}
+                                                onChange={(e) => { setName(e.target.value); setCurrentPage(1); }}
                                             />
                                         </div>
                                     </div>
@@ -215,7 +230,7 @@ function DoctorsPageContent() {
                                                 placeholder="City or Zip..." 
                                                 className="pl-9"
                                                 value={location}
-                                                onChange={(e) => setLocation(e.target.value)}
+                                                onChange={(e) => { setLocation(e.target.value); setCurrentPage(1); }}
                                             />
                                         </div>
                                     </div>
@@ -223,7 +238,7 @@ function DoctorsPageContent() {
                                     {/* Specialization */}
                                     <div className="space-y-2">
                                         <Label>Specialization</Label>
-                                        <Select value={specialization} onValueChange={setSpecialization}>
+                                        <Select value={specialization} onValueChange={(value) => { setSpecialization(value); setCurrentPage(1); }}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Select Specialization" />
                                             </SelectTrigger>
@@ -246,11 +261,11 @@ function DoctorsPageContent() {
                                             </span>
                                         </div>
                                         <Slider 
-                                            defaultValue={[0, 500]} 
-                                            max={1000} 
+                                            defaultValue={[0, MAX_FEE]}
+                                            max={MAX_FEE}
                                             step={10} 
                                             value={feeRange}
-                                            onValueChange={setFeeRange}
+                                            onValueChange={(value) => { setFeeRange(value); setCurrentPage(1); }}
                                             className="py-4"
                                         />
                                     </div>
@@ -258,7 +273,7 @@ function DoctorsPageContent() {
                                     {/* Gender */}
                                     <div className="space-y-2">
                                         <Label>Doctor Gender</Label>
-                                        <Select value={gender || "any"} onValueChange={(v) => setGender(v === "any" ? undefined : v)}>
+                                        <Select value={gender || "any"} onValueChange={(v) => { setGender(v === "any" ? undefined : v); setCurrentPage(1); }}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Any Gender" />
                                             </SelectTrigger>
@@ -272,7 +287,7 @@ function DoctorsPageContent() {
 
                                     <div className="space-y-2">
                                         <Label>Minimum Rating</Label>
-                                        <Select value={minRating} onValueChange={setMinRating}>
+                                        <Select value={minRating} onValueChange={(value) => { setMinRating(value); setCurrentPage(1); }}>
                                             <SelectTrigger>
                                                 <SelectValue placeholder="Any Rating" />
                                             </SelectTrigger>
@@ -296,16 +311,20 @@ function DoctorsPageContent() {
                     </div>
 
                     {/* --- Main Content --- */}
-                    <div className="lg:col-span-3 space-y-6">
+                    <div id="doctor-results" className="lg:col-span-3 scroll-mt-24 space-y-6">
                         {/* Top Bar */}
                         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white dark:bg-zinc-900 p-4 rounded-xl shadow-sm border">
                             <p className="text-muted-foreground font-medium">
-                                Showing <span className="text-foreground font-bold">{doctors.length}</span> results
+                                {doctors.length > 0 ? (
+                                    <>Showing <span className="text-foreground font-bold">{pageStart + 1}-{Math.min(pageStart + DOCTORS_PER_PAGE, doctors.length)}</span> of {doctors.length} results</>
+                                ) : (
+                                    <>Showing <span className="text-foreground font-bold">0</span> results</>
+                                )}
                             </p>
                             
                             <div className="flex items-center gap-2">
                                 <Label className="whitespace-nowrap">Sort by:</Label>
-                                <Select value={sort} onValueChange={setSort}>
+                                <Select value={sort} onValueChange={(value) => { setSort(value); setCurrentPage(1); }}>
                                     <SelectTrigger className="w-[180px]">
                                         <SelectValue placeholder="Recommended" />
                                     </SelectTrigger>
@@ -345,11 +364,12 @@ function DoctorsPageContent() {
                                     <Button variant="link" onClick={clearFilters} className="mt-2">Clear all filters</Button>
                                 </div>
                             ) : (
-                                doctors.map((doctor: any) => (
+                                visibleDoctors.map((doctor: any) => (
                                     <DoctorCard key={doctor._id} doctor={doctor} />
                                 ))
                             )}
                         </div>
+                        <ListPagination currentPage={displayPage} totalPages={totalPages} onPageChange={changePage} />
                     </div>
                 </div>
             </div>

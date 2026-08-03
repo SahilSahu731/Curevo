@@ -13,7 +13,7 @@ export default function ClinicStep() {
     });
     const { setClinic, nextStep } = useBookingStore();
 
-    if (isLoading) return <div className="p-8 text-center text-gray-500">Loading clinics...</div>;
+    if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading clinics...</div>;
 
     const clinics = data?.data || [];
 
@@ -36,7 +36,7 @@ export default function ClinicStep() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-sm text-gray-500">{clinic.phone}</p>
+                            <p className="text-sm text-muted-foreground">{clinic.phone}</p>
                         </CardContent>
                     </Card>
                 ))}

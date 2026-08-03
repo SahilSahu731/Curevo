@@ -19,7 +19,7 @@ export default function DoctorStep() {
         queryFn: doctorService.getAllDoctors
     });
 
-    if (isLoading) return <div className="p-8 text-center text-gray-500">Loading doctors...</div>;
+    if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading doctors...</div>;
 
     const doctors = data?.data?.filter((d: any) => d.clinicId._id === clinicId) || [];
 
@@ -52,13 +52,13 @@ export default function DoctorStep() {
                         </CardHeader>
                         <CardContent>
                              <div className="flex justify-between text-sm">
-                                 <span className="text-gray-500">{doctor.experience} yrs exp</span>
-                                 <span className="font-semibold text-green-600">${doctor.consultationFee}</span>
+                                 <span className="text-muted-foreground">{doctor.experience} yrs exp</span>
+                                 <span className="font-semibold text-green-600 dark:text-green-400">${doctor.consultationFee}</span>
                              </div>
                         </CardContent>
                     </Card>
                 )) : (
-                    <div className="col-span-full text-center py-8 text-gray-500">
+                    <div className="col-span-full py-8 text-center text-muted-foreground">
                         No doctors found for this clinic.
                     </div>
                 )}

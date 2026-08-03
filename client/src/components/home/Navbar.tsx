@@ -5,7 +5,6 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HeartPulse, Menu } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { motion } from "framer-motion";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -55,8 +54,6 @@ export default function Navbar() {
                 </nav>
 
                 <div className="flex items-center gap-4">
-                    <ThemeToggle />
-                    
                     <div className="hidden sm:flex items-center gap-4">
                          {mounted && user ? (
                             <>

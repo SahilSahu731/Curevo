@@ -20,11 +20,15 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import { ListPagination } from "@/components/common/ListPagination";
+
+const CLINICS_PER_PAGE = 9;
 
 export default function ClinicsPage() {
     const router = useRouter();
     const [search, setSearch] = useState("");
     const [activeFilters, setActiveFilters] = useState<string[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
     
     // Fetch Clinics
     const { data: clinicsRes, isLoading, isError } = useQuery({
@@ -59,7 +63,8 @@ export default function ClinicsPage() {
 
     // Filter Logic
     const toggleFilter = (filter: string) => {
-        setActiveFilters(prev => 
+        setCurrentPage(1);
+        setActiveFilters(prev =>
             prev.includes(filter) 
                 ? prev.filter(f => f !== filter)
                 : [...prev, filter]
@@ -80,6 +85,15 @@ export default function ClinicsPage() {
 
         return matchesSearch;
     });
+    const totalPages = Math.ceil(filteredClinics.length / CLINICS_PER_PAGE);
+    const displayPage = Math.min(currentPage, Math.max(totalPages, 1));
+    const pageStart = (displayPage - 1) * CLINICS_PER_PAGE;
+    const visibleClinics = filteredClinics.slice(pageStart, pageStart + CLINICS_PER_PAGE);
+
+    const changePage = (page: number) => {
+        setCurrentPage(page);
+        document.getElementById("clinic-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
 
     const filters = ['Open Now', '24/7', 'Parking Available', 'Wheelchair Access'];
 
@@ -103,7 +117,7 @@ export default function ClinicsPage() {
                                     className="pl-10 h-12 text-lg bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 focus:ring-emerald-500 dark:focus:ring-emerald-500 rounded-xl"
                                     placeholder="Search by clinic name, city, or address..." 
                                     value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
+                                    onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
                                 />
                             </div>
                             <Button className="h-12 w-12 rounded-xl bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-zinc-800 dark:hover:bg-zinc-200 shadow-xl shrink-0">
@@ -115,7 +129,7 @@ export default function ClinicsPage() {
              </div>
 
              {/* --- Clinics Grid --- */}
-             <div className="container mx-auto px-4 max-w-7xl mt-12">
+             <div id="clinic-results" className="container mx-auto mt-12 max-w-7xl scroll-mt-24 px-4">
                 <div className="flex items-center justify-between mb-8">
                     <h2 className="text-2xl font-bold font-heading text-zinc-900 dark:text-white">
                         {filteredClinics.length} {filteredClinics.length === 1 ? 'Facilities' : 'Facilities'} Found
@@ -148,7 +162,7 @@ export default function ClinicsPage() {
                     </div>
                 ) : filteredClinics.length > 0 ? (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {filteredClinics.map((clinic: any) => {
+                        {visibleClinics.map((clinic: any) => {
                             const isOpen = checkIsOpen(clinic);
                             return (
                                 <motion.div 
@@ -239,6 +253,9 @@ export default function ClinicsPage() {
                             View All Clinics
                         </Button>
                     </div>
+                )}
+                {!isLoading && filteredClinics.length > 0 && (
+                    <ListPagination currentPage={displayPage} totalPages={totalPages} onPageChange={changePage} />
                 )}
              </div>
         </div>

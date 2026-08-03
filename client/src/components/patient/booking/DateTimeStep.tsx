@@ -57,9 +57,9 @@ export default function DateTimeStep() {
 
             <div className="grid md:grid-cols-2 gap-8">
                 <div>
-                    <h3 className="mb-4 font-medium text-gray-700">1. Pick a Date</h3>
+                    <h3 className="mb-4 font-medium text-foreground">1. Pick a Date</h3>
                      {/* Assuming naive calendar component or standard input */}
-                     <div className="p-4 border rounded-xl bg-white shadow-sm inline-block">
+                     <div className="inline-block rounded-lg border bg-card p-4 text-card-foreground shadow-sm">
                         <input 
                             type="date" 
                             className="p-2 border rounded w-full"
@@ -76,7 +76,7 @@ export default function DateTimeStep() {
                 </div>
 
                 <div>
-                    <h3 className="mb-4 font-medium text-gray-700">2. Pick a Time Slot</h3>
+                    <h3 className="mb-4 font-medium text-foreground">2. Pick a Time Slot</h3>
                     {slotsLoading ? (
                         <div className="flex items-center gap-2 text-gray-500"><Loader2 className="animate-spin h-4 w-4"/> Loading slots...</div>
                     ) : (slotsData && slotsData.data && slotsData.data.length > 0) ? (

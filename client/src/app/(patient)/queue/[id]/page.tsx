@@ -78,16 +78,16 @@ export default function QueueTrackingPage() {
         // Or it's 'booked' (not checked in).
         // I should probably handle this UI state.
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+            <div className="flex min-h-screen items-center justify-center bg-background p-4 text-foreground">
                  <Card className="max-w-md w-full text-center p-6">
-                    <div className="mx-auto bg-gray-100 rounded-full h-16 w-16 flex items-center justify-center mb-4">
-                        <AlertCircle className="h-8 w-8 text-gray-400" />
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                        <AlertCircle className="h-8 w-8 text-muted-foreground" />
                     </div>
                     <h2 className="text-xl font-bold mb-2">Queue Status Unavailable</h2>
-                    <p className="text-gray-500 mb-6">
+                    <p className="mb-6 text-muted-foreground">
                         This appointment is mostly likely not in the active queue check-in yet or has been completed.
                     </p>
-                    <a href="/patient-dashboard" className="text-blue-600 hover:underline">Back to Dashboard</a>
+                    <a href="/patient-dashboard" className="text-primary hover:underline">Back to Dashboard</a>
                 </Card>
             </div>
         );
@@ -103,17 +103,17 @@ export default function QueueTrackingPage() {
     const progress = Math.max(5, 100 - (position * 10));
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 flex flex-col items-center justify-center">
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background p-6 text-foreground">
              <div className="w-full max-w-md space-y-6">
                 <div className="text-center space-y-2">
-                    <h1 className="text-2xl font-bold text-gray-900">Live Queue Tracker</h1>
-                    <p className="text-gray-500">
+                    <h1 className="text-2xl font-bold text-foreground">Live Queue Tracker</h1>
+                    <p className="text-muted-foreground">
                         {appointment?.doctorId?.userId?.name ? `Dr. ${appointment.doctorId.userId.name}` : "Real-time updates from the clinic"}
                     </p>
                 </div>
 
                 <Card className="border-none shadow-xl overflow-hidden relative">
-                    <div className="absolute top-0 left-0 w-full h-2 bg-gray-100">
+                    <div className="absolute left-0 top-0 h-2 w-full bg-muted">
                         <div className="h-full bg-blue-600 transition-all duration-1000 ease-out" style={{ width: `${progress}%` }}></div>
                     </div>
                     <CardContent className="pt-8 pb-8 text-center space-y-6">
@@ -137,23 +137,23 @@ export default function QueueTrackingPage() {
                                      </span>
                                   </div>
                                   <div>
-                                       <p className="text-gray-500 font-medium">Patients Ahead</p>
-                                       <p className="text-2xl font-bold text-gray-900">{patientsAhead}</p>
+                                       <p className="font-medium text-muted-foreground">Patients Ahead</p>
+                                       <p className="text-2xl font-bold text-foreground">{patientsAhead}</p>
                                   </div>
                              </div>
                          )}
 
                          <div className="grid grid-cols-2 gap-4 pt-4 border-t">
                             <div className="text-center">
-                                <p className="text-xs text-uppercase text-gray-400 font-bold tracking-wider mb-1">EST. WAIT</p>
-                                <div className="flex items-center justify-center gap-1 text-gray-700 font-semibold">
+                                <p className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">EST. WAIT</p>
+                                <div className="flex items-center justify-center gap-1 font-semibold text-foreground">
                                     <Clock className="h-4 w-4" />
                                     {waitTime} mins
                                 </div>
                             </div>
                             <div className="text-center">
-                                <p className="text-xs text-uppercase text-gray-400 font-bold tracking-wider mb-1">STATUS</p>
-                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                                <p className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">STATUS</p>
+                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:hover:bg-blue-950">
                                     Token #{appointment?.tokenNumber || "-"}
                                 </Badge>
                             </div>
@@ -162,7 +162,7 @@ export default function QueueTrackingPage() {
                 </Card>
 
                 <div className="text-center">
-                     <p className="text-xs text-gray-400">
+                     <p className="text-xs text-muted-foreground">
                          We'll notify you when it's your turn. Please stay close to the clinic area.
                      </p>
                 </div>

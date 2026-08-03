@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { HeartPulse, Check, Shield, Zap, UserCheck } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { ThemeToggle } from '@/components/common/ThemeToggle'
 import './auth.css'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -99,10 +98,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
             {/* Right Side: Form Container - Optimized for Dark/Light Mode */}
             <div className="auth-form-panel relative flex flex-col items-center justify-start px-6 pb-10 pt-28 transition-colors duration-300 md:px-12 lg:justify-center lg:py-12">
-                <div className="absolute top-6 right-6 z-20">
-                     <ThemeToggle />
-                </div>
-                
                 {/* Mobile Header (Only visible on small screens) */}
                 <div className="lg:hidden w-full absolute top-0 left-0 p-6 flex justify-between items-center bg-background/80 backdrop-blur-md border-b border-border z-10">
                     <Link href="/" className="flex items-center gap-2 font-bold text-xl font-heading text-foreground">

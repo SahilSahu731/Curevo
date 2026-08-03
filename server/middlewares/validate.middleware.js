@@ -16,8 +16,19 @@ export const validate = (schema) => (req, res, next) => {
     });
   }
 
-  req.body = result.data.body ?? req.body;
-  req.query = result.data.query ?? req.query;
-  req.params = result.data.params ?? req.params;
+  if (result.data.body !== undefined) {
+    req.body = result.data.body;
+  }
+  if (result.data.query !== undefined) {
+    Object.defineProperty(req, "query", {
+      value: result.data.query,
+      configurable: true,
+      enumerable: true,
+      writable: true,
+    });
+  }
+  if (result.data.params !== undefined) {
+    req.params = result.data.params;
+  }
   next();
 };

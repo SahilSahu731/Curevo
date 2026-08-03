@@ -13,7 +13,6 @@ import {
     UserCircle 
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ThemeToggle } from "@/components/common/ThemeToggle";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
@@ -96,8 +95,6 @@ export default function GlobalNavbar() {
 
                 {/* Right Actions */}
                 <div className="flex items-center gap-4">
-                    <ThemeToggle />
-                    
                     <div className="hidden md:flex items-center gap-3">
                          {mounted && user ? (
                             <div className="flex items-center gap-4">
