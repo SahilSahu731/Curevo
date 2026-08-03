@@ -49,6 +49,10 @@ const AppointmentSchema = new mongoose.Schema(
       enum: ['in-person', 'video'],
       default: 'in-person',
     },
+    emergencyReason: { type: String, trim: true, maxlength: 500 },
+    slotStartUtc: { type: Date, index: true },
+    slotEndUtc: Date,
+    clinicTimezone: { type: String, default: 'Asia/Kolkata' },
     telehealthRoomId: {
       type: String,
       trim: true,
@@ -80,8 +84,20 @@ const AppointmentSchema = new mongoose.Schema(
     notes: {
       type: String, // Doctor's notes after consultation
     },
+    idempotencyKey: { type: String, trim: true, maxlength: 120 },
+    statusHistory: {
+      type: [{
+        from: String,
+        to: String,
+        actorUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        actorRole: String,
+        reason: String,
+        changedAt: { type: Date, default: Date.now },
+      }],
+      default: [],
+    },
   },
-  { timestamps: true }
+  { timestamps: true, optimisticConcurrency: true }
 );
 AppointmentSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
@@ -89,6 +105,10 @@ AppointmentSchema.add({ isSynthetic: { type: Boolean, default: false, index: tru
 AppointmentSchema.index({ doctorId: 1, date: 1 });
 AppointmentSchema.index({ patientId: 1, date: -1 }); // Patient history sort by newest
 AppointmentSchema.index({ clinicId: 1, doctorId: 1, date: 1, tokenNumber: 1 }, { unique: true }); // Ensure unique token per doctor/clinic/day
+AppointmentSchema.index(
+  { patientId: 1, idempotencyKey: 1 },
+  { unique: true, partialFilterExpression: { idempotencyKey: { $type: "string" } } },
+);
 
 const Appointment = mongoose.models.Appointment || mongoose.model("Appointment", AppointmentSchema);
 export default Appointment;

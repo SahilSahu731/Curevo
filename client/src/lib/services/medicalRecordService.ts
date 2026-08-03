@@ -14,7 +14,8 @@ export interface MedicalRecord {
   symptoms?: string;
   prescription: PrescriptionItem[];
   treatmentPlan?: string;
-  doctorNotes?: string;
+  patientInstructions?: string;
+  addenda?: Array<{ text: string; createdAt?: string }>;
   followUpDate?: string;
   createdAt: string;
   patientId: {

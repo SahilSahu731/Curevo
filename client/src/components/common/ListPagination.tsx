@@ -50,7 +50,7 @@ export function ListPagination({
       <PaginationContent>
         <PaginationItem>
           <PaginationPrevious
-            href="#"
+            href={`?page=${Math.max(1, currentPage - 1)}`}
             aria-disabled={currentPage === 1}
             className={currentPage === 1 ? "pointer-events-none opacity-40" : undefined}
             onClick={goToPage(currentPage - 1)}
@@ -61,7 +61,7 @@ export function ListPagination({
           <PaginationItem key={item}>
             {typeof item === "number" ? (
               <PaginationLink
-                href="#"
+                href={`?page=${item}`}
                 isActive={item === currentPage}
                 aria-label={`Go to page ${item}`}
                 onClick={goToPage(item)}
@@ -76,7 +76,7 @@ export function ListPagination({
 
         <PaginationItem>
           <PaginationNext
-            href="#"
+            href={`?page=${Math.min(totalPages, currentPage + 1)}`}
             aria-disabled={currentPage === totalPages}
             className={currentPage === totalPages ? "pointer-events-none opacity-40" : undefined}
             onClick={goToPage(currentPage + 1)}

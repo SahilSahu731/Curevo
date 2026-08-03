@@ -8,11 +8,12 @@ export interface BookingData {
     symptoms?: string;
     priority?: 'normal' | 'emergency';
     consultationType?: 'in-person' | 'video';
+    idempotencyKey?: string;
 }
 
 export const patientService = {
     bookAppointment: async (data: BookingData) => {
-        const response = await api.post("/appointments", data);
+        const response = await api.post("/appointments", data, { headers: data.idempotencyKey ? { "Idempotency-Key": data.idempotencyKey } : undefined });
         return response.data;
     },
 

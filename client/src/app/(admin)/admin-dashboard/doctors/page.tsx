@@ -19,6 +19,8 @@ import {
 import { PageLoader } from "@/components/common/Loader";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function DoctorsManagementPage() {
     const queryClient = useQueryClient();
@@ -28,10 +30,12 @@ export default function DoctorsManagementPage() {
     // Delete state
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [doctorToDelete, setDoctorToDelete] = useState<string | null>(null);
+    const [reviewTarget, setReviewTarget] = useState<{ id: string; status: "approved" | "rejected" } | null>(null);
+    const [reviewReason, setReviewReason] = useState("");
 
     const { data: doctorsData, isLoading, isError } = useQuery({
-        queryKey: ['doctors'],
-        queryFn: doctorService.getAllDoctors,
+        queryKey: ['doctor-verifications', 'all'],
+        queryFn: () => adminService.getDoctorVerifications('all'),
         staleTime: 1000 * 60 * 5, // 5 minutes
     });
 
@@ -52,18 +56,22 @@ export default function DoctorsManagementPage() {
     });
 
     const reviewMutation = useMutation({
-        mutationFn: ({ id, status }: { id: string; status: "approved" | "rejected" }) =>
-            adminService.reviewDoctorVerification(id, { status }),
+        mutationFn: ({ id, status, reason }: { id: string; status: "approved" | "rejected"; reason: string }) =>
+            adminService.reviewDoctorVerification(id, { status, reason }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['doctors'] });
+            queryClient.invalidateQueries({ queryKey: ['doctor-verifications'] });
             toast.success("Verification updated");
+            setReviewTarget(null);
+            setReviewReason("");
         },
-        onError: () => toast.error("Failed to update verification")
+        onError: (error: any) => toast.error(error.response?.data?.error || "Failed to update verification")
     });
 
     const openLicense = async (doctorId: string) => {
         try {
-            await adminService.downloadDoctorLicense(doctorId);
+            if (reviewReason.trim().length < 10) return toast.error("Enter the review reason before opening the license");
+            await adminService.downloadDoctorLicense(doctorId, reviewReason.trim());
         } catch {
             toast.error("Private license file is unavailable");
         }
@@ -208,11 +216,11 @@ export default function DoctorsManagementPage() {
 
                             {doctor.verification?.status === 'pending' && (
                                 <div className="mt-4 grid grid-cols-3 gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => openLicense(doctor._id)}>License</Button>
-                                    <Button size="sm" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate({ id: doctor._id, status: "approved" })}>
+                                    <Button variant="outline" size="sm" onClick={() => { setReviewTarget({ id: doctor._id, status: "approved" }); setReviewReason(""); }}>Review</Button>
+                                    <Button size="sm" disabled={reviewMutation.isPending} onClick={() => { setReviewTarget({ id: doctor._id, status: "approved" }); setReviewReason(""); }}>
                                         Approve
                                     </Button>
-                                    <Button size="sm" variant="outline" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate({ id: doctor._id, status: "rejected" })}>
+                                    <Button size="sm" variant="outline" disabled={reviewMutation.isPending} onClick={() => { setReviewTarget({ id: doctor._id, status: "rejected" }); setReviewReason(""); }}>
                                         Reject
                                     </Button>
                                 </div>
@@ -234,17 +242,31 @@ export default function DoctorsManagementPage() {
                 </div>
             )}
 
-            <EditDoctorDialog 
+            <EditDoctorDialog
                 open={isEditOpen} 
                 onOpenChange={setIsEditOpen} 
                 doctor={editingDoctor} 
             />
 
+            <Dialog open={Boolean(reviewTarget)} onOpenChange={(open) => { if (!open) setReviewTarget(null) }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>{reviewTarget?.status === "approved" ? "Approve clinician" : "Reject verification"}</DialogTitle>
+                        <DialogDescription>Record the credential review basis. Recent MFA is required when you submit.</DialogDescription>
+                    </DialogHeader>
+                    <Textarea value={reviewReason} onChange={(event) => setReviewReason(event.target.value)} maxLength={1000} placeholder="Review findings and decision reason" />
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button type="button" variant="outline" onClick={() => reviewTarget && void openLicense(reviewTarget.id)}>Open license</Button>
+                        <Button type="button" disabled={!reviewTarget || reviewReason.trim().length < 10 || reviewMutation.isPending} onClick={() => reviewTarget && reviewMutation.mutate({ ...reviewTarget, reason: reviewReason.trim() })}>Submit decision</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             <ConfirmDialog
                 open={isDeleteOpen}
                 onOpenChange={setIsDeleteOpen}
-                title="Delete Doctor Profile"
-                description="Are you sure you want to delete this doctor's profile? This will remove their association with the clinic but will not delete their user account."
+                title="Suspend Doctor Profile"
+                description="Suspend this clinician from public listing and future bookings. Historical appointments and records will be retained."
                 onConfirm={confirmDelete}
                 isLoading={deleteMutation.isPending}
                 variant="destructive"

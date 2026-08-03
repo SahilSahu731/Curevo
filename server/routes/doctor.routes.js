@@ -7,7 +7,6 @@ import {
     submitVerification,
     getMyVerification,
     toggleAvailability,
-    getAvailableSlots,
     callNextPatient,
     completeConsultation,
     markPatientAbsent,
@@ -17,8 +16,9 @@ import {
     updateDoctor,
     getDoctorAppointments
 } from '../controllers/doctor.controller.js';
+import { getAvailableSlots } from '../controllers/doctorScheduling.controller.js';
 import { protect, authorize, requireVerifiedEmail } from '../middlewares/auth.middleware.js';
-import upload, { validateUploadSignature } from '../middlewares/upload.middleware.js';
+import upload, { uploadTimeout, validateLicenseDocument, validateUploadSignature } from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -34,7 +34,7 @@ router.patch('/mark-absent/:id', protect, authorize('doctor'), requireVerifiedEm
 router.get('/availability/schedule', protect, authorize('doctor'), getAvailability);
 router.put('/availability/schedule', protect, authorize('doctor'), requireVerifiedEmail, updateAvailability);
 router.get('/verification/me', protect, authorize('doctor'), getMyVerification);
-router.post('/verification/license', protect, authorize('doctor'), requireVerifiedEmail, upload.single('license'), validateUploadSignature, submitVerification);
+router.post('/verification/license', protect, authorize('doctor'), requireVerifiedEmail, uploadTimeout, upload.single('license'), validateUploadSignature, validateLicenseDocument, submitVerification);
 router.post('/', protect, authorize('admin', 'doctor'), requireVerifiedEmail, createDoctor);
 router.put('/profile', protect, authorize('doctor'), requireVerifiedEmail, updateDoctorProfile);
 router.patch('/availability', protect, authorize('doctor'), requireVerifiedEmail, toggleAvailability);

@@ -46,6 +46,14 @@ export const authorize = (...roles) => (req, res, next) => {
   next();
 };
 
+export const authorizeAdminScope = (...scopes) => (req, res, next) => {
+  if (!req.user) return res.status(401).json({ success: false, error: "Authentication required", requestId: req.id });
+  if (req.user.role !== "admin" || !scopes.includes(req.user.adminScope || "operations")) {
+    return res.status(403).json({ success: false, error: "Your administrator scope does not permit this action", requestId: req.id });
+  }
+  next();
+};
+
 export const requireVerifiedEmail = (req, res, next) => {
   if (req.user?.role === "admin") return next();
   if (!req.user?.emailVerifiedAt) {
@@ -55,6 +63,14 @@ export const requireVerifiedEmail = (req, res, next) => {
       code: "EMAIL_VERIFICATION_REQUIRED",
       requestId: req.id,
     });
+  }
+  next();
+};
+
+export const requireRecentMfa = (req, res, next) => {
+  const verifiedAt = req.authSession?.mfaVerifiedAt ? new Date(req.authSession.mfaVerifiedAt).getTime() : 0;
+  if (!verifiedAt || Date.now() - verifiedAt > 15 * 60_000) {
+    return res.status(403).json({ success: false, error: "Recent MFA verification is required", code: "MFA_REAUTH_REQUIRED", requestId: req.id });
   }
   next();
 };

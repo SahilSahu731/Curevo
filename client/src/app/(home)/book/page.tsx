@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { doctorService } from "@/lib/services/doctorService";
 import { patientService } from "@/lib/services/patientService";
+import { formatCurrency } from "@/lib/localization";
 import { useAuthStore } from "@/store/authStore";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -46,9 +47,6 @@ function BookingPageContent() {
 
   // Get doctor info from URL params
   const doctorId = searchParams.get("doctorId") || "";
-  const doctorName = searchParams.get("doctorName") || "";
-  const specialization = searchParams.get("specialization") || "";
-  const fee = searchParams.get("fee") || "0";
   const clinicId = searchParams.get("clinicId") || "";
 
   // State
@@ -57,6 +55,7 @@ function BookingPageContent() {
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [consultationType, setConsultationType] = useState<"in-person" | "video">("in-person");
   const [symptoms, setSymptoms] = useState("");
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
   const [patientName, setPatientName] = useState(user?.name || "");
   const [patientPhone, setPatientPhone] = useState(user?.phone || "");
   const [patientEmail, setPatientEmail] = useState(user?.email || "");
@@ -113,6 +112,7 @@ function BookingPageContent() {
       slotTime: selectedSlot,
       symptoms: symptoms,
       consultationType,
+      idempotencyKey,
     });
   };
 
@@ -392,11 +392,11 @@ function BookingPageContent() {
                         <div className="grid gap-3 text-sm">
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Doctor</span>
-                            <span className="font-medium">{doctor?.userId?.name || doctorName}</span>
+                            <span className="font-medium">{doctor?.userId?.name || "Unavailable"}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Specialization</span>
-                            <span className="font-medium">{doctor?.specialization || specialization}</span>
+                            <span className="font-medium">{doctor?.specialization || "Unavailable"}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Date</span>
@@ -413,7 +413,7 @@ function BookingPageContent() {
                           <Separator />
                           <div className="flex justify-between text-lg">
                             <span className="font-semibold">Total</span>
-                            <span className="font-bold text-emerald-600">${doctor?.consultationFee || fee}</span>
+                            <span className="font-bold text-emerald-600">{formatCurrency(doctor?.consultationFee)}</span>
                           </div>
                         </div>
                       </div>
@@ -489,7 +489,7 @@ function BookingPageContent() {
                           Appointment Confirmed!
                         </h2>
                         <p className="text-muted-foreground max-w-md mx-auto">
-                          Your appointment with {doctor?.userId?.name || doctorName} has been successfully booked.
+                          Your appointment with {doctor?.userId?.name || "the selected clinician"} has been successfully booked.
                         </p>
                       </div>
 
@@ -542,18 +542,18 @@ function BookingPageContent() {
                       <Avatar className="h-20 w-20 mx-auto border-4 border-emerald-100 dark:border-emerald-900">
                         <AvatarImage src={doctor?.userId?.profileImage} />
                         <AvatarFallback className="text-xl font-bold bg-emerald-50 text-emerald-600">
-                          {(doctor?.userId?.name || doctorName)?.[0]}
+                          {(doctor?.userId?.name || "D")?.[0]}
                         </AvatarFallback>
                       </Avatar>
-                      <h3 className="font-bold text-lg mt-3">{doctor?.userId?.name || doctorName}</h3>
+                      <h3 className="font-bold text-lg mt-3">{doctor?.userId?.name || "Unavailable"}</h3>
                       <p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
                         <Stethoscope className="w-3.5 h-3.5" />
-                        {doctor?.specialization || specialization}
+                        {doctor?.specialization || "Unavailable"}
                       </p>
                       <div className="flex items-center justify-center gap-1 mt-2 text-amber-500">
                         <Star className="w-4 h-4 fill-amber-500" />
-                        <span className="font-medium">4.9</span>
-                        <span className="text-xs text-muted-foreground">(120 reviews)</span>
+                        <span className="font-medium">{doctor?.ratingStats?.averageRating || "New"}</span>
+                        <span className="text-xs text-muted-foreground">({doctor?.ratingStats?.reviewCount || 0} reviews)</span>
                       </div>
                     </div>
 
@@ -562,15 +562,15 @@ function BookingPageContent() {
                     <div className="space-y-3 text-sm">
                       <div className="flex items-center gap-3 text-muted-foreground">
                         <Clock className="w-4 h-4" />
-                        <span>{doctor?.experience || 10}+ years experience</span>
+                        <span>{doctor?.experience ?? "Unavailable"}{doctor?.experience !== undefined ? "+ years experience" : ""}</span>
                       </div>
                       <div className="flex items-center gap-3 text-muted-foreground">
                         <MapPin className="w-4 h-4" />
-                        <span>{doctor?.clinicId?.name || "Medical Center"}</span>
+                        <span>{doctor?.clinicId?.name || "Unavailable"}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <DollarSign className="w-4 h-4 text-emerald-600" />
-                        <span className="font-bold text-emerald-600">${doctor?.consultationFee || fee}</span>
+                        <span className="font-bold text-emerald-600">{formatCurrency(doctor?.consultationFee)}</span>
                         <span className="text-muted-foreground">per visit</span>
                       </div>
                     </div>

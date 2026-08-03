@@ -1,10 +1,13 @@
 import User from "../models/user.model.js";
+import mongoose from "mongoose";
 import Doctor from "../models/doctor.model.js";
 import Clinic from "../models/clinic.model.js";
 import Appointment from "../models/appointment.model.js";
 import Feedback from "../models/feedback.model.js";
 import { writeAuditEvent } from "../utils/audit.js";
 import { revokeUserSessions } from "../utils/session.js";
+import { notifyUser } from "../services/notification.service.js";
+import { localDayRangeUtc } from "../utils/scheduling.js";
 
 // ... (existing imports)
 
@@ -94,18 +97,39 @@ export const getDoctorVerifications = async (req, res) => {
 
 export const reviewDoctorVerification = async (req, res) => {
     try {
-        const { status, notes } = req.body;
-        const doctor = await Doctor.findById(req.params.id);
+        const { status, notes, reason, expiresAt } = req.body;
+        const doctor = await Doctor.findById(req.params.id).select('+verification.licenseFilePublicId +verification.history').populate('clinicId', 'isActive');
         if (!doctor) return res.status(404).json({ success: false, error: "Doctor not found" });
+
+        const previousStatus = doctor.verification?.status || "not-submitted";
+        if (previousStatus !== "pending") return res.status(409).json({ success: false, error: "Only pending submissions can be reviewed" });
+        if (status === "approved" && (!doctor.verification?.licenseFilePublicId || !doctor.specialization || !doctor.qualification || !doctor.clinicId?.isActive)) {
+            return res.status(409).json({ success: false, error: "Profile, active clinic, and a private license document are required for approval" });
+        }
 
         doctor.verification.status = status;
         doctor.verification.notes = notes;
+        doctor.verification.rejectionReason = status === "rejected" ? reason : "";
         doctor.verification.reviewedAt = Date.now();
         doctor.verification.reviewedBy = req.user.id;
+        doctor.verification.expiresAt = status === "approved" ? (expiresAt || new Date(Date.now() + 365 * 24 * 60 * 60_000)) : undefined;
+        doctor.verification.history.push({ from: previousStatus, to: status, reason, actorUserId: req.user._id, changedAt: new Date() });
         if (status === 'approved') {
             doctor.isAvailable = true;
+        } else {
+            doctor.isAvailable = false;
         }
         await doctor.save();
+        await writeAuditEvent(req, "doctor-verification-reviewed", "success", {
+            targetUserId: doctor.userId,
+            metadata: { doctorId: doctor._id.toString(), previousStatus, status, reason },
+        });
+        await notifyUser({
+            userId: doctor.userId,
+            dedupKey: `verification:${doctor._id}:${doctor.verification.reviewedAt.toISOString()}`,
+            message: status === "approved" ? "Your clinician verification was approved. Review your availability before accepting appointments." : "Your clinician verification needs changes. Open your profile to review the reason and resubmit.",
+            safeLink: "/profile",
+        });
 
         const populated = await Doctor.findById(doctor._id)
             .populate('userId', 'name email profileImage phone')
@@ -123,6 +147,8 @@ export const reviewDoctorVerification = async (req, res) => {
 
 export const downloadDoctorLicense = async (req, res) => {
     try {
+        const reason = String(req.get('x-break-glass-reason') || '').trim();
+        if (reason.length < 10) return res.status(400).json({ success: false, error: "A support reason is required to access a license document" });
         const doctor = await Doctor.findById(req.params.id)
             .select('+verification.licenseFilePublicId +verification.licenseFileResourceType +verification.licenseFileFormat');
         if (!doctor?.verification?.licenseFilePublicId) {
@@ -138,6 +164,7 @@ export const downloadDoctorLicense = async (req, res) => {
                 expires_at: Math.floor(Date.now() / 1000) + 300,
             },
         );
+        await writeAuditEvent(req, 'license-download', 'success', { metadata: { doctorId: doctor._id.toString(), reasonLength: reason.length } });
         res.set('Cache-Control', 'no-store');
         return res.redirect(302, url);
     } catch (error) {
@@ -147,8 +174,22 @@ export const downloadDoctorLicense = async (req, res) => {
 
 export const getAllUsers = async (req, res) => {
     try {
-        const users = await User.find({}).select('-password').sort({ createdAt: -1 });
-        res.status(200).json({ success: true, count: users.length, data: users });
+        const { page, limit, search, role, status, sortBy, sortOrder } = req.query;
+        const query = {};
+        if (role !== 'all') query.role = role;
+        if (status !== 'all') query.status = status;
+        if (search) {
+            const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            query.$or = mongoose.trusted([
+                { name: mongoose.trusted({ $regex: escaped, $options: 'i' }) },
+                { email: mongoose.trusted({ $regex: escaped, $options: 'i' }) },
+            ]);
+        }
+        const [users, count] = await Promise.all([
+            User.find(query).setOptions({ sanitizeFilter: false }).select('-password').sort({ [sortBy]: sortOrder === 'asc' ? 1 : -1, _id: 1 }).skip((page - 1) * limit).limit(limit),
+            User.countDocuments(query).setOptions({ sanitizeFilter: false }),
+        ]);
+        res.status(200).json({ success: true, count, currentPage: page, totalPages: Math.max(1, Math.ceil(count / limit)), data: users });
     } catch (error) {
         res.status(500).json({ success: false, error: "Server Error" });
     }
@@ -157,12 +198,28 @@ export const getAllUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const allowed = ['name', 'phone', 'address', 'gender', 'dateOfBirth', 'bio', 'role', 'status'];
+        const allowed = ['name', 'phone', 'role', 'status'];
         const updates = Object.fromEntries(Object.entries(req.body).filter(([key]) => allowed.includes(key)));
-        const previous = await User.findById(id).select('role status');
+        const previous = await User.findById(id).select('name email role status');
+        if (!previous) return res.status(404).json({ success: false, error: "User not found" });
+        if (previous.email !== req.body.targetEmail) return res.status(400).json({ success: false, error: "Target email does not match" });
+        const changingOwnAccess = previous._id.equals(req.user._id) && (updates.role && updates.role !== previous.role || updates.status === 'suspended');
+        if (changingOwnAccess) return res.status(409).json({ success: false, error: "You cannot remove or suspend your own administrator access" });
+        if (previous.role === 'admin' && (updates.role && updates.role !== 'admin' || updates.status === 'suspended')) {
+            const activeAdmins = await User.countDocuments({ role: 'admin', status: 'active' });
+            if (activeAdmins <= 1) return res.status(409).json({ success: false, error: "The last active administrator cannot be removed or suspended" });
+        }
+        if (updates.role !== undefined && updates.role !== previous.role) updates.adminScope = updates.role === 'admin' ? 'operations' : undefined;
         const user = await User.findByIdAndUpdate(id, updates, { new: true, runValidators: true }).select('-password');
-        
-        if (!user) return res.status(404).json({ success: false, error: "User not found" });
+        if (updates.status === 'suspended') {
+            await revokeUserSessions(user._id, "admin-suspension");
+            const { disconnectUserSessions } = await import('../config/socket.js');
+            disconnectUserSessions(user._id.toString());
+        }
+        await writeAuditEvent(req, 'admin-user-update', 'success', {
+            targetUserId: user._id,
+            metadata: { fields: Object.keys(updates), previousRole: previous.role, nextRole: user.role, previousStatus: previous.status, nextStatus: user.status, reason: req.body.reason },
+        });
 
         res.status(200).json({ success: true, message: "User updated successfully", data: user });
     } catch (error) {
@@ -174,20 +231,21 @@ export const deleteUser = async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, error: "User not found" });
-
-        if (previous.role !== user.role || previous.status !== user.status) {
-            await revokeUserSessions(user._id, previous.role !== user.role ? 'role-change' : 'account-status-change');
-            const { disconnectUserSessions } = await import('../config/socket.js');
-            disconnectUserSessions(user._id.toString());
-            await writeAuditEvent(req, previous.role !== user.role ? 'role-change' : 'account-status-change', 'success', {
-                targetUserId: user._id,
-                metadata: { from: previous.role !== user.role ? previous.role : previous.status, to: previous.role !== user.role ? user.role : user.status },
-            });
+        if (user.email !== req.body.targetEmail) return res.status(400).json({ success: false, error: "Target email does not match" });
+        if (user._id.equals(req.user._id)) return res.status(409).json({ success: false, error: "You cannot suspend your own account" });
+        if (user.role === 'admin') {
+            const activeAdmins = await User.countDocuments({ role: 'admin', status: 'active' });
+            if (activeAdmins <= 1) return res.status(409).json({ success: false, error: "The last active administrator cannot be suspended" });
         }
-        res.status(409).json({
-            success: false,
-            error: "Direct admin deletion is disabled because it can orphan health records. Use the approved privacy deletion workflow.",
-        });
+        user.status = "suspended";
+        await user.save();
+        const doctor = await Doctor.findOne({ userId: user._id });
+        if (doctor) { doctor.isAvailable = false; await doctor.save(); }
+        await revokeUserSessions(user._id, "admin-deactivation");
+        const { disconnectUserSessions } = await import('../config/socket.js');
+        disconnectUserSessions(user._id.toString());
+        await writeAuditEvent(req, 'account-deactivation', 'success', { targetUserId: user._id, metadata: { mode: "retained-records", reason: req.body.reason } });
+        res.status(200).json({ success: true, message: "User deactivated; dependent records were retained" });
     } catch (error) {
         res.status(500).json({ success: false, error: "Server Error" });
     }
@@ -196,6 +254,8 @@ export const deleteUser = async (req, res) => {
 export const getUserAppointments = async (req, res) => {
     try {
         const { id } = req.params;
+        const reason = String(req.get('x-break-glass-reason') || '').trim();
+        if (reason.length < 10) return res.status(400).json({ success: false, error: "A support or compliance reason is required" });
         const appointments = await Appointment.find({ patientId: id })
             .populate('doctorId', 'userId')
             .populate({
@@ -205,6 +265,7 @@ export const getUserAppointments = async (req, res) => {
             .populate('clinicId', 'name address')
             .sort({ date: -1 });
 
+        await writeAuditEvent(req, 'admin-appointment-history-access', 'success', { targetUserId: id, metadata: { reason } });
         res.status(200).json({ success: true, count: appointments.length, data: appointments });
     } catch (error) {
         res.status(500).json({ success: false, error: "Server Error" });
@@ -213,25 +274,33 @@ export const getUserAppointments = async (req, res) => {
 
 export const getAllAppointments = async (req, res) => {
     try {
-        const { page = 1, limit = 10, status, date } = req.query;
+        const { page = 1, limit = 10, status, date, timezone = "Asia/Kolkata", search = "", sortBy = "slotStartUtc", sortOrder = "desc" } = req.query;
         const query = {};
 
         if (status && status !== 'all') query.status = status;
         if (date) {
-            const queryDate = new Date(date);
-            const startOfDay = new Date(queryDate.setHours(0, 0, 0, 0));
-            const endOfDay = new Date(queryDate.setHours(23, 59, 59, 999));
-            query.date = { $gte: startOfDay, $lte: endOfDay };
+            const { start, end } = localDayRangeUtc(date, timezone);
+            query.slotStartUtc = mongoose.trusted({ $gte: start, $lt: end });
         }
 
-        const appointments = await Appointment.find(query)
+        if (search) {
+            const escaped = String(search).slice(0, 100).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const matchingUsers = await User.find({ $or: mongoose.trusted([
+                { name: mongoose.trusted({ $regex: escaped, $options: 'i' }) },
+                { email: mongoose.trusted({ $regex: escaped, $options: 'i' }) },
+            ]) }).setOptions({ sanitizeFilter: false }).select('_id').limit(200).lean();
+            query.patientId = mongoose.trusted({ $in: matchingUsers.map((item) => item._id) });
+        }
+        const allowedSort = new Set(['slotStartUtc', 'status', 'tokenNumber', 'createdAt']);
+        const sortField = allowedSort.has(sortBy) ? sortBy : 'slotStartUtc';
+        const appointments = await Appointment.find(query).setOptions({ sanitizeFilter: false })
             .populate('patientId', 'name email')
             .populate({
                 path: 'doctorId',
                 populate: { path: 'userId', select: 'name' }
             })
             .populate('clinicId', 'name')
-            .sort({ date: -1 })
+            .sort({ [sortField]: sortOrder === 'asc' ? 1 : -1, _id: 1 })
             .limit(limit * 1)
             .skip((page - 1) * limit);
 

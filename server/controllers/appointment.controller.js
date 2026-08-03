@@ -2,10 +2,12 @@ import mongoose from "mongoose";
 import Appointment from "../models/appointment.model.js";
 import Doctor from "../models/doctor.model.js";
 import Clinic from "../models/clinic.model.js";
-import { generateToken } from "../utils/tokenGenerator.js";
 import { addToQueue, removeFromQueue } from "../utils/queueManager.js";
 import { createTelehealthRoomId, isLegacyRoomId, isTelehealthWindowOpen } from "../utils/telehealth.js";
 import { createRoomGrant } from "../utils/roomGrant.js";
+import { reserveAndBook, releaseAppointmentSlot, rescheduleBooking } from "../services/booking.service.js";
+import { transitionAppointment } from "../services/appointmentState.service.js";
+import { notifyAppointment } from "../services/notification.service.js";
 
 const getStartOfDay = (value = new Date()) => {
   const date = new Date(value);
@@ -44,19 +46,6 @@ const canJoinTelehealth = async (user, appointment) => {
   return Boolean(doctor);
 };
 
-const ensureSlotAvailable = async ({ doctorId, clinicId, date, slotTime, excludeId }) => {
-  const conflict = await Appointment.findOne({
-    _id: excludeId ? { $ne: excludeId } : { $exists: true },
-    doctorId,
-    clinicId,
-    date: { $gte: getStartOfDay(date), $lte: getEndOfDay(date) },
-    slotTime,
-    status: { $nin: ['cancelled', 'no-show'] },
-  });
-
-  return !conflict;
-};
-
 const attachTelehealth = (appointment) => {
   if (appointment.consultationType !== 'video') {
     appointment.telehealthRoomId = undefined;
@@ -85,9 +74,9 @@ export const getAppointments = async (req, res) => {
       query.doctorId = doctor._id;
     }
     if (status && status !== 'all') query.status = status;
-    if (date) query.date = { $gte: getStartOfDay(date), $lte: getEndOfDay(date) };
+    if (date) query.date = mongoose.trusted({ $gte: getStartOfDay(date), $lte: getEndOfDay(date) });
 
-    const appointments = await populateAppointment(Appointment.find(query))
+    const appointments = await populateAppointment(Appointment.find(query).setOptions({ sanitizeFilter: false }))
       .sort({ date: 1, tokenNumber: 1 });
 
     res.status(200).json({ success: true, count: appointments.length, data: appointments });
@@ -119,60 +108,28 @@ export const getAppointment = async (req, res) => {
 
 export const createAppointment = async (req, res) => {
   try {
-    const { doctorId, clinicId, date, slotTime, symptoms, priority, consultationType, patientId } = req.body;
-    const actualPatientId = req.user.role === 'admin' && patientId ? patientId : req.user.id;
-
-    if (!doctorId || !date || !slotTime) {
-      return res.status(400).json({ success: false, error: "doctorId, date, and slotTime are required" });
-    }
-
-    const doctor = await Doctor.findById(doctorId);
-    if (!doctor) return res.status(404).json({ success: false, error: "Doctor not found" });
-    if (doctor.verification?.status !== 'approved' || !doctor.isAvailable) {
-      return res.status(409).json({ success: false, error: "This clinician is not currently eligible for booking" });
-    }
-
-    const actualClinicId = clinicId || doctor.clinicId;
-    if (actualClinicId.toString() !== doctor.clinicId.toString()) {
-      return res.status(400).json({ success: false, error: "Clinician is not assigned to the selected clinic" });
-    }
-    const clinic = await Clinic.findById(actualClinicId).select('isActive');
-    if (!clinic?.isActive) {
-      return res.status(409).json({ success: false, error: "This clinic is not currently accepting appointment requests" });
-    }
-    const appointmentDate = getStartOfDay(date);
-    const available = await ensureSlotAvailable({
-      doctorId,
-      clinicId: actualClinicId,
-      date: appointmentDate,
-      slotTime,
+    if (req.user.role !== "admin") req.body.priority = "normal";
+    const patientId = req.user.role === "admin" && req.body.patientId ? req.body.patientId : req.user.id;
+    const result = await reserveAndBook({
+      patientId,
+      payload: req.body,
+      idempotencyKey: req.get("Idempotency-Key"),
     });
-
-    if (!available) {
-      return res.status(409).json({ success: false, error: "Slot already booked" });
+    await notifyAppointment({ appointment: result.appointment, type: "booking-confirmation" });
+    if (result.appointment.consultationType === "video") await notifyAppointment({ appointment: result.appointment, type: "telehealth-ready" });
+    if (result.appointment.priority === "emergency" && !result.replayed) {
+      const { writeAuditEvent } = await import("../utils/audit.js");
+      await writeAuditEvent(req, "emergency-priority-assigned", "success", { targetUserId: result.appointment.patientId, metadata: { appointmentId: result.appointment._id.toString() } });
     }
-
-    const tokenNumber = await generateToken(actualClinicId, doctorId, appointmentDate);
-    const appointment = await Appointment.create({
-      patientId: actualPatientId,
-      doctorId,
-      clinicId: actualClinicId,
-      date: appointmentDate,
-      slotTime,
-      tokenNumber,
-      symptoms,
-      priority: priority || 'normal',
-      consultationType: consultationType || 'in-person',
-      status: 'booked',
+    res.status(result.replayed ? 200 : 201).json({
+      success: true,
+      replayed: result.replayed,
+      message: result.replayed ? "Original booking returned" : "Appointment created",
+      data: result.appointment,
     });
-
-    attachTelehealth(appointment);
-    await appointment.save();
-
-    res.status(201).json({ success: true, message: "Appointment created", data: appointment });
   } catch (error) {
-    console.error("Create Appointment Error:", error);
-    res.status(500).json({ success: false, error: error.message || "Server Error" });
+    if (!error.statusCode || error.statusCode >= 500) console.error("Create Appointment Error:", error.message);
+    res.status(error.statusCode || 500).json({ success: false, error: error.message || "Server Error" });
   }
 };
 
@@ -191,48 +148,25 @@ export const updateAppointment = async (req, res) => {
 
     const editableFieldsByRole = {
       patient: ['symptoms'],
-      doctor: ['status', 'notes'],
-      admin: ['doctorId', 'clinicId', 'slotTime', 'status', 'priority', 'symptoms', 'consultationType', 'notes'],
+      doctor: ['notes'],
+      admin: ['priority', 'symptoms', 'notes'],
     };
     const allowedFields = editableFieldsByRole[req.user.role] || [];
-    const canReschedule = req.user.role === 'admin';
-
-    const nextDate = canReschedule && req.body.date ? getStartOfDay(req.body.date) : appointment.date;
-    const nextSlot = canReschedule && req.body.slotTime ? req.body.slotTime : appointment.slotTime;
-    const nextDoctorId = canReschedule && req.body.doctorId ? req.body.doctorId : appointment.doctorId;
-    const nextClinicId = canReschedule && req.body.clinicId ? req.body.clinicId : appointment.clinicId;
-
-    if (
-      nextSlot !== appointment.slotTime ||
-      getStartOfDay(nextDate).getTime() !== getStartOfDay(appointment.date).getTime() ||
-      nextDoctorId.toString() !== appointment.doctorId.toString() ||
-      nextClinicId.toString() !== appointment.clinicId.toString()
-    ) {
-      const available = await ensureSlotAvailable({
-        doctorId: nextDoctorId,
-        clinicId: nextClinicId,
-        date: nextDate,
-        slotTime: nextSlot,
-        excludeId: appointment._id,
-      });
-      if (!available) return res.status(409).json({ success: false, error: "Slot already booked" });
-    }
-
     const statusChanged = req.body.status !== undefined && req.body.status !== appointment.status;
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) appointment[field] = req.body[field];
     });
-    if (statusChanged) {
-      appointment.telehealthGrantVersion = (appointment.telehealthGrantVersion || 0) + 1;
-    }
-    appointment.date = nextDate;
-    attachTelehealth(appointment);
     await appointment.save();
+    let current = appointment;
+    if (statusChanged) {
+      ({ appointment: current } = await transitionAppointment({ appointment, to: req.body.status, actor: req.user, reason: req.body.reason }));
+    }
 
-    if (appointment.status === 'waiting') await addToQueue(appointment._id);
-    if (['cancelled', 'completed', 'no-show'].includes(appointment.status)) await removeFromQueue(appointment);
+    if (current.status === 'waiting') await addToQueue(current._id);
+    if (['cancelled', 'completed', 'no-show'].includes(current.status)) await removeFromQueue(current);
+    if (['cancelled', 'no-show'].includes(current.status)) await releaseAppointmentSlot(current._id);
 
-    const populated = await populateAppointment(Appointment.findById(appointment._id));
+    const populated = await populateAppointment(Appointment.findById(current._id));
     res.status(200).json({ success: true, message: "Appointment updated", data: populated });
   } catch (error) {
     console.error("Update Appointment Error:", error);
@@ -249,14 +183,32 @@ export const deleteAppointment = async (req, res) => {
       return res.status(403).json({ success: false, error: "Not authorized" });
     }
 
-    appointment.status = 'cancelled';
-    appointment.telehealthGrantVersion = (appointment.telehealthGrantVersion || 0) + 1;
-    await appointment.save();
-    await removeFromQueue(appointment);
+    if (req.user.role === "patient" && appointment.slotStartUtc) {
+      const clinic = await Clinic.findById(appointment.clinicId).select("cancellationNoticeHours");
+      const cutoff = new Date(appointment.slotStartUtc).getTime() - (clinic?.cancellationNoticeHours || 0) * 60 * 60_000;
+      if (Date.now() > cutoff) return res.status(409).json({ success: false, error: "Cancellation window has closed; contact the clinic" });
+    }
+    const result = await transitionAppointment({ appointment, to: "cancelled", actor: req.user, reason: req.body?.reason });
+    await removeFromQueue(result.appointment);
+    await releaseAppointmentSlot(result.appointment._id);
+    await notifyAppointment({ appointment: result.appointment, type: "appointment-cancelled" });
     res.status(200).json({ success: true, message: "Appointment cancelled" });
   } catch (error) {
     console.error("Delete Appointment Error:", error);
     res.status(500).json({ success: false, error: "Server Error" });
+  }
+};
+
+export const rescheduleAppointment = async (req, res) => {
+  try {
+    const appointment = await Appointment.findById(req.params.id);
+    if (!appointment) return res.status(404).json({ success: false, error: "Appointment not found" });
+    if (!(await canAccessAppointment(req.user, appointment))) return res.status(403).json({ success: false, error: "Not authorized" });
+    const updated = await rescheduleBooking({ appointment, payload: req.body, actor: req.user });
+    await notifyAppointment({ appointment: updated, type: "appointment-rescheduled", suffix: updated.updatedAt?.toISOString?.() || String(updated.__v) });
+    return res.json({ success: true, message: "Appointment rescheduled", data: updated });
+  } catch (error) {
+    return res.status(error.statusCode || 500).json({ success: false, error: error.statusCode ? error.message : "Appointment could not be rescheduled" });
   }
 };
 

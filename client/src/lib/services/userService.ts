@@ -1,8 +1,8 @@
 import api from "../api";
 
 export const userService = {
-    getAllUsers: async () => {
-        const response = await api.get('/admin/users');
+    getAllUsers: async (params?: { page?: number; limit?: number; search?: string; role?: string; status?: string; sortBy?: string; sortOrder?: string }) => {
+        const response = await api.get('/admin/users', { params });
         return response.data;
     },
 
@@ -11,13 +11,13 @@ export const userService = {
         return response.data;
     },
 
-    deleteUser: async (id: string) => {
-        const response = await api.delete(`/admin/users/${id}`);
+    deleteUser: async (id: string, data: { targetEmail: string; reason: string }) => {
+        const response = await api.delete(`/admin/users/${id}`, { data });
         return response.data;
     },
 
-    getUserAppointments: async (id: string) => {
-        const response = await api.get(`/admin/users/${id}/appointments`);
+    getUserAppointments: async (id: string, reason: string) => {
+        const response = await api.get(`/admin/users/${id}/appointments`, { headers: { "X-Break-Glass-Reason": reason } });
         return response.data;
     }
 };

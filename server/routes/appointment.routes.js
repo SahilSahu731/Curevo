@@ -7,6 +7,7 @@ import {
   getTelehealthAccessByRoom,
   getTelehealthSession,
   updateAppointment,
+  rescheduleAppointment,
 } from '../controllers/appointment.controller.js';
 import { protect, authorize, requireVerifiedEmail } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
@@ -21,6 +22,7 @@ router.route('/')
   .post(authorize('patient', 'admin'), requireVerifiedEmail, validate(appointmentSchemas.create), createAppointment);
 
 router.get('/:id/telehealth', requireVerifiedEmail, getTelehealthSession);
+router.post('/:id/reschedule', authorize('patient', 'admin'), requireVerifiedEmail, validate(appointmentSchemas.reschedule), rescheduleAppointment);
 router.get('/telehealth/rooms/:roomId/access', requireVerifiedEmail, getTelehealthAccessByRoom);
 
 router.route('/:id')

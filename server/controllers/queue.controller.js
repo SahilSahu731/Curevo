@@ -3,6 +3,10 @@ import Appointment from "../models/appointment.model.js";
 import Doctor from "../models/doctor.model.js";
 import { addToQueue, emitQueueEvents, getQueuePosition, removeFromQueue } from "../utils/queueManager.js";
 import mongoose from "mongoose";
+import { transitionAppointment } from "../services/appointmentState.service.js";
+import { localDateInTimezone } from "../utils/scheduling.js";
+import { notifyAppointment } from "../services/notification.service.js";
+import Clinic from "../models/clinic.model.js";
 
 const getStartOfDay = (value = new Date()) => {
     const date = new Date(value);
@@ -44,38 +48,42 @@ export const joinQueue = async (req, res) => {
             return res.status(403).json({ success: false, error: "Not authorized to join this queue" });
         }
 
-        const today = getStartOfDay();
-        const appointmentDay = getStartOfDay(appointment.date);
-        if (appointmentDay.getTime() !== today.getTime()) {
+        const timezone = appointment.clinicTimezone || "Asia/Kolkata";
+        const today = localDateInTimezone(new Date(), timezone);
+        const appointmentDay = localDateInTimezone(appointment.slotStartUtc || appointment.date, timezone);
+        if (appointmentDay !== today) {
             return res.status(400).json({ success: false, error: "Patients can only join the queue on appointment day" });
         }
+        const clinic = await Clinic.findById(appointment.clinicId).select("checkInOpensMinutesBefore checkInClosesMinutesAfter");
+        const start = new Date(appointment.slotStartUtc || appointment.date).getTime();
+        const opens = start - (clinic?.checkInOpensMinutesBefore ?? 60) * 60_000;
+        const closes = start + (clinic?.checkInClosesMinutesAfter ?? 60) * 60_000;
+        if (Date.now() < opens || Date.now() > closes) return res.status(409).json({ success: false, error: "Check-in is outside the clinic's allowed window" });
 
         if (['completed', 'cancelled', 'no-show'].includes(appointment.status)) {
             return res.status(400).json({ success: false, error: `Cannot join queue for a ${appointment.status} appointment` });
         }
 
-        appointment.status = 'waiting';
-        appointment.checkInTime = appointment.checkInTime || Date.now();
-        await appointment.save();
-
-        await addToQueue(appointment._id);
+        const transition = await transitionAppointment({ appointment, to: "waiting", actor: req.user });
+        await addToQueue(transition.appointment._id);
+        await notifyAppointment({ appointment: transition.appointment, type: "check-in-open" });
         const queue = await populateQueue(Queue.findOne({
             doctorId: appointment.doctorId,
             clinicId: appointment.clinicId,
-            date: today,
+            localDate: today,
         }));
         const stats = await getQueuePosition(appointment._id);
 
         res.status(200).json({
             success: true,
             message: "Joined queue successfully",
-            appointment,
+            appointment: transition.appointment,
             queue,
             ...stats
         });
     } catch (error) {
-        console.error("Join Queue Error:", error);
-        res.status(500).json({ success: false, error: "Server Error" });
+        if (!error.statusCode) console.error("Join Queue Error:", error.message);
+        res.status(error.statusCode || 500).json({ success: false, error: error.statusCode ? error.message : "Server Error" });
     }
 };
 
@@ -101,34 +109,26 @@ export const updateQueueStatus = async (req, res) => {
             return res.status(403).json({ success: false, error: "Not authorized to update this queue" });
         }
 
-        appointment.status = status;
         if (notes !== undefined) appointment.notes = notes;
         if (status === 'waiting') {
-            appointment.checkInTime = appointment.checkInTime || Date.now();
             await appointment.save();
-            const queue = await addToQueue(appointment._id);
-            return res.status(200).json({ success: true, appointment, queue });
         }
-        if (status === 'in-progress') {
-            appointment.consultationStartTime = appointment.consultationStartTime || Date.now();
-        }
-        if (status === 'completed') {
-            appointment.consultationEndTime = appointment.consultationEndTime || Date.now();
-        }
-
-        await appointment.save();
-        const queue = await removeFromQueue(appointment);
-        if (queue && status === 'in-progress') emitQueueEvents(queue, appointment, "patient_called");
+        const result = await transitionAppointment({ appointment, to: status, actor: req.user, reason: req.body.reason });
+        const queue = status === "waiting" ? await addToQueue(result.appointment._id) : await removeFromQueue(result.appointment);
+        if (queue && status === 'in-progress') emitQueueEvents(queue, result.appointment, "patient_called");
+        if (status === "in-progress") await notifyAppointment({ appointment: result.appointment, type: "turn-now" });
+        if (status === "completed") await notifyAppointment({ appointment: result.appointment, type: "appointment-completed" });
+        if (status === "cancelled") await notifyAppointment({ appointment: result.appointment, type: "appointment-cancelled" });
 
         res.status(200).json({
             success: true,
             message: "Queue status updated",
-            appointment,
+            appointment: result.appointment,
             queue
         });
     } catch (error) {
-        console.error("Update Queue Error:", error);
-        res.status(500).json({ success: false, error: "Server Error" });
+        if (!error.statusCode) console.error("Update Queue Error:", error.message);
+        res.status(error.statusCode || 500).json({ success: false, error: error.statusCode ? error.message : "Server Error" });
     }
 };
 
@@ -179,11 +179,13 @@ export const getTodayQueueForDoctor = async (req, res) => {
             return res.status(403).json({ success: false, error: "Not authorized to view this queue" });
         }
 
-        const today = getStartOfDay();
+        const sample = await Appointment.findOne({ doctorId }).select("clinicTimezone").sort({ slotStartUtc: -1 }).lean();
+        const timezone = sample?.clinicTimezone || "Asia/Kolkata";
+        const today = localDateInTimezone(new Date(), timezone);
 
         const queue = await populateQueue(Queue.findOne({
             doctorId: doctorId,
-            date: today
+            localDate: today
         }));
 
         if (!queue) {

@@ -9,7 +9,6 @@ import {
   Calendar,
   Download,
   FileText,
-  Loader2,
   Pill,
   Search,
   Stethoscope,
@@ -79,8 +78,22 @@ const downloadRecordPdf = (record: MedicalRecord) => {
     });
   }
 
+  if (record.patientInstructions) {
+    y += 6;
+    doc.setFontSize(14);
+    doc.text("Patient Instructions", 14, y);
+    y += 8;
+    doc.setFontSize(11);
+    doc.splitTextToSize(record.patientInstructions, 180).forEach((line: string) => {
+      doc.text(line, 14, y);
+      y += 6;
+    });
+  }
+
   doc.save(`curevo-record-${record._id}.pdf`);
 };
+
+const EMPTY_RECORDS: MedicalRecord[] = [];
 
 export default function PatientRecordsPage() {
   const [search, setSearch] = useState("");
@@ -90,7 +103,7 @@ export default function PatientRecordsPage() {
     queryFn: () => medicalRecordService.getRecords(),
   });
 
-  const records: MedicalRecord[] = data?.data || [];
+  const records: MedicalRecord[] = data?.data ?? EMPTY_RECORDS;
   const filteredRecords = useMemo(() => {
     const query = search.toLowerCase();
     return records.filter((record) => {
@@ -202,6 +215,13 @@ export default function PatientRecordsPage() {
                     <Calendar className="h-3.5 w-3.5" />
                     Follow up {format(new Date(record.followUpDate), "PPP")}
                   </Badge>
+                )}
+
+                {record.patientInstructions && (
+                  <div>
+                    <p className="text-sm font-semibold">Patient instructions</p>
+                    <p className="mt-1 text-sm text-muted-foreground">{record.patientInstructions}</p>
+                  </div>
                 )}
               </CardContent>
             </Card>

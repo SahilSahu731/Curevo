@@ -429,18 +429,18 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Define a field-level visibility matrix for diagnosis, symptoms, prescriptions, treatment plan, clinician-private notes, follow-up, attachments, and metadata.
-- [ ] Rename fields to remove ambiguity, such as `patientInstructions` and `clinicianPrivateNotes`.
-- [ ] Split private notes into a distinct model or explicitly excluded API projection.
-- [ ] Ensure patient list/detail/PDF endpoints never return private notes.
-- [ ] Ensure only the authoring clinician and explicitly authorized clinical/admin roles can read or change private notes.
-- [ ] Record access and edits in an immutable audit trail.
-- [ ] Backfill or migrate existing data safely and verify historical records.
+- [x] Define a field-level visibility matrix for diagnosis, symptoms, prescriptions, treatment plan, clinician-private notes, follow-up, attachments, and metadata.
+- [x] Rename fields to remove ambiguity, such as `patientInstructions` and `clinicianPrivateNotes`.
+- [x] Split private notes into a distinct model or explicitly excluded API projection.
+- [x] Ensure patient list/detail/PDF endpoints never return private notes.
+- [x] Ensure only the authoring clinician and explicitly authorized clinical/admin roles can read or change private notes.
+- [x] Record access and edits in an immutable audit trail.
+- [x] Backfill or migrate existing data safely and verify historical records.
 
 ### Acceptance criteria
 
-- [ ] Automated field-level authorization tests prove private notes are absent from patient responses, logs, exports, caches, and PDFs.
-- [ ] UI copy and actual visibility match exactly.
+- [x] Automated field-level authorization tests prove private notes are absent from patient responses, logs, exports, caches, and PDFs.
+- [x] UI copy and actual visibility match exactly.
 
 ## M3-T02 — Strengthen medical-record authorization
 
@@ -448,13 +448,13 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Enforce role authorization for every list, detail, create, update, attachment, and export operation.
-- [ ] Verify the doctor is assigned to the referenced appointment and the appointment belongs to the patient.
-- [ ] Define whether a doctor may access only their own records or a broader care-team history; implement explicit consent and policy for broader access.
-- [ ] Prevent IDOR through guessed record, appointment, patient, or attachment IDs.
-- [ ] Restrict administrators to support/compliance use cases; consider break-glass access with reason capture.
-- [ ] Add immutable author, creation time, revision history, and correction/addendum workflow.
-- [ ] Prevent silent overwrite of finalized clinical records.
+- [x] Enforce role authorization for every list, detail, create, update, attachment, and export operation.
+- [x] Verify the doctor is assigned to the referenced appointment and the appointment belongs to the patient.
+- [x] Define whether a doctor may access only their own records or a broader care-team history; implement explicit consent and policy for broader access.
+- [x] Prevent IDOR through guessed record, appointment, patient, or attachment IDs.
+- [x] Restrict administrators to support/compliance use cases; consider break-glass access with reason capture.
+- [x] Add immutable author, creation time, revision history, and correction/addendum workflow.
+- [x] Prevent silent overwrite of finalized clinical records.
 
 ## M3-T03 — Secure medical and verification file handling
 
@@ -462,14 +462,14 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Do not trust MIME type or extension supplied by the browser; inspect file signatures.
-- [ ] Separate image uploads from doctor-license documents and apply per-purpose allowlists.
+- [x] Do not trust MIME type or extension supplied by the browser; inspect file signatures.
+- [x] Separate image uploads from doctor-license documents and apply per-purpose allowlists.
 - [ ] Add antivirus/malware scanning and quarantine before availability.
-- [ ] Strip image metadata where appropriate and re-encode profile images.
-- [ ] Use private object storage for medical records and license documents.
-- [ ] Replace permanent public Cloudinary URLs with short-lived signed download URLs.
-- [ ] Authorize every download server-side and log access.
-- [ ] Define file-size, page-count, pixel-dimension, decompression, field-count, timeout, and concurrent-upload limits.
+- [x] Strip image metadata where appropriate and re-encode profile images.
+- [x] Use private object storage for medical records and license documents.
+- [x] Replace permanent public Cloudinary URLs with short-lived signed download URLs.
+- [x] Authorize every download server-side and log access.
+- [x] Define file-size, page-count, pixel-dimension, decompression, field-count, timeout, and concurrent-upload limits.
 - [ ] Clean up partial/aborted uploads and orphaned objects.
 - [ ] Add retention and deletion jobs synchronized with database state.
 
@@ -479,13 +479,13 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Enforce TLS for browser, API, database, storage, socket, and TURN traffic.
+- [x] Enforce TLS for browser, API, database, storage, socket, and TURN traffic.
 - [ ] Confirm database and backup encryption; consider application-level encryption for especially sensitive fields.
 - [ ] Use a managed secrets store and rotate JWT, OAuth, database, Cloudinary, TURN, and email secrets.
-- [ ] Redact authorization headers, cookies, reset tokens, room grants, symptoms, diagnoses, prescriptions, private notes, and file URLs from logs.
-- [ ] Define log retention and access control.
-- [ ] Add data classification and code-review guidance.
-- [ ] Verify environment files remain gitignored and add automated secret scanning.
+- [x] Redact authorization headers, cookies, reset tokens, room grants, symptoms, diagnoses, prescriptions, private notes, and file URLs from logs.
+- [x] Define log retention and access control.
+- [x] Add data classification and code-review guidance.
+- [x] Verify environment files remain gitignored and add automated secret scanning.
 
 ## M3-T05 — Add patient data rights and lifecycle operations
 
@@ -493,16 +493,18 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Implement account data export in a documented portable format.
-- [ ] Implement deletion/anonymization according to medical-record retention obligations.
-- [ ] Handle dependent appointments, reviews, queues, doctor profiles, files, sessions, notifications, feedback, and audit records deliberately.
-- [ ] Prevent orphaned records when an admin deletes a user, doctor, or clinic.
-- [ ] Add deactivate/suspend workflows rather than destructive deletion where records must be retained.
+- [x] Implement account data export in a documented portable format.
+- [x] Implement deletion/anonymization according to medical-record retention obligations.
+- [x] Handle dependent appointments, reviews, queues, doctor profiles, files, sessions, notifications, feedback, and audit records deliberately.
+- [x] Prevent orphaned records when an admin deletes a user, doctor, or clinic.
+- [x] Add deactivate/suspend workflows rather than destructive deletion where records must be retained.
 - [ ] Add restoration and mistaken-deletion processes.
 
 ---
 
 # M4 — Doctor Trust, Booking, Queue, Reviews, and Data Integrity
+
+Implementation status: **completed in the application code and development database on 2026-08-03**. Production operation still depends on the release gates and external approvals recorded in `docs/governance/m4-booking-queue-reviews.md`.
 
 ## M4-T01 — Enforce doctor onboarding and verification states
 
@@ -510,14 +512,14 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Define onboarding states: account created, profile incomplete, verification not submitted, pending, approved, rejected, suspended, expired.
-- [ ] Prevent doctor accounts from creating arbitrary profiles for another user.
-- [ ] Require complete qualification, specialization, clinic association, license number, and approved document before public listing.
-- [ ] Filter public doctor queries and clinic doctor lists to approved, active doctors only.
-- [ ] Prevent bookings and availability publication for unapproved/suspended doctors.
-- [ ] Show truthful verification status to the doctor and admin.
-- [ ] Add rejection reasons, resubmission, expiry dates, renewal reminders, and suspension audit events.
-- [ ] Make admin verification require MFA and record reviewer, timestamp, reason, and prior state.
+- [x] Define onboarding states: account created, profile incomplete, verification not submitted, pending, approved, rejected, suspended, expired.
+- [x] Prevent doctor accounts from creating arbitrary profiles for another user.
+- [x] Require complete qualification, specialization, clinic association, license number, and approved document before public listing.
+- [x] Filter public doctor queries and clinic doctor lists to approved, active doctors only.
+- [x] Prevent bookings and availability publication for unapproved/suspended doctors.
+- [x] Show truthful verification status to the doctor and admin.
+- [x] Add rejection reasons, resubmission, expiry dates, renewal reminders, and suspension audit events.
+- [x] Make admin verification require MFA and record reviewer, timestamp, reason, and prior state.
 
 ## M4-T02 — Build authoritative availability validation
 
@@ -525,14 +527,14 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Store clinic and doctor schedules in a canonical timezone-aware format.
-- [ ] Validate date, local time, working day, breaks, blocked slots, leave, appointment duration, buffer, maximum daily capacity, and consultation type server-side.
-- [ ] Reject past appointments and dates beyond the supported booking horizon.
-- [ ] Verify clinic ID matches the doctor’s permitted clinic relationship.
-- [ ] Verify the clinic and doctor are active and the doctor is verified.
-- [ ] Define rescheduling, cancellation cutoff, late-arrival, no-show, and emergency behavior.
-- [ ] Make slot responses and booking validation use the same scheduling service.
-- [ ] Do not trust fee, doctor name, specialization, clinic, or availability passed in URL query parameters.
+- [x] Store clinic and doctor schedules in a canonical timezone-aware format.
+- [x] Validate date, local time, working day, breaks, blocked slots, leave, appointment duration, buffer, maximum daily capacity, and consultation type server-side.
+- [x] Reject past appointments and dates beyond the supported booking horizon.
+- [x] Verify clinic ID matches the doctor’s permitted clinic relationship.
+- [x] Verify the clinic and doctor are active and the doctor is verified.
+- [x] Define rescheduling, cancellation cutoff, late-arrival, no-show, and emergency behavior.
+- [x] Make slot responses and booking validation use the same scheduling service.
+- [x] Do not trust fee, doctor name, specialization, clinic, or availability passed in URL query parameters.
 
 ## M4-T03 — Make slot allocation concurrency-safe
 
@@ -540,18 +542,18 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Add a database-level unique constraint for active doctor/clinic/date/slot occupancy or use a dedicated slot-reservation model.
-- [ ] Normalize slot time before indexing; avoid free-form strings as the authoritative value.
-- [ ] Use transactions or atomic conditional writes for reservation and appointment creation.
-- [ ] Handle duplicate-key conflicts as a normal 409 response.
-- [ ] Add idempotency keys to booking requests so retries cannot create duplicates.
-- [ ] Add temporary reservation expiry if a multi-step/payment flow requires it.
-- [ ] Load-test simultaneous booking attempts for the same and different slots.
+- [x] Add a database-level unique constraint for active doctor/clinic/date/slot occupancy or use a dedicated slot-reservation model.
+- [x] Normalize slot time before indexing; avoid free-form strings as the authoritative value.
+- [x] Use transactions or atomic conditional writes for reservation and appointment creation.
+- [x] Handle duplicate-key conflicts as a normal 409 response.
+- [x] Add idempotency keys to booking requests so retries cannot create duplicates.
+- [x] Add temporary reservation expiry if a multi-step/payment flow requires it.
+- [x] Load-test simultaneous booking attempts for the same and different slots.
 
 ### Acceptance criteria
 
-- [ ] Exactly one of at least 100 concurrent same-slot attempts succeeds.
-- [ ] Client retries return the original booking rather than creating another appointment.
+- [x] Exactly one of at least 100 concurrent same-slot attempts succeeds.
+- [x] Client retries return the original booking rather than creating another appointment.
 
 ## M4-T04 — Make queue token generation atomic
 
@@ -559,12 +561,12 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Replace “find maximum token then add one” with an atomic per-clinic/per-doctor/per-day counter.
-- [ ] Allocate token and create appointment in one transaction where supported.
-- [ ] Define timezone boundaries for “day.”
-- [ ] Preserve uniqueness at the database layer.
-- [ ] Define behavior after cancellations; do not reuse tokens unless explicitly intended.
-- [ ] Test concurrent allocation, database retry, rollback, and midnight boundary behavior.
+- [x] Replace “find maximum token then add one” with an atomic per-clinic/per-doctor/per-day counter.
+- [x] Allocate token and create appointment in one transaction where supported.
+- [x] Define timezone boundaries for “day.”
+- [x] Preserve uniqueness at the database layer.
+- [x] Define behavior after cancellations; do not reuse tokens unless explicitly intended.
+- [x] Test concurrent allocation, database retry, rollback, and midnight boundary behavior.
 
 ## M4-T05 — Formalize appointment and queue state machines
 
@@ -572,15 +574,15 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Define allowed appointment transitions for booked, checked-in/waiting, called/in-progress, completed, cancelled, and no-show.
-- [ ] Define which role can perform each transition and under what timing conditions.
-- [ ] Reject invalid transitions such as completing a cancelled appointment or checking in twice.
-- [ ] Make queue membership update atomically with appointment status.
-- [ ] Prevent duplicate queue entries and duplicate “call next” operations under concurrency.
-- [ ] Calculate wait time from doctor/clinic duration and active queue state rather than a hard-coded 15 minutes.
-- [ ] Define emergency-priority policy, authorization, auditing, and fairness safeguards.
-- [ ] Make socket events derive from committed database state.
-- [ ] Add idempotency and optimistic concurrency/version checks to state changes.
+- [x] Define allowed appointment transitions for booked, checked-in/waiting, called/in-progress, completed, cancelled, and no-show.
+- [x] Define which role can perform each transition and under what timing conditions.
+- [x] Reject invalid transitions such as completing a cancelled appointment or checking in twice.
+- [x] Make queue membership update atomically with appointment status.
+- [x] Prevent duplicate queue entries and duplicate “call next” operations under concurrency.
+- [x] Calculate wait time from doctor/clinic duration and active queue state rather than a hard-coded 15 minutes.
+- [x] Define emergency-priority policy, authorization, auditing, and fairness safeguards.
+- [x] Make socket events derive from committed database state.
+- [x] Add idempotency and optimistic concurrency/version checks to state changes.
 
 ## M4-T06 — Correct date, timezone, and scheduling behavior
 
@@ -588,11 +590,11 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Choose canonical storage in UTC plus explicit clinic timezone.
-- [ ] Avoid server-local `setHours` for clinic-day calculations.
-- [ ] Test daylight-saving changes, non-hour offsets, midnight boundaries, browser/server timezone mismatch, and invalid dates.
-- [ ] Display appointment timezone clearly and include it in reminders and telehealth windows.
-- [ ] Define localization for dates, currencies, phone numbers, and units.
+- [x] Choose canonical storage in UTC plus explicit clinic timezone.
+- [x] Avoid server-local `setHours` for clinic-day calculations.
+- [x] Test daylight-saving changes, non-hour offsets, midnight boundaries, browser/server timezone mismatch, and invalid dates.
+- [x] Display appointment timezone clearly and include it in reminders and telehealth windows.
+- [x] Define localization for dates, currencies, phone numbers, and units.
 
 ## M4-T07 — Make reviews verified and abuse-resistant
 
@@ -600,14 +602,14 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Allow only patient accounts to review.
-- [ ] Require a completed appointment with the reviewed doctor or clinic.
-- [ ] Associate each review with an appointment and enforce one review per appointment.
-- [ ] Define edit window, deletion, moderation, reporting, appeal, and provider response behavior.
-- [ ] Validate comment length/content and reject invalid doctor/clinic IDs.
-- [ ] Add spam/rate controls and audit moderation actions.
-- [ ] Remove hard-coded ratings from cards; display computed counts and an honest “No reviews yet” state.
-- [ ] Recompute/cache aggregates safely and test rounding.
+- [x] Allow only patient accounts to review.
+- [x] Require a completed appointment with the reviewed doctor or clinic.
+- [x] Associate each review with an appointment and enforce one review per appointment.
+- [x] Define edit window, deletion, moderation, reporting, appeal, and provider response behavior.
+- [x] Validate comment length/content and reject invalid doctor/clinic IDs.
+- [x] Add spam/rate controls and audit moderation actions.
+- [x] Remove hard-coded ratings from cards; display computed counts and an honest “No reviews yet” state.
+- [x] Recompute/cache aggregates safely and test rounding.
 
 ## M4-T08 — Add transactional notifications
 
@@ -615,11 +617,11 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Select email/SMS/push providers and obtain user consent where required.
-- [ ] Send verification, booking confirmation, reschedule, cancellation, check-in, queue call, telehealth link, follow-up, and password-recovery messages.
-- [ ] Use server-generated links and never include excessive health information.
-- [ ] Add templates, localization, delivery status, retries, deduplication, bounce handling, and user preferences.
-- [ ] Add an in-app notification API/UI if the existing notification model is retained.
+- [x] Select email/SMS/push providers and obtain user consent where required.
+- [x] Send verification, booking confirmation, reschedule, cancellation, check-in, queue call, telehealth link, follow-up, and password-recovery messages.
+- [x] Use server-generated links and never include excessive health information.
+- [x] Add templates, localization, delivery status, retries, deduplication, bounce handling, and user preferences.
+- [x] Add an in-app notification API/UI if the existing notification model is retained.
 
 ---
 

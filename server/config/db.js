@@ -30,6 +30,7 @@ const connectDB = async () => {
 
   try {
     const conn = await mongoose.connect(uri, {
+      ...(process.env.NODE_ENV === "production" ? { tls: true } : {}),
       serverSelectionTimeoutMS: Number(
         process.env.MONGO_SERVER_SELECTION_TIMEOUT_MS || DEFAULT_SERVER_SELECTION_TIMEOUT_MS
       ),
@@ -41,7 +42,7 @@ const connectDB = async () => {
     if (isSrvLookupError(error) && uri.startsWith("mongodb+srv://")) {
       console.error(`Could not resolve Atlas SRV host: ${getMongoHost(uri)}`);
       console.error("Fix MONGO_URI with the exact Atlas connection string, or use local dev MongoDB:");
-      console.error("MONGO_URI=mongodb://127.0.0.1:27017/curevo");
+      console.error("Set MONGO_URI to a local mongodb://127.0.0.1:27017/curevo value when developing.");
     }
 
     throw error;

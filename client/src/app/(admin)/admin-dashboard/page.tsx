@@ -1,6 +1,7 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
+import Link from "next/link";
 import { 
     Users, 
     Building2, 
@@ -19,24 +20,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { adminService } from "@/lib/services/adminService";
-import { toast } from "sonner";
 
 export default function AdminDashboard() {
-    const queryClient = useQueryClient();
     const { data, isLoading } = useQuery({
         queryKey: ["admin-dashboard"],
         queryFn: adminService.getDashboardStats,
-    });
-
-    const reviewMutation = useMutation({
-        mutationFn: ({ doctorId, status }: { doctorId: string; status: "approved" | "rejected" }) =>
-            adminService.reviewDoctorVerification(doctorId, { status }),
-        onSuccess: () => {
-            toast.success("Verification updated");
-            queryClient.invalidateQueries({ queryKey: ["admin-dashboard"] });
-            queryClient.invalidateQueries({ queryKey: ["admin-doctor-verifications"] });
-        },
-        onError: () => toast.error("Failed to update verification"),
     });
 
     const statsData = data?.stats || {};
@@ -58,10 +46,9 @@ export default function AdminDashboard() {
                     <h1 className="text-3xl font-bold tracking-tight">Admin Console</h1>
                     <p className="text-muted-foreground">System overview and management controls.</p>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline">Open Feedback: {statsData.openFeedback || 0}</Button>
-                    <Button>Generate Report</Button>
-                </div>
+                <Button variant="outline" asChild>
+                    <Link href="/admin-dashboard/feedback">Open feedback: {statsData.openFeedback || 0}</Link>
+                </Button>
             </div>
 
             {/* Stats Grid */}
@@ -119,12 +106,7 @@ export default function AdminDashboard() {
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button size="sm" className="flex-1" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate({ doctorId: doctor._id, status: "approved" })}>
-                                        <CheckCircle2 className="mr-1 h-4 w-4" /> Approve
-                                    </Button>
-                                    <Button size="sm" variant="outline" className="flex-1" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate({ doctorId: doctor._id, status: "rejected" })}>
-                                        Reject
-                                    </Button>
+                                    <Button size="sm" className="flex-1" asChild><Link href="/admin-dashboard/doctors"><CheckCircle2 className="mr-1 h-4 w-4" /> Review</Link></Button>
                                 </div>
                             </div>
                          )) : <div className="py-8 text-center text-sm text-muted-foreground">No pending doctors.</div>}

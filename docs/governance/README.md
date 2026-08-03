@@ -18,5 +18,7 @@ Documents:
 - [Release checklist](./release-checklist.md)
 - [M1 dependency and authentication record](./m1-auth-dependency-record.md)
 - [M2 telehealth privacy, reliability, and safety record](./m2-telehealth-record.md)
+- [M3 medical records and file safety record](./m3-medical-records-file-safety.md)
+- [M4 booking, queue, reviews, and notifications record](./m4-booking-queue-reviews.md)
 
 Run `npm run verify:m0` in `server/` before review. This does not replace privacy, legal, security, or clinical approval.

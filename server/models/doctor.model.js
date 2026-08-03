@@ -45,7 +45,7 @@ const DoctorSchema = new mongoose.Schema(
     verification: {
       status: {
         type: String,
-        enum: ['not-submitted', 'pending', 'approved', 'rejected'],
+        enum: ['not-submitted', 'pending', 'approved', 'rejected', 'suspended', 'expired'],
         default: 'not-submitted',
         index: true,
       },
@@ -65,6 +65,21 @@ const DoctorSchema = new mongoose.Schema(
       reviewedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
+      },
+      expiresAt: Date,
+      rejectionReason: { type: String, trim: true },
+      suspendedAt: Date,
+      suspensionReason: { type: String, trim: true },
+      history: {
+        type: [{
+          from: String,
+          to: String,
+          reason: String,
+          actorUserId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+          changedAt: { type: Date, default: Date.now },
+        }],
+        default: [],
+        select: false,
       },
       notes: {
         type: String,
@@ -100,6 +115,14 @@ const DoctorSchema = new mongoose.Schema(
           reason: { type: String, trim: true },
         }
       ],
+      default: [],
+    },
+    leavePeriods: {
+      type: [{
+        startAt: { type: Date, required: true },
+        endAt: { type: Date, required: true },
+        reason: { type: String, trim: true },
+      }],
       default: [],
     },
   },

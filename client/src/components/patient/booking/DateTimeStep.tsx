@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 export default function DateTimeStep() {
-    const { doctorId, clinicId, setDate, setSlot, date, slotTime, prevStep, reset, doctorName, clinicName } = useBookingStore();
+    const { doctorId, clinicId, setDate, setSlot, date, slotTime, idempotencyKey, prevStep, reset, doctorName, clinicName } = useBookingStore();
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
     const router = useRouter();
 
@@ -44,6 +44,7 @@ export default function DateTimeStep() {
             clinicId,
             date: formattedDate,
             slotTime,
+            idempotencyKey,
             symptoms: "Regular checkup" // Add symptom input if needed
         });
     };

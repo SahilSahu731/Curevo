@@ -35,7 +35,7 @@ import {
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { patientService } from "@/lib/services/patientService";
-import { format } from "date-fns";
+import { formatAppointmentTime } from "@/lib/appointmentTime";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -54,6 +54,8 @@ interface Appointment {
     };
     date: string;
     slotTime: string;
+    slotStartUtc?: string;
+    clinicTimezone?: string;
     tokenNumber: number;
     status: string;
     consultationType?: "in-person" | "video";
@@ -165,11 +167,11 @@ export default function PatientAppointments() {
                                     <div className="space-y-3 mt-2">
                                         <div className="flex items-center text-sm gap-3 p-2 rounded-lg bg-muted/30">
                                             <Calendar className="h-4 w-4 text-primary" />
-                                            <span className="font-medium">{format(new Date(appt.date), 'EEEE, MMMM do yyyy')}</span>
+                                            <span className="font-medium">{formatAppointmentTime(appt)}</span>
                                         </div>
                                         <div className="flex items-center text-sm gap-3 p-2 rounded-lg bg-muted/30">
                                             <Clock className="h-4 w-4 text-primary" />
-                                            <span className="font-medium">{appt.slotTime}</span>
+                                            <span className="font-medium">{appt.clinicTimezone || "Asia/Kolkata"}</span>
                                         </div>
                                         <div className="flex items-center text-sm gap-3 p-2 rounded-lg bg-muted/30">
                                             <MapPin className="h-4 w-4 text-primary" />

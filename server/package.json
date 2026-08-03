@@ -9,9 +9,18 @@
     "seed": "node scripts/seed.js",
     "audit:data": "node scripts/auditDataProvenance.js",
     "tag:legacy-seed": "node scripts/tagLegacySyntheticData.js",
+    "migrate:m3-records": "node scripts/migrateMedicalRecords.js",
+    "retention:sweep": "node scripts/retentionSweep.js",
+    "notifications:reminders": "node scripts/sendAppointmentReminders.js",
+    "migrate:m4-integrity": "node scripts/migrateM4Integrity.js",
+    "doctors:verification-expiry": "node scripts/expireDoctorVerifications.js",
+    "verify:m4-concurrency": "node scripts/verifyM4Concurrency.js",
     "test": "node --test tests/*.test.js",
     "verify:m0": "node --test tests/*.test.js",
-    "verify:m1": "node --test tests/*.test.js"
+    "verify:m1": "node --test tests/*.test.js",
+    "verify:m3": "node --test tests/*.test.js"
+    ,"verify:m4": "node --test tests/*.test.js",
+    "verify:m5": "node --test tests/*.test.js"
   },
   "keywords": [],
   "author": "",

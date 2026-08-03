@@ -16,10 +16,14 @@ const QueueSchema = new mongoose.Schema(
       type: Date, // Date of the queue (should be reset daily)
       required: true,
     },
+    localDate: { type: String, index: true },
+    timezone: { type: String, default: 'Asia/Kolkata' },
     currentToken: {
       type: Number,
       default: 0, // The token number currently being served
     },
+    currentAppointmentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Appointment' },
+    consecutiveEmergencyCalls: { type: Number, default: 0, min: 0 },
     appointmentIds: {
       type: [{
         type: mongoose.Schema.Types.ObjectId,
@@ -45,6 +49,7 @@ QueueSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, s
 
 // Compound index to ensure only ONE queue exists per Doctor/Clinic per Day
 QueueSchema.index({ doctorId: 1, clinicId: 1, date: 1 }, { unique: true });
+QueueSchema.index({ doctorId: 1, clinicId: 1, localDate: 1 }, { unique: true, sparse: true });
 
 const Queue = mongoose.models.Queue || mongoose.model("Queue", QueueSchema);
 export default Queue;

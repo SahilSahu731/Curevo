@@ -1,4 +1,5 @@
-import './config/env.js';
+import { validateProductionEnvironment } from './config/env.js';
+validateProductionEnvironment();
 import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser';
@@ -21,7 +22,9 @@ import medicalRecordRoutes from './routes/medicalRecord.routes.js';
 import feedbackRoutes from './routes/feedback.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import reviewRoutes from './routes/review.routes.js';
+import notificationRoutes from './routes/notification.routes.js';
 import clinicReviewRoutes from './routes/clinicReview.routes.js';
+import supportRoutes from './routes/support.routes.js';
 import { enforceProductionFreeze } from './middlewares/productionFreeze.middleware.js';
 import { validateCsrf } from './middlewares/csrf.middleware.js';
 import { correlationId, noStore, rejectOperatorInjection } from './middlewares/requestSecurity.middleware.js';
@@ -39,7 +42,7 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 })); 
 app.use(correlationId);
-app.use(morgan(':method :url :status :response-time ms'));
+app.use(morgan((tokens, req, res) => `${tokens.method(req, res)} ${req.path} ${tokens.status(req, res)} ${tokens['response-time'](req, res)} ms`));
 app.use(compression());
 
 const apiLimiter = rateLimit({
@@ -89,6 +92,8 @@ app.use("/api/feedback", feedbackRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/clinic-reviews", clinicReviewRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/support", supportRoutes);
 
 // Test route
 app.get("/test", (req, res) => {

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { doctorService } from "@/lib/services/doctorService";
 import { patientService } from "@/lib/services/patientService";
+import { formatCurrency } from "@/lib/localization";
 import { useAuthStore } from "@/store/authStore";
 import { 
     MapPin, 
@@ -95,7 +96,7 @@ export default function DoctorProfilePage() {
         mutationFn: patientService.bookAppointment,
         onSuccess: (data) => {
             toast.success("Appointment booked successfully!");
-            router.push('/dashboard/appointments');
+            router.push('/patient-dashboard/appointments');
         },
         onError: (error: any) => {
             toast.error(error.response?.data?.error || "Failed to book appointment");
@@ -108,12 +109,9 @@ export default function DoctorProfilePage() {
             router.push('/login?redirect=/doctors/' + id);
             return;
         }
-        // Redirect to booking page with doctor info
+        // Only stable identifiers cross the URL boundary; booking reloads authoritative details.
         const params = new URLSearchParams({
             doctorId: id,
-            doctorName: doctor?.userId?.name || '',
-            specialization: doctor?.specialization || '',
-            fee: doctor?.consultationFee?.toString() || '0',
             clinicId: doctor?.clinicId?._id || ''
         });
         router.push(`/book?${params.toString()}`);
@@ -399,7 +397,7 @@ export default function DoctorProfilePage() {
                                 <CardHeader className="pb-4">
                                     <CardTitle className="flex justify-between items-center">
                                         <span>Book Appointment</span>
-                                        <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200">${doctor.consultationFee}</Badge>
+                                        <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-200">{formatCurrency(doctor.consultationFee)}</Badge>
                                     </CardTitle>
                                     <CardDescription>Select a date and time to reserve.</CardDescription>
                                 </CardHeader>
@@ -565,7 +563,7 @@ function SimilarDoctors({ specialization, currentDoctorId }: { specialization: s
                                     <span>{doc.experience} Yrs</span>
                                 </div>
                                 <div className="font-semibold text-emerald-600 dark:text-emerald-400">
-                                    ${doc.consultationFee}
+                                    {formatCurrency(doc.consultationFee)}
                                 </div>
                             </div>
                             
@@ -608,6 +606,15 @@ function DoctorReviews({ doctorId, doctorName }: { doctorId: string, doctorName?
         queryKey: ['reviews', doctorId],
         queryFn: () => doctorService.getReviews(doctorId),
     });
+    const { data: completedVisits } = useQuery({
+        queryKey: ['completed-visits-for-review', doctorId, user?._id],
+        queryFn: () => patientService.getMyAppointments('completed'),
+        enabled: user?.role === 'patient',
+    });
+    const eligibleAppointment = completedVisits?.appointments?.find((appointment: any) => {
+        const appointmentDoctorId = appointment.doctorId?._id || appointment.doctorId;
+        return String(appointmentDoctorId) === doctorId;
+    });
 
     const createReviewMutation = useMutation({
         mutationFn: doctorService.createReview,
@@ -619,7 +626,7 @@ function DoctorReviews({ doctorId, doctorName }: { doctorId: string, doctorName?
             queryClient.invalidateQueries({ queryKey: ['reviews', doctorId] });
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Failed to submit review");
+            toast.error(error.response?.data?.error || "Failed to submit review");
         }
     });
 
@@ -636,7 +643,11 @@ function DoctorReviews({ doctorId, doctorName }: { doctorId: string, doctorName?
              toast.error("Please write a comment");
              return;
         }
-        createReviewMutation.mutate({ doctorId, rating, comment });
+        if (!eligibleAppointment) {
+            toast.error("A completed appointment with this clinician is required");
+            return;
+        }
+        createReviewMutation.mutate({ appointmentId: eligibleAppointment._id, rating, comment });
     };
 
     // Calculate stats

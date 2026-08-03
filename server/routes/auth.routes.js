@@ -34,7 +34,7 @@ import {
 import { issueCsrfToken } from "../middlewares/csrf.middleware.js";
 import { protect } from "../middlewares/auth.middleware.js";
 import { beginOAuth, validateOAuthState } from "../middlewares/oauthState.middleware.js";
-import upload, { validateUploadSignature } from "../middlewares/upload.middleware.js";
+import upload, { uploadTimeout, validateProfileImage, validateUploadSignature } from "../middlewares/upload.middleware.js";
 import { validate } from "../middlewares/validate.middleware.js";
 import { authSchemas } from "../validations/schemas.js";
 
@@ -70,7 +70,7 @@ router.post("/consents", recordConsent);
 router.delete("/account", deleteAccount);
 router.put("/password", passwordChangeLimiter, validate(authSchemas.passwordChange), updatePassword);
 router.put("/updatedetails", updateDetails);
-router.put("/updateimage", upload.single("image"), validateUploadSignature, updateProfileImage);
+router.put("/updateimage", uploadTimeout, upload.single("image"), validateUploadSignature, validateProfileImage, updateProfileImage);
 router.post("/verify-email/resend", resendLimiter, resendVerification);
 router.post("/change-email", passwordChangeLimiter, validate(authSchemas.emailChange), requestEmailChange);
 router.post("/mfa/setup", beginMfaSetup);

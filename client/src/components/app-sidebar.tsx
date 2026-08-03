@@ -14,7 +14,8 @@ import {
   Clock,
   LogOut,
   Building2,
-  LayoutDashboard
+  LayoutDashboard,
+  Bell,
 } from "lucide-react"
 
 import {
@@ -44,6 +45,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     { title: "Queue Management", url: "/doctor-dashboard", icon: Clock },
     { title: "Patients", url: "/doctor-dashboard/appointments", icon: Users },
     { title: "Appointments", url: "/doctor-dashboard/appointments", icon: Calendar },
+    { title: "Notifications", url: "/doctor-dashboard/notifications", icon: Bell },
     { title: "Profile", url: "/profile", icon: User },
     { title: "Settings", url: "/profile", icon: Settings },
   ]
@@ -54,16 +56,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     { title: "Find Doctors", url: "/doctors", icon: Search },
     { title: "Medical Records", url: "/patient-dashboard/records", icon: Activity },
     { title: "Feedback", url: "/patient-dashboard/feedback", icon: Inbox },
+    { title: "Notifications", url: "/patient-dashboard/notifications", icon: Bell },
     { title: "Profile", url: "/profile", icon: User },
     { title: "Settings", url: "/profile", icon: Settings },
   ]
 
   const adminItems = [
     { title: "Dashboard", url: "/admin-dashboard", icon: LayoutDashboard },
+    { title: "Appointments", url: "/admin-dashboard/appointments", icon: Calendar },
     { title: "Clinics", url: "/admin-dashboard/clinics", icon: Building2 },
     { title: "Doctors", url: "/admin-dashboard/doctors", icon: Stethoscope },
     { title: "Users", url: "/admin-dashboard/users", icon: Users },
     { title: "Feedback", url: "/admin-dashboard/feedback", icon: Inbox },
+    { title: "Notifications", url: "/admin-dashboard/notifications", icon: Bell },
     { title: "Profile", url: "/profile", icon: User },
     { title: "Settings", url: "/profile", icon: Settings },
   ]

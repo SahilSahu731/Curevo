@@ -1,16 +1,20 @@
 import Clinic from "../models/clinic.model.js";
 import Doctor from "../models/doctor.model.js";
 import User from "../models/user.model.js";
-import Queue from "../models/queue.model.js";
 import Appointment from "../models/appointment.model.js";
 import MedicalRecord from "../models/medicalRecord.model.js";
+import ClinicalNote from "../models/clinicalNote.model.js";
+import { writeAuditEvent } from "../utils/audit.js";
 import Review from "../models/review.model.js";
 import mongoose from "mongoose";
-import { getIO } from "../config/socket.js";
-import { removeFromQueue } from "../utils/queueManager.js";
+import { claimNextQueuedAppointment, emitQueueEvents, removeFromQueue } from "../utils/queueManager.js";
+import { getDoctorOnboardingState, isDoctorBookable, listAvailableSlots, localDateInTimezone, localDayRangeUtc, normalizeTime } from "../utils/scheduling.js";
+import { transitionAppointment } from "../services/appointmentState.service.js";
+import { notifyAppointment } from "../services/notification.service.js";
 
 // Helper function to handle common Mongoose error patterns
 const handleMongooseError = (res, error) => {
+  if (error.statusCode) return res.status(error.statusCode).json({ success: false, error: error.message });
   if (error.name === "ValidationError") {
     const messages = Object.values(error.errors).map((val) => val.message);
     return res.status(400).json({ success: false, error: messages });
@@ -37,20 +41,20 @@ const getEndOfDay = (value = new Date()) => {
 export const createDoctor = async (req, res) => {
   try {
     const { 
-      userId, 
-      clinicId, 
+      clinicId,
       specialization, 
       qualification, 
       experience, 
       consultationFee 
     } = req.body;
 
+    const userId = req.user.role === "admin" ? req.body.userId : req.user.id;
     if (!userId || !clinicId) {
-      return res.status(400).json({ success: false, error: "userId and clinicId are required." });
+      return res.status(400).json({ success: false, error: "clinicId is required." });
     }
 
     const user = await User.findById(userId);
-    if (!user || (user.role !== 'doctor' && user.role !== 'admin')) {
+    if (!user || user.role !== 'doctor') {
       return res.status(400).json({ success: false, error: "User not found or does not have a valid role for a doctor profile." });
     }
 
@@ -66,7 +70,8 @@ export const createDoctor = async (req, res) => {
       qualification,
       experience,
       consultationFee,
-      isAvailable: true 
+      isAvailable: false,
+      verification: { status: "not-submitted" },
     });
 
     res.status(201).json({
@@ -94,7 +99,18 @@ export const getDoctors = async (req, res) => {
         minRating
     } = req.query;
 
-    const query = {};
+    const activeUsers = await User.find({ status: "active", role: "doctor" }).select("_id").lean();
+    const activeClinics = await Clinic.find({ isActive: true }).select("_id").lean();
+    const query = {
+      userId: mongoose.trusted({ $in: activeUsers.map(({ _id }) => _id) }),
+      clinicId: mongoose.trusted({ $in: activeClinics.map(({ _id }) => _id) }),
+      isAvailable: true,
+      "verification.status": "approved",
+      $and: [
+        { $or: [{ "verification.expiresAt": mongoose.trusted({ $exists: false }) }, { "verification.expiresAt": null }, { "verification.expiresAt": mongoose.trusted({ $gt: new Date() }) }] },
+        { $or: [{ "verification.licenseFilePublicId": mongoose.trusted({ $exists: true }) }, { "verification.licenseFileUrl": mongoose.trusted({ $exists: true }) }] },
+      ],
+    };
 
     // 1. Filter by Doctor-specific fields
     if (specialization) {
@@ -103,33 +119,34 @@ export const getDoctors = async (req, res) => {
     }
 
     if (minFee || maxFee) {
-        query.consultationFee = {};
+        query.consultationFee = mongoose.trusted({});
         if (minFee) query.consultationFee.$gte = Number(minFee);
         if (maxFee) query.consultationFee.$lte = Number(maxFee);
     }
 
     if (minExperience) {
-        query.experience = { $gte: Number(minExperience) };
+        query.experience = mongoose.trusted({ $gte: Number(minExperience) });
     }
 
     if (location) {
         const matchingClinics = await Clinic.find({
             $or: [
-                { name: { $regex: location, $options: 'i' } },
-                { city: { $regex: location, $options: 'i' } },
-                { state: { $regex: location, $options: 'i' } },
-                { zipCode: { $regex: location, $options: 'i' } },
-                { address: { $regex: location, $options: 'i' } },
+                { name: mongoose.trusted({ $regex: location, $options: 'i' }) },
+                { city: mongoose.trusted({ $regex: location, $options: 'i' }) },
+                { state: mongoose.trusted({ $regex: location, $options: 'i' }) },
+                { zipCode: mongoose.trusted({ $regex: location, $options: 'i' }) },
+                { address: mongoose.trusted({ $regex: location, $options: 'i' }) },
             ]
-        }).select('_id');
-        query.clinicId = { $in: matchingClinics.map((clinic) => clinic._id) };
+        }).setOptions({ sanitizeFilter: false }).select('_id');
+        const activeIds = new Set(activeClinics.map((clinic) => clinic._id.toString()));
+        query.clinicId = mongoose.trusted({ $in: matchingClinics.filter((clinic) => activeIds.has(clinic._id.toString())).map((clinic) => clinic._id) });
     }
 
     // 2. Filter by User-specific fields (Name, Gender)
     if (search || gender) {
         const userQuery = {};
         if (search) {
-            userQuery.name = { $regex: search, $options: 'i' };
+            userQuery.name = mongoose.trusted({ $regex: search, $options: 'i' });
         }
         if (gender) {
             userQuery.gender = gender; // Expect exact match for enum
@@ -139,7 +156,8 @@ export const getDoctors = async (req, res) => {
         const userIds = matchingUsers.map(u => u._id);
         
         // Add to main query
-        query.userId = { $in: userIds };
+        const activeIds = new Set(activeUsers.map((user) => user._id.toString()));
+        query.userId = mongoose.trusted({ $in: userIds.filter((id) => activeIds.has(id.toString())) });
     }
 
     // 3. Prepare Sort Options
@@ -165,8 +183,8 @@ export const getDoctors = async (req, res) => {
         sortOptions.createdAt = -1; // Default new
     }
 
-    let doctors = await Doctor.find(query)
-      .select('-verification -currentPatient -blockedSlots')
+    let doctors = await Doctor.find(query).setOptions({ sanitizeFilter: false })
+      .select('userId clinicId specialization qualification experience consultationFee isAvailable availability createdAt updatedAt isSynthetic')
       .populate({
         path: 'userId',
         select: 'name profileImage gender',
@@ -178,7 +196,7 @@ export const getDoctors = async (req, res) => {
       .sort(sortOptions);
 
     const reviewStats = await Review.aggregate([
-        { $match: { doctorId: { $in: doctors.map((doctor) => doctor._id) } } },
+        { $match: { doctorId: { $in: doctors.map((doctor) => doctor._id) }, status: 'published' } },
         { $group: { _id: '$doctorId', averageRating: { $avg: '$rating' }, reviewCount: { $sum: 1 } } }
     ]);
     const statsByDoctor = new Map(reviewStats.map((stat) => [stat._id.toString(), stat]));
@@ -218,23 +236,28 @@ export const getDoctor = async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid Doctor ID format." });
     }
 
-    const doctor = await Doctor.findById(req.params.id)
-      .select('-verification -currentPatient -blockedSlots')
+    const doctor = await Doctor.findOne({
+      _id: req.params.id,
+      isAvailable: true,
+      "verification.status": "approved",
+      $or: [{ "verification.expiresAt": mongoose.trusted({ $exists: false }) }, { "verification.expiresAt": null }, { "verification.expiresAt": mongoose.trusted({ $gt: new Date() }) }],
+    }).setOptions({ sanitizeFilter: false })
+      .select('userId clinicId specialization qualification experience consultationFee isAvailable availability createdAt updatedAt isSynthetic')
       .populate({
         path: 'userId',
-        select: 'name email profileImage phone bio',
+        select: 'name email profileImage phone bio status',
       })
       .populate({
         path: 'clinicId',
-        select: 'name address city state phone',
+        select: 'name address city state phone isActive timezone',
       });
 
-    if (!doctor) {
+    if (!doctor || doctor.userId?.status !== "active" || !doctor.clinicId?.isActive) {
       return res.status(404).json({ success: false, error: "Doctor profile not found" });
     }
 
     const stats = await Review.aggregate([
-      { $match: { doctorId: doctor._id } },
+      { $match: { doctorId: doctor._id, status: 'published' } },
       { $group: { _id: '$doctorId', averageRating: { $avg: '$rating' }, reviewCount: { $sum: 1 } } }
     ]);
 
@@ -261,7 +284,7 @@ export const getDoctor = async (req, res) => {
 
 export const updateDoctorProfile = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ userId: req.user.id });
+    const doctor = await Doctor.findOne({ userId: req.user.id }).select('+verification.history');
 
     if (!doctor) {
       return res.status(404).json({ success: false, error: "Doctor profile not found for this user." });
@@ -275,16 +298,23 @@ export const updateDoctorProfile = async (req, res) => {
         }
     });
     
-    const updatedDoctor = await Doctor.findByIdAndUpdate(doctor._id, updates, {
-      new: true,
-      runValidators: true,
-    }).populate('userId', 'name email');
+    const requiresReview = doctor.verification?.status === "approved" && ['specialization', 'qualification', 'experience'].some((key) => updates[key] !== undefined && String(updates[key]) !== String(doctor[key]));
+    Object.assign(doctor, updates);
+    if (requiresReview) {
+      doctor.verification.history.push({ from: "approved", to: "pending", reason: "Material clinician profile change", actorUserId: req.user._id });
+      doctor.verification.status = "pending";
+      doctor.verification.submittedAt = new Date();
+      doctor.isAvailable = false;
+    }
+    await doctor.save();
+    const updatedDoctor = await Doctor.findById(doctor._id).populate('userId', 'name email');
 
     await User.findByIdAndUpdate(req.user.id, {
         name: req.body.name,
         phone: req.body.phone,
         profileImage: req.body.profileImage
     }, { new: true, runValidators: true });
+    if (requiresReview) await writeAuditEvent(req, "doctor-profile-reverification", "success", { metadata: { doctorId: doctor._id.toString() } });
 
 
     res.status(200).json({
@@ -305,7 +335,11 @@ export const toggleAvailability = async (req, res) => {
       return res.status(404).json({ success: false, error: "Doctor profile not found." });
     }
 
+    const clinic = await Clinic.findById(doctor.clinicId);
     const newAvailability = !doctor.isAvailable;
+    if (newAvailability && !isDoctorBookable({ ...doctor.toObject(), isAvailable: true }, clinic)) {
+      return res.status(409).json({ success: false, error: "Complete verification and keep an active license before accepting bookings" });
+    }
 
     doctor.isAvailable = newAvailability;
     await doctor.save();
@@ -326,73 +360,31 @@ export const callNextPatient = async (req, res) => {
     try {
         const doctor = await Doctor.findOne({ userId: req.user.id });
         if (!doctor) return res.status(404).json({ success: false, error: "Doctor not found" });
+        const clinic = await Clinic.findById(doctor.clinicId).select("timezone");
+        const localDate = localDateInTimezone(new Date(), clinic?.timezone || "Asia/Kolkata");
+        const queue = await claimNextQueuedAppointment({ doctorId: doctor._id, clinicId: doctor.clinicId, localDate });
+        if (!queue?.currentAppointmentId) return res.status(200).json({ success: true, message: "Queue is empty", patient: null });
 
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        const queue = await Queue.findOne({
-            doctorId: doctor._id,
-            date: today
-        }).populate('appointmentIds').populate('emergencyQueue');
-
-        if (!queue) {
-            return res.status(404).json({ success: false, error: "No active queue for today" });
+        const selected = await Appointment.findById(queue.currentAppointmentId);
+        if (!selected) return res.status(409).json({ success: false, error: "Queued appointment no longer exists" });
+        let appointment;
+        try {
+          ({ appointment } = await transitionAppointment({ appointment: selected, to: "in-progress", actor: req.user }));
+        } catch (error) {
+          return res.status(error.statusCode || 409).json({ success: false, error: error.message });
         }
-
-        // Logic to pick next patient
-        let nextApptId = null;
-        let isEmergency = false;
-
-        if (queue.emergencyQueue.length > 0) {
-            nextApptId = queue.emergencyQueue[0]._id; // Peek
-            isEmergency = true;
-        } else if (queue.appointmentIds.length > 0) {
-            nextApptId = queue.appointmentIds[0]._id; // Peek
-        } else {
-            return res.status(200).json({ success: true, message: "Queue is empty", patient: null });
-        }
-
-        const appointment = await Appointment.findById(nextApptId).populate('patientId', 'name profileImage');
-        
-        // Update Appointment Status
-        appointment.status = 'in-progress';
-        appointment.consultationStartTime = Date.now();
-        await appointment.save();
-
-        // Update Queue: Remove from waiting list, set current token
-        if (isEmergency) {
-            queue.emergencyQueue.shift();
-        } else {
-            queue.appointmentIds.shift();
-        }
-        
-        queue.currentToken = appointment.tokenNumber; // Update current token being served
-        queue.lastUpdated = Date.now();
+        queue.currentToken = appointment.tokenNumber;
+        queue.lastUpdated = new Date();
         await queue.save();
-
-        doctor.currentPatient = appointment._id;
-        await doctor.save();
-
-        // Socket Events
-        const io = getIO();
-        if (io) {
-            // Notify Patient
-            io.to(`appointment-${appointment._id}`).emit('your-turn', { appointment });
-            io.to(`appointment-${appointment._id}`).emit('patient_called', { appointment });
-            
-            // Update Clinic/Queue Boards
-            const payload = {
-                queueId: queue._id,
-                doctorId: doctor._id,
-                clinicId: doctor.clinicId,
-                currentToken: queue.currentToken,
-                waitingCount: queue.appointmentIds.length + queue.emergencyQueue.length
-            };
-            io.to(`clinic-${doctor.clinicId}`).emit('queue-update', payload);
-            io.to(`doctor-${doctor._id}`).emit('queue-update', payload);
-            io.to(`clinic-${doctor.clinicId}`).emit('queue_updated', payload);
-            io.to(`doctor-${doctor._id}`).emit('queue_updated', payload);
+        await Doctor.updateOne({ _id: doctor._id }, { $set: { currentPatient: appointment._id } });
+        emitQueueEvents(queue, appointment, "patient_called");
+        await notifyAppointment({ appointment, type: "turn-now" });
+        const approachingId = queue.emergencyQueue?.[0] || queue.appointmentIds?.[0];
+        if (approachingId) {
+          const approaching = await Appointment.findById(approachingId).select("patientId");
+          if (approaching) await notifyAppointment({ appointment: approaching, type: "turn-approaching", suffix: String(queue.currentToken) });
         }
+        await appointment.populate('patientId', 'name profileImage');
 
         res.status(200).json({
             success: true,
@@ -411,7 +403,7 @@ export const completeConsultation = async (req, res) => {
         const { id } = req.params;
         const { notes, diagnosis, prescription, prescriptionText, treatmentPlan, followUpDate } = req.body;
 
-        const appointment = await Appointment.findById(id);
+        let appointment = await Appointment.findById(id);
         if (!appointment) return res.status(404).json({ success: false, error: "Appointment not found" });
 
         const doctor = await Doctor.findOne({ userId: req.user.id });
@@ -419,14 +411,22 @@ export const completeConsultation = async (req, res) => {
         if (appointment.doctorId.toString() !== doctor._id.toString()) {
             return res.status(403).json({ success: false, error: "Not authorized for this appointment" });
         }
+        const existingRecordBeforeCompletion = await MedicalRecord.findOne({ appointmentId: appointment._id }).select("finalizedAt").lean();
+        if (existingRecordBeforeCompletion?.finalizedAt) return res.status(409).json({ success: false, error: "This clinical record is finalized; add an addendum instead" });
+        const existingPrivateNoteBeforeCompletion = existingRecordBeforeCompletion ? await ClinicalNote.findOne({ medicalRecordId: existingRecordBeforeCompletion._id }).select("finalizedAt").lean() : null;
+        if (existingPrivateNoteBeforeCompletion?.finalizedAt) return res.status(409).json({ success: false, error: "This private note is finalized; use an addendum" });
 
-        appointment.status = 'completed';
         appointment.notes = notes;
-        appointment.consultationEndTime = Date.now();
         await appointment.save();
+        ({ appointment: appointment } = await transitionAppointment({ appointment, to: "completed", actor: req.user }));
+        await notifyAppointment({ appointment, type: "appointment-completed" });
 
         let medicalRecord = null;
         if (diagnosis?.trim()) {
+            const existingRecord = await MedicalRecord.findOne({ appointmentId: appointment._id });
+            if (existingRecord?.finalizedAt) {
+                return res.status(409).json({ success: false, error: "This clinical record is finalized; add an addendum instead" });
+            }
             medicalRecord = await MedicalRecord.findOneAndUpdate(
                 { appointmentId: appointment._id },
                 {
@@ -442,11 +442,21 @@ export const completeConsultation = async (req, res) => {
                             return { medicine, dosage, frequency, duration, instructions };
                         }),
                     treatmentPlan,
-                    doctorNotes: notes,
+                    patientInstructions: req.body.patientInstructions,
                     followUpDate: followUpDate || undefined,
+                    authorDoctorId: doctor._id,
+                    lastEditedBy: req.user._id,
+                    revision: (existingRecord?.revision || 0) + 1,
                 },
                 { new: true, upsert: true, runValidators: true }
             );
+            const privateNote = await ClinicalNote.findOne({ medicalRecordId: medicalRecord._id });
+            if (privateNote?.finalizedAt) return res.status(409).json({ success: false, error: "This private note is finalized; use an addendum" });
+            if (privateNote) privateNote.revisions.push({ notes: privateNote.notes, authorUserId: privateNote.authorUserId });
+            const note = privateNote || new ClinicalNote({ medicalRecordId: medicalRecord._id, appointmentId: appointment._id, patientId: appointment.patientId, doctorId: doctor._id });
+            note.notes = String(notes || ""); note.authorUserId = req.user._id;
+            await note.save();
+            await writeAuditEvent(req, "medical-record-edit", "success", { targetUserId: appointment.patientId, metadata: { recordId: medicalRecord._id.toString() } });
         }
 
         if (doctor?.currentPatient?.toString() === appointment._id.toString()) {
@@ -467,6 +477,9 @@ export const submitVerification = async (req, res) => {
     const doctor = await Doctor.findOne({ userId: req.user.id }).select('+verification.licenseFilePublicId +verification.licenseFileResourceType +verification.licenseFileFormat');
     if (!doctor) {
       return res.status(404).json({ success: false, error: "Doctor profile not found." });
+    }
+    if (doctor.verification?.status === "pending") {
+      return res.status(409).json({ success: false, error: "Verification is already awaiting review" });
     }
     if (!req.file) {
       return res.status(400).json({ success: false, error: "Medical license file is required." });
@@ -493,6 +506,8 @@ export const submitVerification = async (req, res) => {
       type: "authenticated",
     });
 
+    const previousStatus = doctor.verification?.status || "not-submitted";
+    const history = doctor.verification?.history || [];
     doctor.verification = {
       status: "pending",
       licenseNumber: licenseNumber.trim(),
@@ -502,8 +517,11 @@ export const submitVerification = async (req, res) => {
       licenseFileFormat: result.format,
       submittedAt: new Date(),
       notes: "",
+      rejectionReason: "",
+      history: [...history, { from: previousStatus, to: "pending", actorUserId: req.user._id, changedAt: new Date() }],
     };
     await doctor.save();
+    await writeAuditEvent(req, "license-upload", "success", { metadata: { doctorId: doctor._id.toString(), detectedType: req.file.detectedType, status: "quarantined-pending-review" } });
 
     res.status(200).json({
       success: true,
@@ -519,8 +537,8 @@ export const submitVerification = async (req, res) => {
 export const getMyVerification = async (req, res) => {
   try {
     const doctor = await Doctor.findOne({ userId: req.user.id }).select("verification");
-    if (!doctor) return res.status(404).json({ success: false, error: "Doctor profile not found." });
-    res.status(200).json({ success: true, data: doctor.verification });
+    if (!doctor) return res.status(200).json({ success: true, data: { status: "not-submitted", onboardingState: "account-created" } });
+    res.status(200).json({ success: true, data: { ...doctor.verification.toObject(), onboardingState: getDoctorOnboardingState(doctor) } });
   } catch (error) {
     res.status(500).json({ success: false, error: "Server Error" });
   }
@@ -538,16 +556,15 @@ export const markPatientAbsent = async (req, res) => {
             return res.status(403).json({ success: false, error: "Not authorized for this appointment" });
         }
 
-        appointment.status = 'no-show';
-        await appointment.save();
-        await removeFromQueue(appointment);
+        const transition = await transitionAppointment({ appointment, to: "no-show", actor: req.user, reason: req.body?.reason });
+        await removeFromQueue(transition.appointment);
 
         if (doctor.currentPatient?.toString() === appointment._id.toString()) {
             doctor.currentPatient = null;
             await doctor.save();
         }
 
-        res.status(200).json({ success: true, message: "Patient marked absent", appointment });
+        res.status(200).json({ success: true, message: "Patient marked absent", appointment: transition.appointment });
     } catch (error) {
         console.error("Mark Absent Error:", error);
         res.status(500).json({ success: false, error: "Server Error" });
@@ -580,20 +597,28 @@ export const updateAvailability = async (req, res) => {
 
         const { availability, blockedSlots } = req.body;
         if (availability) {
+            const startTime = normalizeTime(availability.startTime);
+            const endTime = normalizeTime(availability.endTime);
+            if (startTime >= endTime) return res.status(400).json({ success: false, error: "Availability end time must be after start time" });
+            if (!Array.isArray(availability.days) || availability.days.length === 0) return res.status(400).json({ success: false, error: "At least one working day is required" });
+            if (!Number.isInteger(Number(availability.slotDuration)) || availability.slotDuration < 5 || availability.slotDuration > 240) return res.status(400).json({ success: false, error: "Slot duration must be 5-240 minutes" });
             doctor.availability = {
                 days: availability.days,
-                startTime: availability.startTime,
-                endTime: availability.endTime,
+                startTime,
+                endTime,
                 slotDuration: availability.slotDuration,
             };
         }
         if (Array.isArray(blockedSlots)) {
-            doctor.blockedSlots = blockedSlots.map((slot) => ({
-                date: getStartOfDay(slot.date),
-                startTime: slot.startTime,
-                endTime: slot.endTime,
-                reason: slot.reason || '',
-            }));
+            doctor.blockedSlots = blockedSlots.map((slot) => {
+                const startTime = normalizeTime(slot.startTime); const endTime = normalizeTime(slot.endTime);
+                if (startTime >= endTime) throw Object.assign(new Error("Blocked-slot end time must be after start time"), { statusCode: 400 });
+                return { date: getStartOfDay(slot.date), startTime, endTime, reason: slot.reason || '' };
+            });
+        }
+        if (Array.isArray(req.body.leavePeriods)) {
+            if (req.body.leavePeriods.some((leave) => !leave.startAt || !leave.endAt || new Date(leave.startAt) >= new Date(leave.endAt))) return res.status(400).json({ success: false, error: "Every leave period needs a valid start and end" });
+            doctor.leavePeriods = req.body.leavePeriods;
         }
 
         await doctor.save();
@@ -761,19 +786,25 @@ export const deleteDoctor = async (req, res) => {
             return res.status(400).json({ success: false, error: "Invalid Doctor ID format." });
         }
 
-        const doctor = await Doctor.findByIdAndDelete(req.params.id);
+        const doctor = await Doctor.findById(req.params.id).select("+verification.history");
 
         if (!doctor) {
             return res.status(404).json({ success: false, error: "Doctor not found" });
         }
 
-        // Optionally, one might want to cascadingly delete or unlink related User/Appointments
-        // For now, we just remove the Doctor profile, leaving the User intact (maybe they revert to patient)
+        const previous = doctor.verification?.status || "not-submitted";
+        doctor.isAvailable = false;
+        doctor.verification.status = "suspended";
+        doctor.verification.suspendedAt = new Date();
+        doctor.verification.suspensionReason = String(req.body?.reason || "Administrative suspension").slice(0, 500);
+        doctor.verification.history.push({ from: previous, to: "suspended", reason: doctor.verification.suspensionReason, actorUserId: req.user._id });
+        await doctor.save();
+        await writeAuditEvent(req, "doctor-suspended", "success", { targetUserId: doctor.userId, metadata: { doctorId: doctor._id.toString(), previousStatus: previous } });
         
         res.status(200).json({
             success: true,
-            data: {},
-            message: "Doctor profile deleted successfully"
+            data: { id: doctor._id, status: "suspended" },
+            message: "Doctor profile suspended"
         });
     } catch (error) {
         handleMongooseError(res, error);
@@ -796,10 +827,13 @@ export const updateDoctor = async (req, res) => {
           }
       });
       
-      const updatedDoctor = await Doctor.findByIdAndUpdate(req.params.id, updates, {
-        new: true,
-        runValidators: true,
-      }).populate('userId', 'name email').populate('clinicId', 'name');
+      const doctor = await Doctor.findById(req.params.id).select('+verification.licenseFilePublicId');
+      if (!doctor) return res.status(404).json({ success: false, error: "Doctor not found." });
+      Object.assign(doctor, updates);
+      const clinic = await Clinic.findById(doctor.clinicId);
+      if (doctor.isAvailable && !isDoctorBookable(doctor, clinic)) return res.status(409).json({ success: false, error: "Suspended, expired, or unverified clinicians cannot be made available" });
+      await doctor.save();
+      const updatedDoctor = await Doctor.findById(doctor._id).populate('userId', 'name email').populate('clinicId', 'name');
   
       if (!updatedDoctor) {
         return res.status(404).json({ success: false, error: "Doctor not found." });
@@ -826,17 +860,16 @@ export const getDoctorAppointments = async (req, res) => {
         let query = { doctorId: doctor._id };
 
         if (date) {
-            const queryDate = new Date(date);
-            const startOfDay = new Date(queryDate.setHours(0, 0, 0, 0));
-            const endOfDay = new Date(queryDate.setHours(23, 59, 59, 999));
-            query.date = { $gte: startOfDay, $lte: endOfDay };
+            const clinic = await Clinic.findById(doctor.clinicId).select("timezone");
+            const { start, end } = localDayRangeUtc(date, clinic?.timezone || "Asia/Kolkata");
+            query.slotStartUtc = mongoose.trusted({ $gte: start, $lt: end });
         }
 
         if (status) {
             query.status = status;
         }
 
-        const appointments = await Appointment.find(query)
+        const appointments = await Appointment.find(query).setOptions({ sanitizeFilter: false })
             .populate('patientId', 'name email phone profileImage gender age') // Populate patient details
             .sort({ date: 1, tokenNumber: 1 });
 

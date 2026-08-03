@@ -70,5 +70,5 @@ test("reviews require completed visits and public clinician responses omit licen
   assert.match(read("server/controllers/review.controller.js"), /status: "completed"/);
   assert.match(read("server/controllers/clinicReview.controller.js"), /status: "completed"/);
   assert.match(read("server/controllers/queue.controller.js"), /Not authorized to view this queue position/);
-  assert.match(read("server/controllers/doctor.controller.js"), /select\('-verification -currentPatient -blockedSlots'\)/);
+  assert.match(read("server/controllers/doctor.controller.js"), /select\('userId clinicId specialization qualification experience consultationFee isAvailable availability createdAt updatedAt isSynthetic'\)/);
 });

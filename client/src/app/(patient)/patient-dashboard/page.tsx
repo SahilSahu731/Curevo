@@ -25,7 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { patientService } from "@/lib/services/patientService";
-import { format } from "date-fns";
+import { formatAppointmentTime } from "@/lib/appointmentTime";
 import toast from "react-hot-toast";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -44,6 +44,8 @@ interface Appointment {
     };
     date: string;
     slotTime: string;
+    slotStartUtc?: string;
+    clinicTimezone?: string;
     tokenNumber: number;
     status: string;
     consultationType?: "in-person" | "video";
@@ -147,7 +149,7 @@ export default function PatientDashboard() {
                                 </div>
                                 <div className="text-right">
                                     <p className="font-mono font-bold text-xl">
-                                        {format(new Date(nextAppointment.date), 'MMM dd')} • {nextAppointment.slotTime}
+                                        {formatAppointmentTime(nextAppointment, { dateStyle: "medium", timeStyle: "short" })}
                                     </p>
                                     <p className="text-sm text-blue-100 flex items-center justify-end gap-1 mt-1">
                                         <MapPin className="h-3 w-3" /> {nextAppointment.clinicId.address}
@@ -261,7 +263,7 @@ export default function PatientDashboard() {
                                 <div className="space-y-2 mt-4">
                                     <div className="flex items-center text-sm gap-2">
                                         <Clock className="h-4 w-4 text-muted-foreground" />
-                                        <span>{format(new Date(appt.date), 'PPP')} at {appt.slotTime}</span>
+                                        <span>{formatAppointmentTime(appt, { dateStyle: "medium", timeStyle: "short" })}</span>
                                     </div>
                                     <div className="flex items-center text-sm gap-2">
                                         <Activity className="h-4 w-4 text-muted-foreground" />

@@ -8,6 +8,7 @@ interface BookingState {
   date: Date | null;
   slotTime: string | null;
   steps: number;
+  idempotencyKey: string;
   
   setClinic: (id: string, name: string) => void;
   setDoctor: (id: string, name: string) => void;
@@ -26,15 +27,16 @@ export const useBookingStore = create<BookingState>((set) => ({
   date: null,
   slotTime: null,
   steps: 1,
+  idempotencyKey: crypto.randomUUID(),
 
   setClinic: (id, name) => set({ clinicId: id, clinicName: name }),
   setDoctor: (id, name) => set({ doctorId: id, doctorName: name }),
-  setDate: (date) => set({ date }),
-  setSlot: (time) => set({ slotTime: time }),
+  setDate: (date) => set({ date, slotTime: null, idempotencyKey: crypto.randomUUID() }),
+  setSlot: (time) => set({ slotTime: time, idempotencyKey: crypto.randomUUID() }),
   nextStep: () => set((state) => ({ steps: state.steps + 1 })),
   prevStep: () => set((state) => ({ steps: Math.max(1, state.steps - 1) })),
   reset: () => set({ 
       clinicId: null, doctorId: null, doctorName: null, clinicName: null, 
-      date: null, slotTime: null, steps: 1 
+      date: null, slotTime: null, steps: 1, idempotencyKey: crypto.randomUUID()
   }),
 }));

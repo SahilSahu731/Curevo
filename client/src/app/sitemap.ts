@@ -10,8 +10,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/clinics",
     "/telehealth",
     "/health-check",
-    "/lab-tests",
-    "/medicines",
     "/contact",
     "/privacy",
     "/terms",

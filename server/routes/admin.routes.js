@@ -11,9 +11,9 @@ import {
     downloadDoctorLicense
 } from '../controllers/admin.controller.js';
 import { getAllFeedback, updateFeedback } from '../controllers/feedback.controller.js';
-import { protect, authorize } from '../middlewares/auth.middleware.js';
+import { protect, authorize, authorizeAdminScope, requireRecentMfa } from '../middlewares/auth.middleware.js';
 import { validate } from '../middlewares/validate.middleware.js';
-import { feedbackSchemas, verificationSchemas } from '../validations/schemas.js';
+import { adminSchemas, feedbackSchemas, verificationSchemas } from '../validations/schemas.js';
 
 const router = express.Router();
 
@@ -21,15 +21,15 @@ router.use(protect);
 router.use(authorize('admin'));
 
 router.get('/dashboard', getDashboardStats);
-router.get('/users', getAllUsers);
-router.put('/users/:id', updateUser);
-router.delete('/users/:id', deleteUser);
-router.get('/users/:id/appointments', getUserAppointments);
-router.get('/appointments', getAllAppointments);
-router.get('/doctor-verifications', getDoctorVerifications);
-router.get('/doctor-verifications/:id/license', downloadDoctorLicense);
-router.patch('/doctor-verifications/:id', validate(verificationSchemas.review), reviewDoctorVerification);
-router.get('/feedback', getAllFeedback);
-router.patch('/feedback/:id', validate(feedbackSchemas.update), updateFeedback);
+router.get('/users', authorizeAdminScope('operations', 'compliance', 'super-admin'), validate(adminSchemas.users), getAllUsers);
+router.put('/users/:id', authorizeAdminScope('super-admin'), requireRecentMfa, validate(adminSchemas.userUpdate), updateUser);
+router.delete('/users/:id', authorizeAdminScope('super-admin'), requireRecentMfa, validate(adminSchemas.userDeactivate), deleteUser);
+router.get('/users/:id/appointments', authorizeAdminScope('compliance', 'super-admin'), getUserAppointments);
+router.get('/appointments', authorizeAdminScope('operations', 'compliance', 'super-admin'), getAllAppointments);
+router.get('/doctor-verifications', authorizeAdminScope('operations', 'super-admin'), getDoctorVerifications);
+router.get('/doctor-verifications/:id/license', authorizeAdminScope('compliance', 'super-admin'), downloadDoctorLicense);
+router.patch('/doctor-verifications/:id', authorizeAdminScope('super-admin'), requireRecentMfa, validate(verificationSchemas.review), reviewDoctorVerification);
+router.get('/feedback', authorizeAdminScope('operations', 'super-admin'), getAllFeedback);
+router.patch('/feedback/:id', authorizeAdminScope('operations', 'super-admin'), validate(feedbackSchemas.update), updateFeedback);
 
 export default router;

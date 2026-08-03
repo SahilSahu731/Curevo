@@ -8,7 +8,7 @@ export const appointmentService = {
   },
 
   bookAppointment: async (data: any) => {
-    const response = await api.post("/appointments", data);
+    const response = await api.post("/appointments", data, { headers: data.idempotencyKey ? { "Idempotency-Key": data.idempotencyKey } : undefined });
     return response.data;
   },
 

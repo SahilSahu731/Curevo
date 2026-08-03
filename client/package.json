@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "check:links": "node scripts/check-internal-links.mjs",
+    "audit:controls": "node scripts/audit-controls.mjs",
+    "verify:m5": "npm run audit:controls && npm run check:links && npm run build"
   },
   "dependencies": {
     "@fontsource/outfit": "^5.2.8",

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clinicService } from "@/lib/services/clinicService";
+import { patientService } from "@/lib/services/patientService";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
 import { 
@@ -374,6 +375,15 @@ function ClinicReviews({ clinicId, clinicName }: { clinicId: string, clinicName?
         queryKey: ['clinic-reviews', clinicId],
         queryFn: () => clinicService.getReviews(clinicId),
     });
+    const { data: completedVisits } = useQuery({
+        queryKey: ['completed-clinic-visits-for-review', clinicId, user?._id],
+        queryFn: () => patientService.getMyAppointments('completed'),
+        enabled: user?.role === 'patient',
+    });
+    const eligibleAppointment = completedVisits?.appointments?.find((appointment: any) => {
+        const appointmentClinicId = appointment.clinicId?._id || appointment.clinicId;
+        return String(appointmentClinicId) === clinicId;
+    });
 
     const createReviewMutation = useMutation({
         mutationFn: clinicService.createReview,
@@ -385,7 +395,7 @@ function ClinicReviews({ clinicId, clinicName }: { clinicId: string, clinicName?
             queryClient.invalidateQueries({ queryKey: ['clinic-reviews', clinicId] });
         },
         onError: (error: any) => {
-            toast.error(error.response?.data?.message || "Failed to submit review");
+            toast.error(error.response?.data?.error || "Failed to submit review");
         }
     });
 
@@ -402,7 +412,11 @@ function ClinicReviews({ clinicId, clinicName }: { clinicId: string, clinicName?
              toast.error("Please write a comment");
              return;
         }
-        createReviewMutation.mutate({ clinicId, rating, comment });
+        if (!eligibleAppointment) {
+            toast.error("A completed appointment at this clinic is required");
+            return;
+        }
+        createReviewMutation.mutate({ appointmentId: eligibleAppointment._id, rating, comment });
     };
 
     // Calculate stats

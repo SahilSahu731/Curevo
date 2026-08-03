@@ -53,6 +53,11 @@ const ClinicSchema = new mongoose.Schema(
       match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, "Please provide a valid email address"],
     },
     // --- Core Scheduling & Capacity ---
+    timezone: {
+      type: String,
+      default: "Asia/Kolkata",
+      trim: true,
+    },
     openingTime: {
       type: String,
       required: [true, "Opening time is required (e.g., 09:00)"],
@@ -78,6 +83,25 @@ const ClinicSchema = new mongoose.Schema(
       type: Number,
       default: 100,
       min: [1, "Maximum patients must be at least 1"],
+    },
+    bookingHorizonDays: {
+      type: Number,
+      default: 90,
+      min: 1,
+      max: 365,
+    },
+    cancellationNoticeHours: {
+      type: Number,
+      default: 2,
+      min: 0,
+      max: 168,
+    },
+    checkInOpensMinutesBefore: { type: Number, default: 60, min: 0, max: 1440 },
+    checkInClosesMinutesAfter: { type: Number, default: 60, min: 0, max: 1440 },
+    supportedConsultationTypes: {
+      type: [String],
+      enum: ['in-person', 'video'],
+      default: ['in-person', 'video'],
     },
     // --- Unique Enhancements ---
     slotBufferMinutes: {

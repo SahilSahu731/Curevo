@@ -1,242 +1,109 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { userService } from "@/lib/services/userService";
-import { PageLoader } from "@/components/common/Loader";
-import { 
-    Table, 
-    TableBody, 
-    TableCell, 
-    TableHead, 
-    TableHeader, 
-    TableRow 
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { 
-    DropdownMenu, 
-    DropdownMenuContent, 
-    DropdownMenuItem, 
-    DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
-import { MoreHorizontal, Shield, Trash2, Calendar, Search, Filter } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format } from "date-fns";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ChevronLeft, ChevronRight, MoreHorizontal, Search, Shield, UserX } from "lucide-react";
 import { useState } from "react";
-import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { toast } from "sonner";
-import { UserDetailDialog } from "@/components/admin/UserDetailDialog";
 import { EditUserDialog } from "@/components/admin/EditUserDialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
+import { adminService } from "@/lib/services/adminService";
+import { useAuthStore } from "@/store/authStore";
+
+const initials = (name = "") => name.split(" ").map((word) => word[0]).join("").toUpperCase().slice(0, 2);
 
 export default function UsersManagementPage() {
-    const queryClient = useQueryClient();
-    
-    const [selectedUser, setSelectedUser] = useState<any>(null);
-    const [isDetailOpen, setIsDetailOpen] = useState(false);
-    const [isEditOpen, setIsEditOpen] = useState(false);
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-    const [userToDelete, setUserToDelete] = useState<string | null>(null);
-    
-    // Search & Filter State
-    const [searchTerm, setSearchTerm] = useState("");
-    const [roleFilter, setRoleFilter] = useState("all");
+  const queryClient = useQueryClient();
+  const currentUser = useAuthStore((state) => state.user);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState("all");
+  const [status, setStatus] = useState("all");
+  const [sort, setSort] = useState("createdAt:desc");
+  const [editing, setEditing] = useState<any>(null);
+  const [suspending, setSuspending] = useState<any>(null);
+  const [confirmation, setConfirmation] = useState("");
+  const [reason, setReason] = useState("");
+  const [sortBy, sortOrder] = sort.split(":");
 
-    const { data: usersData, isLoading, isError } = useQuery({
-        queryKey: ['users'],
-        queryFn: userService.getAllUsers,
-    });
+  const usersQuery = useQuery({
+    queryKey: ["users", page, search, role, status, sort],
+    queryFn: () => adminService.getAllUsers({ page, limit: 20, search: search || undefined, role, status, sortBy, sortOrder }),
+  });
+  const users = usersQuery.data?.data || [];
+  const totalPages = usersQuery.data?.totalPages || 1;
 
-    const deleteMutation = useMutation({
-        mutationFn: async (id: string) => {
-            await userService.deleteUser(id);
-        },
-        onSuccess: () => {
-            toast.success("User deleted successfully");
-            queryClient.invalidateQueries({ queryKey: ['users'] });
-            setIsDeleteOpen(false);
-        },
-        onError: () => {
-            toast.error("Failed to delete user");
-            setIsDeleteOpen(false);
-        }
-    });
+  const suspendMutation = useMutation({
+    mutationFn: () => adminService.deleteUser(suspending._id, { targetEmail: confirmation.trim().toLowerCase(), reason }),
+    onSuccess: () => {
+      toast.success("User suspended; retained records were not deleted");
+      queryClient.invalidateQueries({ queryKey: ["users"] });
+      setSuspending(null);
+      setConfirmation("");
+      setReason("");
+    },
+    onError: (error: any) => toast.error(error.response?.data?.error || "User could not be suspended"),
+  });
 
-    const handleViewDetails = (user: any) => {
-        setSelectedUser(user);
-        setIsDetailOpen(true);
-    };
+  const changeFilter = (setter: (value: string) => void) => (value: string) => { setter(value); setPage(1); };
 
-    const handleEdit = (user: any) => {
-        setSelectedUser(user);
-        setIsEditOpen(true);
-    };
-
-    const handleDelete = (id: string) => {
-        setUserToDelete(id);
-        setIsDeleteOpen(true);
-    };
-
-    const getInitials = (name: string) => {
-        return name
-            ?.split(' ')
-            .map((word) => word[0])
-            .join('')
-            .toUpperCase()
-            .slice(0, 2);
-    };
-
-    if (isLoading) return <PageLoader text="Loading user directory..." />;
-
-    if (isError) return <div className="text-center py-20 text-red-500">Failed to load users.</div>;
-
-    const allUsers = usersData?.data || [];
-    
-    const filteredUsers = allUsers.filter((user: any) => {
-        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                              user.email.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesRole = roleFilter === "all" ? true : user.role === roleFilter;
-        return matchesSearch && matchesRole;
-    });
-
-    return (
-        <div className="flex flex-col gap-8 p-6 lg:p-8 w-full max-w-[1600px] mx-auto">
-             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">User Management</h1>
-                    <p className="text-zinc-500 dark:text-zinc-400 mt-1">
-                        Manage system users, view appointments, and update roles.
-                    </p>
-                </div>
-                <div className="flex items-center gap-2 w-full md:w-auto">
-                     <div className="relative w-full md:w-64">
-                        <Search className="absolute left-2 top-2.5 h-4 w-4 text-zinc-500 dark:text-zinc-400" />
-                        <Input 
-                            placeholder="Search name or email..." 
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-8 bg-white dark:bg-zinc-900 border-zinc-200 dark:text-white dark:border-zinc-800"
-                        />
-                     </div>
-                     <Select value={roleFilter} onValueChange={setRoleFilter}>
-                        <SelectTrigger className="w-[180px] bg-white dark:text-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
-                            <div className="flex items-center gap-2">
-                                <Filter className="h-4 w-4 text-zinc-500" />
-                                <SelectValue placeholder="All Roles" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent className="dark:bg-zinc-900 dark:border-zinc-800">
-                            <SelectItem value="all">All Roles</SelectItem>
-                            <SelectItem value="patient">Patients Only</SelectItem>
-                            <SelectItem value="doctor">Doctors Only</SelectItem>
-                            <SelectItem value="admin">Admins Only</SelectItem>
-                        </SelectContent>
-                     </Select>
-                </div>
-            </div>
-
-            <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/50 overflow-hidden shadow-sm w-full">
-                <Table>
-                    <TableHeader>
-                        <TableRow className="hover:bg-transparent border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/50">
-                            <TableHead className="w-[30%]">User Identity</TableHead>
-                            <TableHead className="w-[20%]">Role & Access</TableHead>
-                            <TableHead className="w-[20%]">Joined Date</TableHead>
-                            <TableHead className="w-[20%] text-right">Actions</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {filteredUsers.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={4} className="h-24 text-center text-zinc-500">
-                                    No users found matching your search.
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            filteredUsers.map((user: any) => (
-                                <TableRow key={user._id} className="border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 transition-colors">
-                                    <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <Avatar className="h-10 w-10 border border-zinc-100 dark:border-zinc-800">
-                                                <AvatarImage src={user.profileImage} />
-                                                <AvatarFallback className="text-xs bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 font-medium">
-                                                    {getInitials(user.name)}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex flex-col">
-                                                <span className="font-semibold text-sm text-zinc-900 dark:text-zinc-100">{user.name}</span>
-                                                <span className="text-xs text-zinc-500 dark:text-zinc-400">{user.email}</span>
-                                            </div>
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline" className={`
-                                            capitalize font-normal px-2.5 py-0.5
-                                            ${user.role === 'admin' ? 'border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900/30 dark:bg-purple-900/20 dark:text-purple-300' : 
-                                            user.role === 'doctor' ? 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/30 dark:bg-blue-900/20 dark:text-blue-300' :
-                                            'border-zinc-200 bg-zinc-100 text-zinc-700 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400'}
-                                        `}>
-                                            {user.role}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-zinc-600 dark:text-zinc-400 text-sm">
-                                        {format(new Date(user.createdAt), 'MMM d, yyyy')}
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="w-48 dark:bg-zinc-950 dark:border-zinc-800 p-1">
-                                                <DropdownMenuItem onClick={() => handleViewDetails(user)} className="cursor-pointer dark:focus:bg-zinc-900 dark:text-zinc-200 mb-1">
-                                                    <Calendar className="mr-2 h-4 w-4 text-emerald-500" /> View History
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleEdit(user)} className="cursor-pointer dark:focus:bg-zinc-900 dark:text-zinc-200 mb-1">
-                                                    <Shield className="mr-2 h-4 w-4 text-blue-500" /> Edit Access
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem onClick={() => handleDelete(user._id)} className="cursor-pointer text-red-600 focus:text-red-700 dark:text-red-400 dark:focus:text-red-300 dark:focus:bg-red-950/20 bg-red-50 dark:bg-red-950/10">
-                                                    <Trash2 className="mr-2 h-4 w-4" /> Delete Account
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                            ))
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
-
-            <UserDetailDialog 
-                open={isDetailOpen} 
-                onOpenChange={setIsDetailOpen} 
-                user={selectedUser} 
-            />
-
-            <EditUserDialog 
-                open={isEditOpen} 
-                onOpenChange={setIsEditOpen} 
-                user={selectedUser} 
-            />
-
-            <ConfirmDialog
-                open={isDeleteOpen}
-                onOpenChange={setIsDeleteOpen}
-                title="Delete User"
-                description="Are you sure you want to delete this user? This action is irreversible and will remove all their data."
-                onConfirm={() => userToDelete && deleteMutation.mutate(userToDelete)}
-                isLoading={deleteMutation.isPending}
-                variant="destructive"
-            />
+  return (
+    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 p-4 lg:p-8">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">User management</h1>
+        <p className="mt-1 text-muted-foreground">Search accounts, review status, and perform audited access changes.</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-[minmax(220px,1fr)_180px_180px_210px]">
+        <div className="relative">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+          <Input aria-label="Search users" placeholder="Search name or email" className="pl-9" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); }} />
         </div>
-    );
+        <Select value={role} onValueChange={changeFilter(setRole)}><SelectTrigger aria-label="Filter by role"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All roles</SelectItem><SelectItem value="patient">Patients</SelectItem><SelectItem value="doctor">Doctors</SelectItem><SelectItem value="admin">Administrators</SelectItem></SelectContent></Select>
+        <Select value={status} onValueChange={changeFilter(setStatus)}><SelectTrigger aria-label="Filter by status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">All statuses</SelectItem><SelectItem value="active">Active</SelectItem><SelectItem value="suspended">Suspended</SelectItem></SelectContent></Select>
+        <Select value={sort} onValueChange={changeFilter(setSort)}><SelectTrigger aria-label="Sort users"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="createdAt:desc">Newest first</SelectItem><SelectItem value="createdAt:asc">Oldest first</SelectItem><SelectItem value="name:asc">Name A-Z</SelectItem><SelectItem value="name:desc">Name Z-A</SelectItem><SelectItem value="role:asc">Role</SelectItem><SelectItem value="status:asc">Status</SelectItem></SelectContent></Select>
+      </div>
+
+      <div className="overflow-hidden rounded-lg border bg-card">
+        <Table>
+          <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Role</TableHead><TableHead>Scope</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+          <TableBody>
+            {usersQuery.isLoading && <TableRow><TableCell colSpan={5} className="h-28 text-center text-muted-foreground">Loading users...</TableCell></TableRow>}
+            {usersQuery.isError && <TableRow><TableCell colSpan={5} className="h-28 text-center"><p className="text-destructive">Users could not be loaded.</p><Button variant="outline" size="sm" className="mt-3" onClick={() => usersQuery.refetch()}>Retry</Button></TableCell></TableRow>}
+            {!usersQuery.isLoading && !usersQuery.isError && users.length === 0 && <TableRow><TableCell colSpan={5} className="h-28 text-center text-muted-foreground">No users match these filters.</TableCell></TableRow>}
+            {users.map((user: any) => (
+              <TableRow key={user._id}>
+                <TableCell><div className="flex items-center gap-3"><Avatar><AvatarImage src={user.profileImage} /><AvatarFallback>{initials(user.name)}</AvatarFallback></Avatar><div><p className="font-medium">{user.name}</p><p className="text-xs text-muted-foreground">{user.email}</p></div></div></TableCell>
+                <TableCell><Badge variant="outline" className="capitalize">{user.role}</Badge></TableCell>
+                <TableCell className="capitalize text-muted-foreground">{user.role === "admin" ? user.adminScope || "operations" : "Not applicable"}</TableCell>
+                <TableCell><Badge variant={user.status === "suspended" ? "destructive" : "secondary"} className="capitalize">{user.status || "active"}</Badge></TableCell>
+                <TableCell className="text-right">
+                  <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="icon" aria-label={`Actions for ${user.name}`}><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => setEditing(user)}><Shield className="mr-2 h-4 w-4" />Edit access</DropdownMenuItem>
+                    <DropdownMenuItem disabled={user._id === currentUser?._id || user.status === "suspended"} className="text-destructive" onClick={() => setSuspending(user)}><UserX className="mr-2 h-4 w-4" />Suspend account</DropdownMenuItem>
+                  </DropdownMenuContent></DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <div className="flex items-center justify-between text-sm text-muted-foreground"><span>{usersQuery.data?.count || 0} users</span><div className="flex items-center gap-2"><Button variant="outline" size="sm" aria-label="Previous page" disabled={page <= 1 || usersQuery.isFetching} onClick={() => setPage((value) => value - 1)}><ChevronLeft className="h-4 w-4" /></Button><span>Page {page} of {totalPages}</span><Button variant="outline" size="sm" aria-label="Next page" disabled={page >= totalPages || usersQuery.isFetching} onClick={() => setPage((value) => value + 1)}><ChevronRight className="h-4 w-4" /></Button></div></div>
+
+      <EditUserDialog open={Boolean(editing)} onOpenChange={(open: boolean) => !open && setEditing(null)} user={editing} />
+      <Dialog open={Boolean(suspending)} onOpenChange={(open) => { if (!open) { setSuspending(null); setConfirmation(""); setReason(""); } }}>
+        <DialogContent><DialogHeader><DialogTitle>Suspend {suspending?.name}</DialogTitle><DialogDescription>This revokes active sessions and disables access. Appointments, audit records, and records subject to retention are preserved.</DialogDescription></DialogHeader>
+          <div className="space-y-4 py-2"><div className="space-y-2"><Label htmlFor="suspend-email">Type {suspending?.email} to confirm</Label><Input id="suspend-email" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="suspend-reason">Reason</Label><Textarea id="suspend-reason" minLength={10} maxLength={500} value={reason} onChange={(event) => setReason(event.target.value)} /></div></div>
+          <DialogFooter><Button variant="outline" onClick={() => setSuspending(null)}>Cancel</Button><Button variant="destructive" disabled={suspendMutation.isPending || confirmation.trim().toLowerCase() !== suspending?.email || reason.trim().length < 10} onClick={() => suspendMutation.mutate()}>{suspendMutation.isPending ? "Suspending..." : "Suspend account"}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
 }

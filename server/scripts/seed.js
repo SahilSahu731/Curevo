@@ -7,16 +7,21 @@ import { fileURLToPath } from "url";
 import Appointment from "../models/appointment.model.js";
 import Clinic from "../models/clinic.model.js";
 import ClinicReview from "../models/clinicReview.model.js";
+import ClinicalNote from "../models/clinicalNote.model.js";
 import Consent from "../models/consent.model.js";
 import Doctor from "../models/doctor.model.js";
 import Feedback from "../models/feedback.model.js";
 import MedicalRecord from "../models/medicalRecord.model.js";
+import MedicalRecordRevision from "../models/medicalRecordRevision.model.js";
 import Notification from "../models/notification.model.js";
 import PrivacyRequest from "../models/privacyRequest.model.js";
 import Queue from "../models/queue.model.js";
+import QueueCounter from "../models/queueCounter.model.js";
 import Review from "../models/review.model.js";
+import SlotReservation from "../models/slotReservation.model.js";
 import User from "../models/user.model.js";
 import { createTelehealthRoomId } from "../utils/telehealth.js";
+import { localDateInTimezone, localDateTimeToUtc } from "../utils/scheduling.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,7 +137,7 @@ const connectDB = async () => {
 };
 
 const clearSeedableData = async () => {
-  const models = [Notification, Queue, MedicalRecord, Review, ClinicReview, Feedback, Appointment, Doctor, Clinic, User];
+  const models = [Notification, Queue, QueueCounter, SlotReservation, MedicalRecord, Review, ClinicReview, Feedback, Appointment, Doctor, Clinic, User];
   const unmarkedCounts = await Promise.all(models.map((model) => model.countDocuments({ isSynthetic: { $ne: true } })));
   const hasUnmarkedData = unmarkedCounts.some((count) => count > 0);
   const target = new URL(process.env.MONGO_URI);
@@ -144,12 +149,17 @@ const clearSeedableData = async () => {
 
   console.log(hasUnmarkedData ? "Local destructive reset explicitly approved." : "Clearing previously tagged synthetic fixtures...");
   const filter = hasUnmarkedData ? {} : { isSynthetic: true };
+  const recordIds = (await MedicalRecord.find(filter).select("_id").lean()).map(({ _id }) => _id);
   const usersToDelete = await User.find(filter).select('_id').lean();
   const userIds = usersToDelete.map(({ _id }) => _id);
   await Promise.all([
     Notification.deleteMany(filter),
     Queue.deleteMany(filter),
+    QueueCounter.deleteMany(filter),
+    SlotReservation.deleteMany(filter),
     MedicalRecord.deleteMany(filter),
+    ClinicalNote.deleteMany({ medicalRecordId: { $in: recordIds } }),
+    MedicalRecordRevision.deleteMany({ medicalRecordId: { $in: recordIds } }),
     Review.deleteMany(filter),
     ClinicReview.deleteMany(filter),
     Feedback.deleteMany(filter),
@@ -248,7 +258,7 @@ const seedDoctors = async (clinics, doctorUsers, admin) => Doctor.insertMany(
     qualification: pick(["MBBS, MD", "MBBS, DNB", "MBBS, MS", "BDS, MDS"], index),
     experience: 3 + (index % 28),
     consultationFee: 400 + (index % 10) * 150,
-    isAvailable: index % 9 !== 0,
+    isAvailable: index % 12 !== 0 && index % 9 !== 0,
     verification: {
       status: index % 12 === 0 ? "pending" : "approved",
       licenseNumber: `SYNTHETIC-NOT-A-LICENSE-${pad(index + 1, 5)}`,
@@ -256,7 +266,9 @@ const seedDoctors = async (clinics, doctorUsers, admin) => Doctor.insertMany(
       submittedAt: dateAtOffset(-40 - (index % 20)),
       reviewedAt: index % 12 === 0 ? undefined : dateAtOffset(-20 - (index % 10)),
       reviewedBy: index % 12 === 0 ? undefined : admin._id,
+      expiresAt: index % 12 === 0 ? undefined : dateAtOffset(345 - (index % 30)),
       notes: index % 12 === 0 ? "Synthetic fixture awaiting workflow review" : "Synthetic approved state; no credentialing was performed",
+      history: [],
     },
     availability: {
       days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -283,6 +295,10 @@ const seedAppointmentsAndQueues = async (clinics, doctors, patients) => {
     tokenCounters.set(tokenKey, tokenNumber);
     const hour = 8 + Math.floor((tokenNumber - 1) / 2);
     const minute = tokenNumber % 2 === 0 ? "30" : "00";
+    const slotTime = `${String(hour).padStart(2, "0")}:${minute}`;
+    const clinicTimezone = clinic.timezone || "Asia/Kolkata";
+    const slotStartUtc = localDateTimeToUtc(localDateInTimezone(date, clinicTimezone), slotTime, clinicTimezone);
+    const slotEndUtc = new Date(slotStartUtc.getTime() + (doctor.availability?.slotDuration || clinic.averageConsultationTime || 20) * 60_000);
     const isVideo = consultationType === "video";
     const telehealthRoomId = isVideo ? createTelehealthRoomId() : undefined;
     const checkInTime = ["waiting", "in-progress", "completed"].includes(status)
@@ -294,8 +310,11 @@ const seedAppointmentsAndQueues = async (clinics, doctors, patients) => {
       patientId: patients[patientIndex % patients.length]._id,
       doctorId: doctor._id,
       clinicId: clinic._id,
-      date,
-      slotTime: `${String(hour).padStart(2, "0")}:${minute}`,
+      date: slotStartUtc,
+      slotTime,
+      slotStartUtc,
+      slotEndUtc,
+      clinicTimezone,
       tokenNumber,
       status,
       priority,
@@ -361,8 +380,11 @@ const seedAppointmentsAndQueues = async (clinics, doctors, patients) => {
       clinicId: clinics[index % clinics.length]._id,
       doctorId: doctor._id,
       date: dateAtOffset(0),
+      localDate: localDateInTimezone(dateAtOffset(0), clinics[index % clinics.length].timezone || "Asia/Kolkata"),
+      timezone: clinics[index % clinics.length].timezone || "Asia/Kolkata",
       currentToken: 1,
-      appointmentIds: queueAppointments.map((appointment) => appointment._id),
+      currentAppointmentId: queueAppointments.find((appointment) => appointment.status === "in-progress")?._id,
+      appointmentIds: queueAppointments.filter((appointment) => appointment.status === "waiting" && appointment.priority !== "emergency").map((appointment) => appointment._id),
       emergencyQueue: queueAppointments.filter((appointment) => appointment.priority === "emergency").map((appointment) => appointment._id),
       lastUpdated: new Date(),
     };
@@ -372,6 +394,34 @@ const seedAppointmentsAndQueues = async (clinics, doctors, patients) => {
     { _id: doctor._id },
     { currentPatient: todayAppointments[index * COUNTS.todayAppointmentsPerDoctor]._id },
   )));
+
+  const counters = new Map();
+  for (const appointment of appointments) {
+    const localDate = localDateInTimezone(appointment.slotStartUtc, appointment.clinicTimezone);
+    const key = `${appointment.clinicId}:${appointment.doctorId}:${localDate}`;
+    const previous = counters.get(key);
+    if (!previous || appointment.tokenNumber > previous.sequence) counters.set(key, {
+      ...synthetic,
+      clinicId: appointment.clinicId,
+      doctorId: appointment.doctorId,
+      localDate,
+      timezone: appointment.clinicTimezone,
+      sequence: appointment.tokenNumber,
+    });
+  }
+  await QueueCounter.insertMany([...counters.values()]);
+  const reservable = appointments.filter((appointment) => ["booked", "waiting", "in-progress"].includes(appointment.status) && appointment.slotEndUtc > new Date());
+  await SlotReservation.insertMany(reservable.map((appointment) => ({
+    ...synthetic,
+    doctorId: appointment.doctorId,
+    clinicId: appointment.clinicId,
+    patientId: appointment.patientId,
+    slotStartUtc: appointment.slotStartUtc,
+    slotEndUtc: appointment.slotEndUtc,
+    appointmentId: appointment._id,
+    state: "booked",
+    expiresAt: new Date(appointment.slotEndUtc.getTime() + 86_400_000),
+  })));
 
   return { appointments, queues };
 };
@@ -402,10 +452,11 @@ const seedMedicalRecords = async (appointments) => {
       }] : []),
     ],
     treatmentPlan: "Rest, maintain hydration, take medication as prescribed, and monitor symptoms.",
-    doctorNotes: "Patient was stable during consultation and understood the care plan.",
+    patientInstructions: "Continue the care plan and contact the clinic if symptoms worsen.",
+    authorDoctorId: appointment.doctorId,
     followUpDate: dateAtOffset(14 + (index % 15)),
     attachments: index % 5 === 0
-      ? [{ name: "Lab summary.pdf", url: `https://example.com/records/lab-${pad(index + 1)}.pdf`, type: "application/pdf" }]
+      ? [{ name: "Lab summary.pdf", type: "application/pdf", status: "quarantined" }]
       : [],
   })));
 };
@@ -485,6 +536,8 @@ const printSummary = async () => {
     doctors: Doctor,
     appointments: Appointment,
     queues: Queue,
+    queueCounters: QueueCounter,
+    slotReservations: SlotReservation,
     medicalRecords: MedicalRecord,
     reviews: Review,
     clinicReviews: ClinicReview,

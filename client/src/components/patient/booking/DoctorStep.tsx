@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { User, Stethoscope } from "lucide-react";
 import { useBookingStore } from "@/store/bookingStore";
+import { formatCurrency } from "@/lib/localization";
 
 export default function DoctorStep() {
     const { clinicId, setDoctor, nextStep, prevStep } = useBookingStore();
@@ -53,7 +54,7 @@ export default function DoctorStep() {
                         <CardContent>
                              <div className="flex justify-between text-sm">
                                  <span className="text-muted-foreground">{doctor.experience} yrs exp</span>
-                                 <span className="font-semibold text-green-600 dark:text-green-400">${doctor.consultationFee}</span>
+                                 <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(doctor.consultationFee)}</span>
                              </div>
                         </CardContent>
                     </Card>

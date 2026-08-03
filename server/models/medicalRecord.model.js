@@ -14,11 +14,21 @@ const PrescriptionItemSchema = new mongoose.Schema(
 const AttachmentSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
-    url: { type: String, required: true, trim: true },
+    storageKey: { type: String, trim: true },
+    resourceType: { type: String, trim: true },
+    format: { type: String, trim: true },
+    url: { type: String, trim: true, select: false },
     type: { type: String, trim: true },
-  },
-  { _id: false }
+    size: { type: Number, min: 0, max: 10 * 1024 * 1024 },
+    status: { type: String, enum: ["quarantined", "available", "deleted"], default: "quarantined" },
+  }
 );
+
+const AddendumSchema = new mongoose.Schema({
+  text: { type: String, required: true, maxlength: 20000 },
+  authorDoctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", required: true },
+  authorUserId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+}, { timestamps: true });
 
 const MedicalRecordSchema = new mongoose.Schema(
   {
@@ -57,10 +67,12 @@ const MedicalRecordSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
-    doctorNotes: {
+    patientInstructions: {
       type: String,
       trim: true,
     },
+    // Legacy field retained only for migration; never included in public projections.
+    doctorNotes: { type: String, trim: true, select: false },
     followUpDate: {
       type: Date,
     },
@@ -68,6 +80,11 @@ const MedicalRecordSchema = new mongoose.Schema(
       type: [AttachmentSchema],
       default: [],
     },
+    addenda: { type: [AddendumSchema], default: [] },
+    authorDoctorId: { type: mongoose.Schema.Types.ObjectId, ref: "Doctor", index: true },
+    finalizedAt: Date,
+    revision: { type: Number, min: 1, default: 1 },
+    lastEditedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
   },
   { timestamps: true }
 );

@@ -189,7 +189,11 @@ export const updateProfileImage = async (req, res) => {
     if (!req.file) return res.status(400).json({ success: false, error: "No image file provided", requestId: req.id });
     const dataURI = `data:${req.file.mimetype};base64,${Buffer.from(req.file.buffer).toString("base64")}`;
     const cloudinary = (await import("../config/cloudinary.js")).default;
-    const result = await cloudinary.uploader.upload(dataURI, { folder: "curevo/profiles", resource_type: "image" });
+    const result = await cloudinary.uploader.upload(dataURI, {
+      folder: "curevo/profiles",
+      resource_type: "image",
+      transformation: [{ width: 1600, height: 1600, crop: "limit", quality: "auto", fetch_format: "auto" }],
+    });
     const current = await User.findById(req.user._id).select("+profileImagePublicId");
     if (current?.profileImagePublicId) await cloudinary.uploader.destroy(current.profileImagePublicId, { invalidate: true });
     const user = await User.findByIdAndUpdate(req.user._id, {

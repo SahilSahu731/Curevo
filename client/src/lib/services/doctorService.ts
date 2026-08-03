@@ -28,7 +28,7 @@ export const doctorService = {
 
   getReviews: async (doctorId: string) => {
       const response = await api.get(`/reviews/${doctorId}`);
-      return response.data;
+      return response.data.data;
   },
 
   createReview: async (reviewData: any) => {

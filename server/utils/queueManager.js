@@ -1,181 +1,108 @@
-import Queue from "../models/queue.model.js";
 import Appointment from "../models/appointment.model.js";
+import Clinic from "../models/clinic.model.js";
+import Queue from "../models/queue.model.js";
 import { getIO } from "../config/socket.js";
+import { localDateInTimezone, localDateTimeToUtc } from "./scheduling.js";
 
-const idsEqual = (left, right) => left?.toString() === right?.toString();
+const waitingCount = (queue) => (queue.appointmentIds?.length || 0) + (queue.emergencyQueue?.length || 0);
 
-const getStartOfDay = (value = new Date()) => {
-  const date = new Date(value);
-  date.setHours(0, 0, 0, 0);
-  return date;
+const queueIdentity = async (appointment) => {
+  const clinic = await Clinic.findById(appointment.clinicId).select("timezone averageConsultationTime").lean();
+  const timezone = appointment.clinicTimezone || clinic?.timezone || "Asia/Kolkata";
+  const instant = appointment.slotStartUtc || appointment.date;
+  const localDate = localDateInTimezone(instant, timezone);
+  return { timezone, localDate, date: localDateTimeToUtc(localDate, "00:00", timezone), averageConsultationTime: clinic?.averageConsultationTime || 15 };
 };
-
-const getWaitingCount = (queue) => queue.appointmentIds.length + queue.emergencyQueue.length;
 
 export const emitQueueEvents = (queue, appointment = null, eventName = "queue_updated") => {
   try {
-    const io = getIO();
     const payload = {
       queueId: queue._id,
       doctorId: queue.doctorId,
       clinicId: queue.clinicId,
       currentToken: queue.currentToken,
-      waitingCount: getWaitingCount(queue),
+      waitingCount: waitingCount(queue),
       updatedAt: queue.lastUpdated,
       appointmentId: appointment?._id,
       status: appointment?.status,
     };
-
-    io.to(`clinic-${queue.clinicId}`).emit("queue_updated", payload);
-    io.to(`doctor-${queue.doctorId}`).emit("queue_updated", payload);
-    io.to(`clinic-${queue.clinicId}`).emit("queue-update", payload);
-    io.to(`doctor-${queue.doctorId}`).emit("queue-update", payload);
-
+    const io = getIO();
+    for (const room of [`clinic-${queue.clinicId}`, `doctor-${queue.doctorId}`]) {
+      io.to(room).emit("queue_updated", payload);
+      io.to(room).emit("queue-update", payload);
+    }
     if (appointment) {
       io.to(`appointment-${appointment._id}`).emit(eventName, payload);
-      if (eventName === "patient_called") {
-        io.to(`appointment-${appointment._id}`).emit("your-turn", { appointment });
-      }
+      if (eventName === "patient_called") io.to(`appointment-${appointment._id}`).emit("your-turn", payload);
     }
-  } catch (error) {
-    console.warn("Queue socket emit skipped:", error.message);
+  } catch {
+    // Socket updates are best-effort and contain no patient health data.
   }
 };
 
 export const addToQueue = async (appointmentId) => {
-  try {
-    const appointment = await Appointment.findById(appointmentId);
-    if (!appointment) throw new Error("Appointment not found");
+  const appointment = await Appointment.findById(appointmentId);
+  if (!appointment) throw Object.assign(new Error("Appointment not found"), { statusCode: 404 });
+  if (appointment.status !== "waiting") throw Object.assign(new Error("Only checked-in appointments can enter a queue"), { statusCode: 409 });
+  const identity = await queueIdentity(appointment);
+  const target = appointment.priority === "emergency" ? "emergencyQueue" : "appointmentIds";
+  const other = target === "emergencyQueue" ? "appointmentIds" : "emergencyQueue";
+  const queue = await Queue.findOneAndUpdate(
+    { doctorId: appointment.doctorId, clinicId: appointment.clinicId, localDate: identity.localDate },
+    {
+      $setOnInsert: { date: identity.date, timezone: identity.timezone, currentToken: 0 },
+      $set: { lastUpdated: new Date() },
+      $addToSet: { [target]: appointment._id },
+      $pull: { [other]: appointment._id },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  );
+  emitQueueEvents(queue, appointment);
+  return queue;
+};
 
-    const today = getStartOfDay();
-
-    let queue = await Queue.findOne({
-      doctorId: appointment.doctorId,
-      clinicId: appointment.clinicId,
-      date: today,
-    });
-
-    if (!queue) {
-      queue = await Queue.create({
-        doctorId: appointment.doctorId,
-        clinicId: appointment.clinicId,
-        date: today,
-        currentToken: 0,
-        appointmentIds: [],
-        emergencyQueue: [],
-      });
-    }
-
-    // Add to appropriate array based on priority
-    if (appointment.priority === 'emergency') {
-        if (!queue.emergencyQueue.some((id) => idsEqual(id, appointmentId))) {
-            queue.emergencyQueue.push(appointmentId);
-        }
-    } else {
-        if (!queue.appointmentIds.some((id) => idsEqual(id, appointmentId))) {
-            queue.appointmentIds.push(appointmentId);
-        }
-    }
-
-    queue.lastUpdated = Date.now();
-    await queue.save();
-
-    emitQueueEvents(queue, appointment);
-
-    return queue;
-  } catch (error) {
-    console.error("Queue add error:", error);
-    throw error;
-  }
+export const removeFromQueue = async (appointment, { emit = true } = {}) => {
+  const identity = await queueIdentity(appointment);
+  const queue = await Queue.findOneAndUpdate(
+    { doctorId: appointment.doctorId, clinicId: appointment.clinicId, localDate: identity.localDate },
+    { $pull: { appointmentIds: appointment._id, emergencyQueue: appointment._id }, $set: { lastUpdated: new Date() } },
+    { new: true },
+  );
+  if (queue && emit) emitQueueEvents(queue, appointment);
+  return queue;
 };
 
 export const getQueuePosition = async (appointmentId) => {
-    try {
-        const appointment = await Appointment.findById(appointmentId);
-        if (!appointment) throw new Error("Appointment not found");
+  const appointment = await Appointment.findById(appointmentId);
+  if (!appointment) throw Object.assign(new Error("Appointment not found"), { statusCode: 404 });
+  const identity = await queueIdentity(appointment);
+  const queue = await Queue.findOne({ doctorId: appointment.doctorId, clinicId: appointment.clinicId, localDate: identity.localDate }).lean();
+  if (!queue) return { position: null, waitTime: null, patientsAhead: 0 };
+  const id = appointment._id.toString();
+  const emergencyIndex = queue.emergencyQueue.findIndex((value) => value.toString() === id);
+  const normalIndex = queue.appointmentIds.findIndex((value) => value.toString() === id);
+  const position = emergencyIndex >= 0 ? emergencyIndex + 1 : normalIndex >= 0 ? queue.emergencyQueue.length + normalIndex + 1 : null;
+  if (position === null) return { position: null, waitTime: null, patientsAhead: 0 };
+  const patientsAhead = position - 1;
+  const waitTime = patientsAhead * identity.averageConsultationTime;
+  return { position, waitTime, estimatedWaitTime: waitTime, patientsAhead, currentToken: queue.currentToken, waitingCount: waitingCount(queue), timezone: identity.timezone };
+};
 
-        const today = getStartOfDay();
-
-        const queue = await Queue.findOne({
-            doctorId: appointment.doctorId,
-            clinicId: appointment.clinicId,
-            date: today,
-        });
-
-        if (!queue) return { position: null, waitTime: null, patientsAhead: 0 };
-
-        let position = -1;
-        let isEmergency = false;
-
-        // Check emergency queue first
-        const emergencyIndex = queue.emergencyQueue.findIndex((id) => idsEqual(id, appointmentId));
-        if (emergencyIndex !== -1) {
-            position = emergencyIndex + 1; // 1-based index
-            isEmergency = true;
-        } else {
-             // Check normal queue
-            const normalIndex = queue.appointmentIds.findIndex((id) => idsEqual(id, appointmentId));
-            if (normalIndex !== -1) {
-                position = queue.emergencyQueue.length + normalIndex + 1;
-            }
-        }
-        
-        if (position === -1) return { position: null, waitTime: null, patientsAhead: 0 };
-
-        // Simple wait time calculation (e.g., 15 mins per patient)
-        // Ideally should fetch doctor's avg consultation time
-        const AVG_TIME = 15; 
-        const patientsAhead = position - 1; // Incorrect if currentToken is advanced.
-        
-        // Correct logic: find effective position relative to currentToken
-        // Wait, 'position' above is absolute in the list.
-        // We need to know how many people are efficiently ahead.
-        // Since we don't remove people from the list immediately usually, or we use currentToken to track index.
-        // logic:
-        // The queue lists ALL pending appointments for the day? Or just waiting ones?
-        // Usually, 'appointmentIds' contains IDs of people WAITING.
-        // If we remove them when done, then position is just index + 1.
-        
-        // Assuming currentToken logic:
-        // currentToken implies token number being served.
-        // But here we are using lists of IDs.
-        
-        // Revised Logic: 
-        // queue.appointmentIds should list people waiting.
-        // When doctor calls next, we shift/remove from this list or mark them somewhere.
-        // Let's assume queue.appointmentIds is the dynamic waiting list.
-        
-        const waitTime = patientsAhead * AVG_TIME;
-
-        return {
-            position,
-            waitTime,
-            patientsAhead,
-            currentToken: queue.currentToken,
-            waitingCount: getWaitingCount(queue),
-            estimatedWaitTime: waitTime,
-        };
-
-    } catch (error) {
-        console.error("Get Position Error:", error);
-        throw error;
-    }
-}
-
-export const removeFromQueue = async (appointment) => {
-  const today = getStartOfDay();
-  const queue = await Queue.findOne({
-    doctorId: appointment.doctorId,
-    clinicId: appointment.clinicId,
-    date: today,
-  });
-
-  if (!queue) return null;
-
-  queue.appointmentIds = queue.appointmentIds.filter((id) => !idsEqual(id, appointment._id));
-  queue.emergencyQueue = queue.emergencyQueue.filter((id) => !idsEqual(id, appointment._id));
-  queue.lastUpdated = Date.now();
-  await queue.save();
-  emitQueueEvents(queue, appointment);
+export const claimNextQueuedAppointment = async ({ doctorId, clinicId, localDate }) => {
+  let queue = await Queue.findOneAndUpdate(
+    {
+      doctorId, clinicId, localDate, "emergencyQueue.0": { $exists: true },
+      $or: [{ consecutiveEmergencyCalls: { $lt: 2 } }, { consecutiveEmergencyCalls: { $exists: false } }, { "appointmentIds.0": { $exists: false } }],
+    },
+    [{ $set: { currentAppointmentId: { $arrayElemAt: ["$emergencyQueue", 0] }, emergencyQueue: { $slice: ["$emergencyQueue", 1, { $size: "$emergencyQueue" }] }, consecutiveEmergencyCalls: { $add: [{ $ifNull: ["$consecutiveEmergencyCalls", 0] }, 1] }, lastUpdated: "$$NOW" } }],
+    { new: true, sanitizeFilter: false },
+  );
+  if (!queue) {
+    queue = await Queue.findOneAndUpdate(
+      { doctorId, clinicId, localDate, "appointmentIds.0": { $exists: true } },
+      [{ $set: { currentAppointmentId: { $arrayElemAt: ["$appointmentIds", 0] }, appointmentIds: { $slice: ["$appointmentIds", 1, { $size: "$appointmentIds" }] }, consecutiveEmergencyCalls: 0, lastUpdated: "$$NOW" } }],
+      { new: true, sanitizeFilter: false },
+    );
+  }
   return queue;
 };

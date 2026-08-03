@@ -56,6 +56,11 @@ const UserSchema = new mongoose.Schema(
       },
       default: "patient"
     },
+    adminScope: {
+      type: String,
+      enum: ["operations", "compliance", "super-admin"],
+      default() { return this.role === "admin" ? "operations" : undefined; },
+    },
     profileImage: { type: String },
     profileImagePublicId: { type: String, select: false },
     provider: { type: String, enum: ["local", "google", "facebook"], default: "local" },
@@ -81,6 +86,14 @@ const UserSchema = new mongoose.Schema(
       recoveryCodeHashes: { type: [String], select: false, default: undefined },
       enabledAt: Date,
     },
+    notificationPreferences: {
+      inApp: { type: Boolean, default: true },
+      email: { type: Boolean, default: false },
+      sms: { type: Boolean, default: false },
+      appointmentUpdates: { type: Boolean, default: true },
+      reminders: { type: Boolean, default: true },
+      locale: { type: String, default: "en-IN" },
+    },
   },
   { timestamps: true }
 );
@@ -99,7 +112,10 @@ UserSchema.methods.comparePassword = function (candidate) {
   return bcrypt.compare(candidate, this.password);
 };
 
-UserSchema.index({ provider: 1, providerId: 1 }, { unique: true, sparse: true });
+UserSchema.index(
+  { provider: 1, providerId: 1 },
+  { unique: true, partialFilterExpression: { providerId: { $type: "string" } } },
+);
 
 const User = mongoose.models.User || mongoose.model("User", UserSchema);
 export default User;

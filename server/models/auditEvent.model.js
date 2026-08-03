@@ -12,4 +12,12 @@ const AuditEventSchema = new mongoose.Schema({
   expiresAt: { type: Date, required: true, index: { expires: 0 } },
 }, { timestamps: true });
 
+for (const operation of ["updateOne", "updateMany", "findOneAndUpdate", "deleteOne", "deleteMany", "findOneAndDelete"]) {
+  AuditEventSchema.pre(operation, function (next) {
+    const error = new Error("Audit events are append-only");
+    error.name = "ImmutableAuditEvent";
+    next(error);
+  });
+}
+
 export default mongoose.models.AuditEvent || mongoose.model("AuditEvent", AuditEventSchema);

@@ -1,21 +1,15 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
 import { 
     Search,
-    Filter,
-    MoreHorizontal,
     ChevronLeft,
     ChevronRight,
-    Calendar
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
     Card, 
     CardContent, 
-    CardHeader, 
-    CardTitle,
-    CardDescription
+    CardHeader,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +30,7 @@ import {
 } from "@/components/ui/select"
 import { useState, useEffect } from "react";
 import { adminService } from "@/lib/services/adminService";
-import { format } from "date-fns";
+import { formatAppointmentTime } from "@/lib/appointmentTime";
 import toast from "react-hot-toast";
 
 interface AdminAppointment {
@@ -57,6 +51,8 @@ interface AdminAppointment {
     };
     date: string;
     slotTime: string;
+    slotStartUtc?: string;
+    clinicTimezone?: string;
     tokenNumber: number;
     status: string;
 }
@@ -68,15 +64,23 @@ export default function AdminAppointments() {
     const [totalPages, setTotalPages] = useState(1);
     const [statusFilter, setStatusFilter] = useState("all");
     const [dateFilter, setDateFilter] = useState("");
+    const [search, setSearch] = useState("");
+    const [sort, setSort] = useState("slotStartUtc:desc");
+    const [error, setError] = useState("");
 
     const fetchAppointments = async () => {
         try {
             setLoading(true);
+            setError("");
+            const [sortBy, sortOrder] = sort.split(":");
             const data = await adminService.getAllAppointments({
                 page,
                 limit: 10,
                 status: statusFilter,
-                date: dateFilter
+                date: dateFilter,
+                search: search || undefined,
+                sortBy,
+                sortOrder,
             });
             
             if (data.success) {
@@ -85,6 +89,7 @@ export default function AdminAppointments() {
             }
         } catch (error) {
             console.error("Failed to fetch appointments", error);
+            setError("Appointments could not be loaded.");
             toast.error("Failed to load appointments");
         } finally {
             setLoading(false);
@@ -93,7 +98,7 @@ export default function AdminAppointments() {
 
     useEffect(() => {
         fetchAppointments();
-    }, [page, statusFilter, dateFilter]);
+    }, [page, statusFilter, dateFilter, search, sort]);
 
     return (
         <div className="flex flex-col gap-6 p-2 md:p-6 max-w-[1600px] mx-auto w-full animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -111,14 +116,15 @@ export default function AdminAppointments() {
             <Card>
                 <CardHeader>
                     <div className="flex flex-col md:flex-row gap-4 justify-between">
-                         <div className="flex flex-1 gap-4">
+                         <div className="flex flex-1 flex-wrap gap-4">
                             <div className="relative flex-1 max-w-sm">
                                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                                 <Input
                                     type="search"
                                     placeholder="Search by patient or doctor..."
                                     className="pl-8"
-                                    disabled
+                                    value={search}
+                                    onChange={(event) => { setSearch(event.target.value); setPage(1); }}
                                 />
                             </div>
                             <div className="w-[180px]">
@@ -142,6 +148,12 @@ export default function AdminAppointments() {
                                     className="w-[160px]"
                                 />
                              </div>
+                             <div className="w-[190px]">
+                                <Select value={sort} onValueChange={(value) => { setSort(value); setPage(1); }}>
+                                    <SelectTrigger aria-label="Sort appointments"><SelectValue /></SelectTrigger>
+                                    <SelectContent><SelectItem value="slotStartUtc:desc">Newest slot first</SelectItem><SelectItem value="slotStartUtc:asc">Oldest slot first</SelectItem><SelectItem value="tokenNumber:asc">Token ascending</SelectItem><SelectItem value="status:asc">Status</SelectItem></SelectContent>
+                                </Select>
+                             </div>
                          </div>
                     </div>
                 </CardHeader>
@@ -156,16 +168,17 @@ export default function AdminAppointments() {
                                     <TableHead>Clinic</TableHead>
                                     <TableHead>Date & Time</TableHead>
                                     <TableHead>Status</TableHead>
-                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
                                 {loading ? (
                                      <TableRow>
-                                        <TableCell colSpan={7} className="h-24 text-center">
+                                        <TableCell colSpan={6} className="h-24 text-center">
                                             Loading...
                                         </TableCell>
                                     </TableRow>
+                                ) : error ? (
+                                    <TableRow><TableCell colSpan={6} className="h-28 text-center"><p className="text-destructive">{error}</p><Button variant="outline" size="sm" className="mt-3" onClick={fetchAppointments}>Retry</Button></TableCell></TableRow>
                                 ) : appointments.length > 0 ? (
                                     appointments.map((appt) => (
                                         <TableRow key={appt._id}>
@@ -177,8 +190,7 @@ export default function AdminAppointments() {
                                             <TableCell>{appt.doctorId?.userId?.name || "Dr. N/A"}</TableCell>
                                             <TableCell>{appt.clinicId?.name}</TableCell>
                                             <TableCell>
-                                                <div>{format(new Date(appt.date), 'MMM dd, yyyy')}</div>
-                                                <div className="text-xs text-muted-foreground">{appt.slotTime}</div>
+                                                <div>{formatAppointmentTime(appt, { dateStyle: "medium", timeStyle: "short" })}</div>
                                             </TableCell>
                                             <TableCell>
                                                 <Badge variant={
@@ -189,16 +201,11 @@ export default function AdminAppointments() {
                                                     {appt.status}
                                                 </Badge>
                                             </TableCell>
-                                            <TableCell className="text-right">
-                                                <Button variant="ghost" size="icon">
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </TableCell>
                                         </TableRow>
                                     ))
                                 ) : (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
+                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">
                                             No appointments found matching your filters.
                                         </TableCell>
                                     </TableRow>

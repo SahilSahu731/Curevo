@@ -77,7 +77,6 @@ export default function BentoGrid() {
                          <p className="text-sm text-muted-foreground font-body">Authenticated routes, role checks, and production write containment are implemented; formal assurance is pending.</p>
                      </div>
                  </div>
-                 <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
             </motion.div>
 
             {/* M2: Instant Booking */}

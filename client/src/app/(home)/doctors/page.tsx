@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { doctorService } from "@/lib/services/doctorService";
-import { 
+import {
     Search, 
     Filter, 
     MapPin, 
@@ -38,6 +38,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListPagination } from "@/components/common/ListPagination";
+import { formatCurrency } from "@/lib/localization";
 
 const DOCTORS_PER_PAGE = 10;
 const MAX_FEE = 2000;
@@ -400,7 +401,7 @@ function DoctorCard({ doctor }: { doctor: any }) {
                             </Avatar>
                             <div className="text-center">
                                 <div className="text-sm text-muted-foreground">Consultation Fee</div>
-                                <div className="text-xl font-bold text-emerald-600 dark:text-emerald-500">${doctor.consultationFee}</div>
+                                <div className="text-xl font-bold text-emerald-600 dark:text-emerald-500">{formatCurrency(doctor.consultationFee)}</div>
                             </div>
                         </div>
 
@@ -454,7 +455,7 @@ function DoctorCard({ doctor }: { doctor: any }) {
                                         View Profile
                                     </Button>
                                 </Link>
-                                <Link href={`/book?doctorId=${doctor._id}&doctorName=${encodeURIComponent(doctor.userId?.name || '')}&specialization=${encodeURIComponent(doctor.specialization || '')}&fee=${doctor.consultationFee}&clinicId=${doctor.clinicId?._id || ''}`} className="flex-1">
+                                <Link href={`/book?doctorId=${doctor._id}&clinicId=${doctor.clinicId?._id || ''}`} className="flex-1">
                                     <Button className="w-full group bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:text-black dark:hover:bg-zinc-200">
                                         Book Now
                                         <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />

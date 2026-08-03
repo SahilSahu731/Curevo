@@ -14,7 +14,7 @@ const NotificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ['booking-confirmation', 'turn-approaching', 'turn-now', 'appointment-cancelled', 'system-alert'],
+      enum: ['booking-confirmation', 'appointment-reminder', 'telehealth-ready', 'check-in-open', 'turn-approaching', 'turn-now', 'appointment-completed', 'follow-up', 'appointment-cancelled', 'appointment-rescheduled', 'system-alert'],
       required: true,
     },
     message: {
@@ -25,6 +25,16 @@ const NotificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    templateKey: { type: String, trim: true },
+    locale: { type: String, default: "en-IN" },
+    safeLink: { type: String, trim: true },
+    dedupKey: { type: String, trim: true },
+    channels: { type: [String], enum: ["in-app", "email", "sms"], default: ["in-app"] },
+    deliveryStatus: { type: String, enum: ["pending", "sent", "partial", "failed"], default: "pending", index: true },
+    attempts: { type: Number, default: 0 },
+    lastAttemptAt: Date,
+    deliveredAt: Date,
+    failureCode: { type: String, trim: true },
   },
   { timestamps: true }
 );
@@ -32,6 +42,10 @@ NotificationSchema.add({ isSynthetic: { type: Boolean, default: false, index: tr
 
 // Index for quick fetching of unread notifications for a user
 NotificationSchema.index({ userId: 1, isRead: 1 });
+NotificationSchema.index(
+  { userId: 1, dedupKey: 1 },
+  { unique: true, partialFilterExpression: { dedupKey: { $type: "string" } } },
+);
 
 const Notification = mongoose.models.Notification || mongoose.model("Notification", NotificationSchema);
 export default Notification;

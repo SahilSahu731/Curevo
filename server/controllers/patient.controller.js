@@ -1,7 +1,11 @@
 import Appointment from "../models/appointment.model.js";
-import { generateToken } from "../utils/tokenGenerator.js";
+import mongoose from "mongoose";
+import Clinic from "../models/clinic.model.js";
 import { addToQueue, removeFromQueue } from "../utils/queueManager.js";
-import { createTelehealthRoomId } from "../utils/telehealth.js";
+import { reserveAndBook, releaseAppointmentSlot } from "../services/booking.service.js";
+import { transitionAppointment } from "../services/appointmentState.service.js";
+import { localDateInTimezone } from "../utils/scheduling.js";
+import { notifyAppointment } from "../services/notification.service.js";
 
 const getStartOfDay = (value = new Date()) => {
     const dateValue = new Date(value);
@@ -17,58 +21,23 @@ const getEndOfDay = (value = new Date()) => {
 
 export const bookAppointment = async (req, res) => {
     try {
-        const { doctorId, clinicId, date, slotTime, symptoms, priority, consultationType } = req.body;
-        const patientId = req.user.id; // From auth middleware
+        req.body.priority = "normal";
+        const result = await reserveAndBook({ patientId: req.user.id, payload: req.body, idempotencyKey: req.get("Idempotency-Key") });
+        const appointment = result.appointment;
+        await notifyAppointment({ appointment, type: "booking-confirmation" });
+        if (appointment.consultationType === "video") await notifyAppointment({ appointment, type: "telehealth-ready" });
 
-        if (!doctorId || !clinicId || !date || !slotTime) {
-            return res.status(400).json({ success: false, error: "Missing required fields" });
-        }
-
-        const checkDate = getStartOfDay(date);
-        const existing = await Appointment.findOne({
-            doctorId,
-            clinicId,
-            date: { $gte: getStartOfDay(checkDate), $lte: getEndOfDay(checkDate) },
-            slotTime,
-            status: { $nin: ['cancelled', 'no-show'] }
-        });
-
-        if (existing) {
-            return res.status(400).json({ success: false, error: "Slot already booked" });
-        }
-
-        const tokenNumber = await generateToken(clinicId, doctorId, checkDate);
-
-        const appointment = await Appointment.create({
-            patientId,
-            doctorId,
-            clinicId,
-            date: checkDate,
-            slotTime,
-            tokenNumber,
-            symptoms,
-            priority: priority || 'normal',
-            consultationType: consultationType || 'in-person',
-            status: 'booked'
-        });
-
-        if (appointment.consultationType === 'video') {
-            appointment.telehealthRoomId = createTelehealthRoomId();
-            appointment.telehealthGrantVersion = 1;
-            appointment.telehealthUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/telehealth/room/${appointment.telehealthRoomId}`;
-            await appointment.save();
-        }
-
-        res.status(201).json({
+        res.status(result.replayed ? 200 : 201).json({
             success: true,
             appointment,
-            tokenNumber,
-            message: "Appointment booked successfully"
+            tokenNumber: appointment.tokenNumber,
+            replayed: result.replayed,
+            message: result.replayed ? "Original booking returned" : "Appointment booked successfully"
         });
 
     } catch (error) {
-        console.error("Booking Error:", error);
-        res.status(500).json({ success: false, error: "Server Error" });
+        if (!error.statusCode || error.statusCode >= 500) console.error("Booking Error:", error.message);
+        res.status(error.statusCode || 500).json({ success: false, error: error.message || "Server Error" });
     }
 };
 
@@ -80,14 +49,14 @@ export const getMyAppointments = async (req, res) => {
         let query = { patientId };
         if (status) {
             if (status === 'upcoming') {
-                query.date = { $gte: new Date() };
-                query.status = { $nin: ['cancelled', 'completed'] };
+                query.date = mongoose.trusted({ $gte: new Date() });
+                query.status = mongoose.trusted({ $nin: ['cancelled', 'completed'] });
             } else {
                 query.status = status;
             }
         }
 
-        const appointments = await Appointment.find(query)
+        const appointments = await Appointment.find(query).setOptions({ sanitizeFilter: false })
             .populate('doctorId', 'userId')
             .populate({
                 path: 'doctorId',
@@ -121,24 +90,25 @@ export const checkIn = async (req, res) => {
             return res.status(403).json({ success: false, error: "Not authorized" });
         }
 
-        const today = getStartOfDay();
-        const apptDate = getStartOfDay(appointment.date);
-
-        if (apptDate.getTime() !== today.getTime()) {
+        const timezone = appointment.clinicTimezone || "Asia/Kolkata";
+        const appointmentDay = localDateInTimezone(appointment.slotStartUtc || appointment.date, timezone);
+        if (appointmentDay !== localDateInTimezone(new Date(), timezone)) {
              return res.status(400).json({ success: false, error: "Can only check-in on the day of appointment" });
         }
-
-        appointment.status = 'waiting';
-        appointment.checkInTime = Date.now();
-        await appointment.save();
-
-        await addToQueue(appointment._id);
+        const clinic = await Clinic.findById(appointment.clinicId).select("checkInOpensMinutesBefore checkInClosesMinutesAfter");
+        const start = new Date(appointment.slotStartUtc || appointment.date).getTime();
+        if (Date.now() < start - (clinic?.checkInOpensMinutesBefore ?? 60) * 60_000 || Date.now() > start + (clinic?.checkInClosesMinutesAfter ?? 60) * 60_000) {
+            return res.status(409).json({ success: false, error: "Check-in is outside the clinic's allowed window" });
+        }
+        const result = await transitionAppointment({ appointment, to: "waiting", actor: req.user });
+        await addToQueue(result.appointment._id);
+        await notifyAppointment({ appointment: result.appointment, type: "check-in-open" });
 
         res.status(200).json({ success: true, message: "Checked in successfully" });
 
     } catch (error) {
-        console.error("Check-in Error:", error);
-        res.status(500).json({ success: false, error: "Server Error" });
+        if (!error.statusCode) console.error("Check-in Error:", error.message);
+        res.status(error.statusCode || 500).json({ success: false, error: error.statusCode ? error.message : "Server Error" });
     }
 };
 
@@ -155,24 +125,21 @@ export const cancelAppointment = async (req, res) => {
             return res.status(403).json({ success: false, error: "Not authorized" });
         }
 
-        if (appointment.status === 'completed' || appointment.status === 'cancelled') {
-             return res.status(400).json({ success: false, error: "Cannot cancel completed or already cancelled appointment" });
+        if (appointment.slotStartUtc) {
+            const clinic = await Clinic.findById(appointment.clinicId).select("cancellationNoticeHours");
+            const cutoff = new Date(appointment.slotStartUtc).getTime() - (clinic?.cancellationNoticeHours || 0) * 60 * 60_000;
+            if (Date.now() > cutoff) return res.status(409).json({ success: false, error: "Cancellation window has closed; contact the clinic" });
         }
 
-        appointment.status = 'cancelled';
-        await appointment.save();
-
-        const today = getStartOfDay();
-        const apptDate = getStartOfDay(appointment.date);
-
-        if (apptDate.getTime() === today.getTime()) {
-             await removeFromQueue(appointment);
-        }
+        const result = await transitionAppointment({ appointment, to: "cancelled", actor: req.user, reason: req.body?.reason });
+        await removeFromQueue(result.appointment);
+        await releaseAppointmentSlot(result.appointment._id);
+        await notifyAppointment({ appointment: result.appointment, type: "appointment-cancelled" });
 
         res.status(200).json({ success: true, message: "Appointment cancelled successfully" });
 
     } catch (error) {
-        console.error("Cancel Error:", error);
-        res.status(500).json({ success: false, error: "Server Error" });
+        if (!error.statusCode) console.error("Cancel Error:", error.message);
+        res.status(error.statusCode || 500).json({ success: false, error: error.statusCode ? error.message : "Server Error" });
     }
 };
