@@ -4,11 +4,12 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
 export default function DashboardRouter() {
-    const { user, token } = useAuthStore();
+    const { user, initialized } = useAuthStore();
     const router = useRouter();
 
     useEffect(() => {
-        if (!token) {
+        if (!initialized) return;
+        if (!user) {
             router.push('/login');
             return;
         }
@@ -22,7 +23,7 @@ export default function DashboardRouter() {
                  router.push('/patient-dashboard');
             }
         }
-    }, [user, token, router]);
+    }, [initialized, user, router]);
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">

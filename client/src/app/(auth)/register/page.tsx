@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Separator } from '@/components/ui/separator'
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton'
 import { Loader2, User, Stethoscope } from 'lucide-react'
@@ -19,13 +20,25 @@ type FormValues = {
   password: string
   confirmPassword: string
   role: 'patient' | 'doctor'
+  acceptedTerms: boolean
+}
+
+function safeRedirect(value: string | null) {
+  return value && value.startsWith('/') && !value.startsWith('//') && !value.includes('\\')
+    ? value
+    : ''
+}
+
+function dashboardFor(role: string) {
+  if (role === 'doctor') return '/doctor-dashboard'
+  return '/patient-dashboard'
 }
 
 export default function RegisterPage() {
   const router = useRouter()
-  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({ 
+  const { register, handleSubmit, watch, setValue, formState: { errors } } = useForm<FormValues>({
       mode: 'onBlur',
-      defaultValues: { role: 'patient' }
+      defaultValues: { role: 'patient', acceptedTerms: false }
   })
   const { register: registerUser, isLoading } = useAuth()
   // Watch role for conditional UI
@@ -40,9 +53,14 @@ export default function RegisterPage() {
       fd.append('email', data.email)
       fd.append('password', data.password)
       fd.append('role', data.role)
+      fd.append('acceptedTerms', String(data.acceptedTerms))
+      fd.append('policyVersion', '2026-08-03')
 
-      await registerUser(fd)
-      router.push('/')
+      const user = await registerUser(fd)
+      const requested = typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('from') || new URLSearchParams(window.location.search).get('redirect')
+        : null
+      router.replace(safeRedirect(requested) || dashboardFor(user.role))
     } catch {
        // handled by store
     }
@@ -59,6 +77,9 @@ export default function RegisterPage() {
 
       <div className="space-y-4">
         <GoogleAuthButton disabled={isLoading}>Sign up with Google</GoogleAuthButton>
+        <p className="text-center text-xs leading-5 text-muted-foreground">
+          Continuing with Google records acceptance of the current <Link href="/terms" className="text-primary underline">Terms</Link> and <Link href="/privacy" className="text-primary underline">Privacy Notice</Link>.
+        </p>
       </div>
 
       <div className="relative">
@@ -71,10 +92,10 @@ export default function RegisterPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        
+
         {/* Role Selection Cards */}
         <div className="grid grid-cols-2 gap-4">
-            <div 
+            <div
                 className={`auth-role-option cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center gap-2 transition-all ${selectedRole === 'patient' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/50'}`}
                 onClick={() => setValue('role', 'patient')}
             >
@@ -87,7 +108,7 @@ export default function RegisterPage() {
                 </div>
             </div>
 
-            <div 
+            <div
                 className={`auth-role-option cursor-pointer rounded-lg border-2 p-4 flex flex-col items-center gap-2 transition-all ${selectedRole === 'doctor' ? 'border-primary bg-primary/10' : 'border-border bg-card hover:border-primary/50'}`}
                 onClick={() => setValue('role', 'doctor')}
             >
@@ -99,7 +120,7 @@ export default function RegisterPage() {
                     <div className="text-[10px] text-muted-foreground">Manage patients</div>
                 </div>
             </div>
-            
+
             {/* hidden input for form lib */}
             <input type="hidden" {...register('role')} />
         </div>
@@ -130,6 +151,19 @@ export default function RegisterPage() {
               {errors.confirmPassword && <span className="text-xs text-destructive">{errors.confirmPassword.message}</span>}
             </div>
         </div>
+
+        <div className="flex items-start gap-3">
+          <Checkbox
+            id="acceptedTerms"
+            checked={watch('acceptedTerms')}
+            onCheckedChange={(checked) => setValue('acceptedTerms', checked === true, { shouldValidate: true })}
+          />
+          <Label htmlFor="acceptedTerms" className="text-sm font-normal leading-5 text-muted-foreground">
+            I have read and accept the <Link href="/terms" className="text-primary underline">Terms</Link> and <Link href="/privacy" className="text-primary underline">Privacy Notice</Link> (version 2026-08-03).
+          </Label>
+          <input type="hidden" {...register('acceptedTerms', { validate: value => value || 'You must accept the current notices' })} />
+        </div>
+        {errors.acceptedTerms && <span className="block text-xs text-destructive">{errors.acceptedTerms.message}</span>}
 
         <Button type="submit" className="w-full h-11 text-base font-bold shadow-lg shadow-primary/25 bg-primary text-primary-foreground hover:bg-primary/90" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

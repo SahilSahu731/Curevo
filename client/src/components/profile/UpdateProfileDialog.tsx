@@ -64,7 +64,7 @@ export function UpdateProfileDialog({ open, onOpenChange, user }: UpdateProfileD
         return updateProfile(payload);
     },
     onSuccess: (updatedUser) => {
-      setUser(updatedUser, useAuthStore.getState().token);
+      setUser(updatedUser);
       toast.success("Profile updated successfully");
       onOpenChange(false);
     },

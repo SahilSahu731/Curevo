@@ -7,15 +7,15 @@ import { TrendingUp, Shield, Brain, Clock, Users, Zap } from "lucide-react";
 const features = [
   {
     icon: Brain,
-    title: "AI-Powered Analysis",
-    description: "Advanced algorithms analyze your responses to provide accurate health insights.",
+    title: "Simple Calculations",
+    description: "Fixed browser-side rules transform answers into an educational summary.",
     color: "text-purple-600 dark:text-purple-400",
     bg: "bg-purple-100 dark:bg-purple-900/30"
   },
   {
     icon: Shield,
-    title: "100% Private",
-    description: "Your data never leaves your device. All processing is done locally.",
+    title: "Local Assessment Data",
+    description: "Assessment answers are processed in this browser and are not sent to the Curevo API.",
     color: "text-emerald-600 dark:text-emerald-400",
     bg: "bg-emerald-100 dark:bg-emerald-900/30"
   },
@@ -28,22 +28,22 @@ const features = [
   },
   {
     icon: TrendingUp,
-    title: "Actionable Insights",
-    description: "Get personalized recommendations based on your health profile.",
+    title: "General Education",
+    description: "Read general wellness suggestions that are not personalized medical advice.",
     color: "text-amber-600 dark:text-amber-400",
     bg: "bg-amber-100 dark:bg-amber-900/30"
   },
   {
     icon: Users,
-    title: "Clinically Validated",
-    description: "Assessments based on established medical questionnaires and research.",
+    title: "Not Clinically Validated",
+    description: "Scores have not been evaluated for clinical accuracy or decision-making.",
     color: "text-rose-600 dark:text-rose-400",
     bg: "bg-rose-100 dark:bg-rose-900/30"
   },
   {
     icon: Zap,
-    title: "Instant Results",
-    description: "No waiting. Get your health score and report immediately.",
+    title: "Downloadable Summary",
+    description: "Create a local PDF that repeats the assessment limitations.",
     color: "text-cyan-600 dark:text-cyan-400",
     bg: "bg-cyan-100 dark:bg-cyan-900/30"
   }
@@ -55,10 +55,10 @@ export function FeaturesSection() {
       <div className="container px-4 mx-auto">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            Why Choose Our Health Platform?
+            How these wellness tools work
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
-            Trusted by thousands of users worldwide for reliable health insights
+            Understand the processing and limitations before deciding whether to continue
           </p>
         </div>
 

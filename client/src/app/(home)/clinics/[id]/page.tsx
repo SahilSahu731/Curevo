@@ -71,11 +71,9 @@ export default function ClinicDetailsPage() {
     if (isClinicLoading) return <ClinicSkeleton />;
     if (!clinic) return <div className="min-h-screen flex items-center justify-center">Clinic not found</div>;
 
-    // Derived fallback data
-    const rating = 4.8; 
-    const reviewCount = 320;
+    // Visual fallbacks are not evidence of services or quality.
     const services = clinic.services && clinic.services.length > 0 ? clinic.services : [
-        "General Consultation", "Pediatrics", "Cardiology", "Dermatology", "Orthopedics", "Emergency Care"
+        "Service details not submitted"
     ];
     const images = clinic.images && clinic.images.length > 0 ? clinic.images : [
         "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&q=80&w=2000",
@@ -110,8 +108,9 @@ export default function ClinicDetailsPage() {
                          <div className="flex flex-col md:flex-row justify-between items-end gap-6">
                              <div>
                                 <Badge className="bg-emerald-500 text-white border-emerald-400 mb-4 hover:bg-emerald-600">
-                                    Premium Healthcare
+                                    Submitted clinic listing
                                 </Badge>
+                                {clinic.isSynthetic && <Badge className="ml-2 bg-amber-500 text-black border-0">Synthetic demo</Badge>}
                                 <h1 className="text-4xl md:text-6xl font-bold text-white font-heading mb-2">
                                     {clinic.name}
                                 </h1>
@@ -124,15 +123,15 @@ export default function ClinicDetailsPage() {
                              <div className="flex gap-4">
                                  <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-center min-w-[100px]">
                                      <div className="flex items-center justify-center gap-1 text-amber-400 font-bold text-2xl">
-                                         4.8 <Star className="w-5 h-5 fill-amber-400" />
+                                         {doctors.length}
                                      </div>
-                                     <p className="text-zinc-300 text-xs uppercase tracking-wider">Rating</p>
+                                     <p className="text-zinc-300 text-xs uppercase tracking-wider">Listed clinicians</p>
                                  </div>
                                  <div className="bg-white/10 backdrop-blur-md rounded-xl p-4 border border-white/20 text-center min-w-[100px]">
                                      <div className="text-white font-bold text-2xl">
-                                         {doctors.length}+
+                                         {clinic.workingDays?.length || 0}
                                      </div>
-                                     <p className="text-zinc-300 text-xs uppercase tracking-wider">Doctors</p>
+                                     <p className="text-zinc-300 text-xs uppercase tracking-wider">Submitted work days</p>
                                  </div>
                              </div>
                          </div>
@@ -166,11 +165,9 @@ export default function ClinicDetailsPage() {
                                         <h2 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">About {clinic.name}</h2>
                                         <div className="prose dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-300 leading-relaxed text-lg">
                                             <p>
-                                                {clinic.description || `${clinic.name} is a state-of-the-art medical facility dedicated to providing comprehensive healthcare services. Our team of experienced specialists uses the latest technology to ensure accurate diagnosis and effective treatment for all our patients.`}
+                                                {clinic.description || "No clinic description has been submitted."}
                                             </p>
-                                            <p className="mt-4">
-                                                Located in the heart of {clinic.city}, we are committed to making quality healthcare accessible to everyone. We offer a wide range of medical services, from routine check-ups to complex surgical procedures.
-                                            </p>
+                                            <p className="mt-4">Confirm services, credentials, hours, accessibility, and appointment availability directly with the clinic before relying on this listing.</p>
                                         </div>
 
                                         <div className="grid sm:grid-cols-2 gap-4 mt-8">
@@ -184,7 +181,7 @@ export default function ClinicDetailsPage() {
                                                         <p className="text-zinc-600 dark:text-zinc-400 text-sm">
                                                             {clinic.openingTime} - {clinic.closingTime}
                                                         </p>
-                                                        <p className="text-zinc-500 dark:text-zinc-500 text-xs">Mon - Sat</p>
+                                                        <p className="text-zinc-500 dark:text-zinc-500 text-xs">{clinic.workingDays?.join(", ") || "Days not submitted"}</p>
                                                     </div>
                                                 </CardContent>
                                             </Card>
@@ -194,9 +191,9 @@ export default function ClinicDetailsPage() {
                                                         <ShieldCheck className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-bold text-zinc-900 dark:text-zinc-100">Certified Facility</h4>
-                                                        <p className="text-zinc-600 dark:text-zinc-400 text-sm">ISO 9001:2015 Certified</p>
-                                                        <p className="text-zinc-500 dark:text-zinc-500 text-xs">Top Hygiene Standards</p>
+                                                        <h4 className="font-bold text-zinc-900 dark:text-zinc-100">Accreditation status</h4>
+                                                        <p className="text-zinc-600 dark:text-zinc-400 text-sm">Not submitted or verified</p>
+                                                        <p className="text-zinc-500 dark:text-zinc-500 text-xs">Confirm directly with the clinic</p>
                                                     </div>
                                                 </CardContent>
                                             </Card>
@@ -510,6 +507,7 @@ function ClinicReviews({ clinicId, clinicName }: { clinicId: string, clinicName?
                                         </Avatar>
                                         <div>
                                             <h4 className="font-bold text-zinc-900 dark:text-zinc-100">{review.patientId?.name || 'Anonymous'}</h4>
+                                            {review.isSynthetic && <span className="text-[10px] font-semibold uppercase text-amber-600 dark:text-amber-400">Synthetic review</span>}
                                             <div className="flex items-center gap-2 mt-1">
                                                 <div className="flex">
                                                     {Array(5).fill(0).map((_, i) => (

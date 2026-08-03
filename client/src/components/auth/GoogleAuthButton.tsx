@@ -19,8 +19,13 @@ function GoogleIcon() {
 function getGoogleAuthUrl() {
   const apiBase = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api")
     .replace(/\/+$/, "")
-
-  return `${apiBase}/auth/google`
+  const url = new URL(`${apiBase}/auth/google`)
+  const current = new URL(window.location.href)
+  const redirect = current.searchParams.get("redirect") || current.searchParams.get("from")
+  if (redirect?.startsWith("/") && !redirect.startsWith("//") && !redirect.includes("\\")) {
+    url.searchParams.set("redirect", redirect)
+  }
+  return url.toString()
 }
 
 export function GoogleAuthButton({ children, disabled = false }: { children: React.ReactNode; disabled?: boolean }) {

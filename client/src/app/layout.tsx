@@ -16,17 +16,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"),
   title: {
-    default: "Curevo SmartQueue - Real-time Medical OS",
+    default: "Curevo SmartQueue Prototype",
     template: "%s | Curevo",
   },
-  description: "Book doctors, track live clinic queues, manage telehealth visits, and access prescriptions from one secure healthcare dashboard.",
+  description: "A pre-release demonstration of appointment, queue, and video-visit workflows.",
   keywords: ["clinic queue management", "doctor appointments", "telehealth", "medical records", "Curevo"],
   authors: [{ name: "Curevo" }],
   creator: "Curevo",
   publisher: "Curevo",
   openGraph: {
     title: "Curevo SmartQueue",
-    description: "Real-time queue, appointment, telehealth, and medical records platform for modern clinics.",
+    description: "Pre-release appointment and clinic queue workflow demonstration.",
     url: "/",
     siteName: "Curevo",
     type: "website",
@@ -34,14 +34,14 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Curevo SmartQueue",
-    description: "Real-time medical OS for clinics, doctors, and patients.",
+    description: "Pre-release appointment and clinic queue workflow demonstration.",
   },
   alternates: {
     canonical: "/",
   },
   robots: {
-    index: true,
-    follow: true,
+    index: process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true",
+    follow: process.env.NEXT_PUBLIC_ALLOW_INDEXING === "true",
   },
 };
 

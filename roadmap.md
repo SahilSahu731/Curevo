@@ -359,13 +359,13 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Authenticate the Socket.IO handshake using the same revocable server session as HTTP.
-- [ ] Reject missing, expired, revoked, or malformed sessions before connection is established.
-- [ ] Attach the minimal authenticated user identity and role to the socket server-side.
-- [ ] Validate every event payload with a schema and strict size limits.
-- [ ] Add rate limits for connections, joins, signaling messages, and malformed payloads.
-- [ ] Remove trust in client-supplied names, roles, doctor IDs, clinic IDs, and appointment IDs.
-- [ ] Sanitize production socket logs and add correlation/session IDs without health data.
+- [x] Authenticate the Socket.IO handshake using the same revocable server session as HTTP.
+- [x] Reject missing, expired, revoked, or malformed sessions before connection is established.
+- [x] Attach the minimal authenticated user identity and role to the socket server-side.
+- [x] Validate every event payload with a schema and strict size limits.
+- [x] Add rate limits for connections, joins, signaling messages, and malformed payloads.
+- [x] Remove trust in client-supplied names, roles, doctor IDs, clinic IDs, and appointment IDs.
+- [x] Sanitize production socket logs and add correlation/session IDs without health data.
 
 ## M2-T02 — Authorize queue and telehealth room membership
 
@@ -373,20 +373,20 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] For `join-queue`, verify the user owns the appointment or is its assigned doctor/admin.
-- [ ] For clinic/doctor queue rooms, verify doctor/admin scope or define a separate public display payload containing no personal data.
-- [ ] For telehealth, resolve room membership from an appointment; do not accept arbitrary room IDs as authority.
-- [ ] Permit only the assigned patient and assigned verified doctor during an allowed time window.
-- [ ] Enforce a participant limit and reject extra connections.
-- [ ] Issue short-lived signed room access grants and support revocation.
-- [ ] Record join, leave, denial, start, and end events without recording media content.
-- [ ] Remove or rotate predictable room identifiers from persistent public URLs.
+- [x] For `join-queue`, verify the user owns the appointment or is its assigned doctor/admin.
+- [x] For clinic/doctor queue rooms, verify doctor/admin scope or define a separate public display payload containing no personal data.
+- [x] For telehealth, resolve room membership from an appointment; do not accept arbitrary room IDs as authority.
+- [x] Permit only the assigned patient and assigned verified doctor during an allowed time window.
+- [x] Enforce a participant limit and reject extra connections.
+- [x] Issue short-lived signed room access grants and support revocation.
+- [x] Record join, leave, denial, start, and end events without recording media content.
+- [x] Remove or rotate predictable room identifiers from persistent public URLs.
 
 ### Acceptance criteria
 
-- [ ] An authenticated unrelated patient, unrelated doctor, anonymous user, and expired session cannot join or signal into a room.
-- [ ] Replayed and tampered room grants fail.
-- [ ] No signaling event can target a room the sender has not joined and been authorized for.
+- [x] An authenticated unrelated patient, unrelated doctor, anonymous user, and expired session cannot join or signal into a room.
+- [x] Replayed and tampered room grants fail.
+- [x] No signaling event can target a room the sender has not joined and been authorized for.
 
 ## M2-T03 — Add production-grade WebRTC connectivity
 
@@ -394,13 +394,13 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Deploy or subscribe to authenticated TURN service with short-lived credentials.
-- [ ] Configure regional STUN/TURN servers, UDP/TCP/TLS fallbacks, and environment-specific endpoints.
-- [ ] Add connectivity diagnostics without exposing local IP details in logs.
-- [ ] Implement negotiation collision handling, ICE restart, reconnect, network switching, and participant refresh.
-- [ ] Handle camera/microphone permission denial and allow audio-only fallback.
-- [ ] Add pre-call device selection, preview, microphone test, and bandwidth check.
-- [ ] Add clear connection-quality, reconnecting, failed-call, and support states.
+- [ ] Deploy or subscribe to an authenticated TURN service with short-lived credentials before production.
+- [x] Configure regional STUN/TURN servers, UDP/TCP/TLS fallbacks, and environment-specific endpoints.
+- [x] Add connectivity diagnostics without exposing local IP details in logs.
+- [x] Implement negotiation collision handling, ICE restart, reconnect, network switching, and participant refresh.
+- [x] Handle camera/microphone permission denial and allow audio-only fallback.
+- [x] Add pre-call device selection, preview, microphone test, and bandwidth check.
+- [x] Add clear connection-quality, reconnecting, failed-call, and support states.
 - [ ] Test behind symmetric NAT, VPN, hospital/corporate firewalls, mobile networks, and low bandwidth.
 
 ## M2-T04 — Complete telehealth product controls
@@ -409,14 +409,14 @@ Complete M8 through M11 and all launch criteria in Section 16. Legal/compliance 
 
 ### Implementation tasks
 
-- [ ] Add a waiting room so patients cannot enter before the clinician.
-- [ ] Prevent entry outside the appointment window unless explicitly allowed.
-- [ ] Add participant identity display based on server data.
-- [ ] Add consent confirmation and emergency limitations before joining.
-- [ ] Add accessible labels/tooltips for microphone, camera, and end-call buttons.
-- [ ] Confirm before ending a call and return users to the correct role dashboard.
-- [ ] Add call-duration handling, appointment-state integration, and post-call workflow.
-- [ ] Decide whether screen sharing, chat, attachments, recording, or captions are supported; do not imply them without implementation.
+- [x] Add a waiting room so patients cannot enter before the clinician.
+- [x] Prevent entry outside the appointment window unless explicitly allowed.
+- [x] Add participant identity display based on server data.
+- [x] Add consent confirmation and emergency limitations before joining.
+- [x] Add accessible labels/tooltips for microphone, camera, and end-call buttons.
+- [x] Confirm before ending a call and return users to the correct role dashboard.
+- [x] Add call-duration handling, appointment-state integration, and post-call workflow.
+- [x] Decide whether screen sharing, chat, attachments, recording, or captions are supported; do not imply them without implementation.
 - [ ] If recording is ever added, require explicit consent, retention, access controls, and jurisdiction review.
 
 ---
@@ -1448,7 +1448,7 @@ This appendix identifies the primary current files to inspect when beginning eac
 | Public navigation and footer | `client/src/components/home/GlobalNavbar.tsx`, `client/src/components/home/Navbar.tsx`, `client/src/components/common/Navbar.tsx`, `client/src/components/home/Footer.tsx` | M5-T01, M5-T02, M6-T01, M6-T03, M7-T02 |
 | Homepage search and visual defects | `client/src/components/home/SearchHero.tsx`, `HomeHero.tsx`, `TrustedStrip.tsx`, `PopularCategories.tsx`, `BentoGrid.tsx` | M0-T02, M6-T02, M7-T04, M11-T02 |
 | Authentication UI/state | `client/src/app/(auth)/*`, `client/src/store/authStore.ts`, `client/src/hooks/useAuth.ts`, `client/src/hooks/useRequireAuth.tsx` | M1-T03 through M1-T07, M6-T05 |
-| Authentication API | `server/routes/auth.routes.js`, `server/controllers/auth.controller.js`, `server/config/passport.js`, `server/utils/generateToken.js`, `server/middlewares/auth.middleware.js` | M1-T03 through M1-T06 |
+| Authentication API | `server/routes/auth.routes.js`, `server/controllers/auth.controller.js`, `server/config/passport.js`, `server/utils/session.js`, `server/middlewares/auth.middleware.js` | M1-T03 through M1-T06 |
 | Route protection | `client/src/middleware.ts`, protected route-group layouts, backend route modules | M1-T07, M9-T04 |
 | Doctors and verification | `server/models/doctor.model.js`, `server/controllers/doctor.controller.js`, `server/controllers/admin.controller.js`, doctor/profile/admin pages | M4-T01, M4-T02, M5-T07 |
 | Booking and appointments | `server/controllers/appointment.controller.js`, `server/controllers/patient.controller.js`, `server/models/appointment.model.js`, `client/src/app/(home)/book/page.tsx`, doctor detail and dashboard pages | M4-T02 through M4-T06, M6-T06 |

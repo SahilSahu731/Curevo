@@ -53,6 +53,11 @@ const AppointmentSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    telehealthGrantVersion: {
+      type: Number,
+      min: 0,
+      default: 0,
+    },
     telehealthUrl: {
       type: String,
       trim: true,
@@ -78,6 +83,7 @@ const AppointmentSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+AppointmentSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
 // Compound index for quick fetching of today's appointments for a doctor/clinic
 AppointmentSchema.index({ doctorId: 1, date: 1 });

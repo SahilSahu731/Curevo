@@ -150,7 +150,6 @@ export default function DoctorProfilePage() {
     const languages = doctor.languages?.length ? doctor.languages : ["English"];
     const averageRating = doctor.ratingStats?.averageRating || 0;
     const reviewCount = doctor.ratingStats?.reviewCount || 0;
-    const successRate = reviewCount > 0 ? Math.round((averageRating / 5) * 100) : 0;
     const patientsServed = doctor.completedConsultations || 0;
 
     return (
@@ -173,9 +172,6 @@ export default function DoctorProfilePage() {
                                     </AvatarFallback>
                                 </Avatar>
                             </div>
-                            <div className="absolute bottom-1 right-2 bg-emerald-500 text-white p-1.5 rounded-full ring-4 ring-white dark:ring-black" title="Verified Doctor">
-                                <CheckCircle2 className="w-5 h-5" />
-                            </div>
                          </motion.div>
 
                          {/* Header Info */}
@@ -185,9 +181,8 @@ export default function DoctorProfilePage() {
                                     <h1 className="text-3xl md:text-4xl font-bold text-zinc-900 dark:text-zinc-50 font-heading">
                                         {doctor.userId?.name}
                                     </h1>
-                                    <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 text-xs px-2 py-0.5">
-                                        Top Rated
-                                    </Badge>
+                                    <Badge variant="outline" className="text-xs px-2 py-0.5">Submitted profile</Badge>
+                                    {doctor.isSynthetic && <Badge variant="secondary" className="text-xs px-2 py-0.5">Synthetic demo</Badge>}
                                 </div>
                                 <p className="text-lg text-zinc-500 dark:text-zinc-300 font-medium flex items-center justify-center md:justify-start gap-2">
                                      <Stethoscope className="w-4 h-4" /> {doctor.specialization} &bull; {doctor.qualification}
@@ -211,13 +206,13 @@ export default function DoctorProfilePage() {
                              
                              <div className="flex items-center justify-center md:justify-start gap-6 pt-2">
                                  <div className="text-center md:text-left">
-                                     <p className="text-2xl font-bold text-zinc-900 dark:text-white">{successRate}%</p>
-                                     <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Success Rate</p>
+                                     <p className="text-2xl font-bold text-zinc-900 dark:text-white">{doctor.experience}</p>
+                                     <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Submitted years</p>
                                  </div>
                                  <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800"></div>
                                  <div className="text-center md:text-left">
-                                     <p className="text-2xl font-bold text-zinc-900 dark:text-white">{patientsServed}+</p>
-                                     <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Patients</p>
+                                     <p className="text-2xl font-bold text-zinc-900 dark:text-white">{patientsServed}</p>
+                                     <p className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Completed visits</p>
                                  </div>
                                  <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800"></div>
                                  <div className="text-center md:text-left">
@@ -242,7 +237,7 @@ export default function DoctorProfilePage() {
                         
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                             <TabsList className="w-full justify-start rounded-xl p-0 h-auto bg-transparent border-b border-zinc-200 dark:border-zinc-800 mb-6 gap-6 overflow-x-auto no-scrollbar">
-                                {['Overview', 'Locations', 'Reviews', 'Insurance'].map((tab) => (
+                                {['Overview', 'Locations', 'Reviews'].map((tab) => (
                                     <TabsTrigger 
                                         key={tab} 
                                         value={tab.toLowerCase()}
@@ -263,8 +258,7 @@ export default function DoctorProfilePage() {
                                     </h3>
                                     <div className="prose dark:prose-invert max-w-none text-zinc-600 dark:text-zinc-300 leading-relaxed text-lg">
                                         <p>
-                                            {doctor.userId?.bio || `Dr. ${doctor.userId?.name} is a renowned ${doctor.specialization} specialist with over ${doctor.experience} years of dedicated practice. 
-                                            Known for a patient-centric approach, Dr. ${doctor.userId?.name?.split(' ').pop()} combines cutting-edge medical knowledge with compassionate care.`}
+                                            {doctor.userId?.bio || "No biography has been submitted. Profile fields and credentials require independent confirmation."}
                                         </p>
                                         
                                         <div className="my-6 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -274,7 +268,7 @@ export default function DoctorProfilePage() {
                                                  </div>
                                                  <div>
                                                      <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">Video Consultation</h4>
-                                                     <p className="text-sm text-zinc-600 dark:text-zinc-400">Available for remote patients</p>
+                                                     <p className="text-sm text-zinc-600 dark:text-zinc-400">May be requested when a video slot is listed</p>
                                                  </div>
                                             </div>
                                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/20 flex gap-3">
@@ -282,41 +276,23 @@ export default function DoctorProfilePage() {
                                                      <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                                                  </div>
                                                  <div>
-                                                     <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">Verified Specialist</h4>
-                                                     <p className="text-sm text-zinc-600 dark:text-zinc-400">Board certified in {doctor.specialization}</p>
+                                                     <h4 className="font-semibold text-zinc-900 dark:text-zinc-100">Credential status</h4>
+                                                     <p className="text-sm text-zinc-600 dark:text-zinc-400">Confirm qualifications and licensing independently</p>
                                                  </div>
                                             </div>
                                         </div>
                                         
-                                        <p>
-                                            Having completed their {doctor.qualification} with honors, they have served in multiple prestigious institutions before leading the {doctor.specialization} department at {doctor.clinicId?.name}.
-                                        </p>
+                                        <p>Submitted qualification: {doctor.qualification}. No honors, institutional history, board status, or leadership role is asserted.</p>
                                     </div>
                                 </section>
 
                                 {/* Education & Experience Timeline style */}
                                 <section>
-                                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                                        <GraduationCap className="w-5 h-5 text-blue-500" /> Education & Experience
-                                    </h3>
-                                    
-                                    <div className="relative border-l-2 border-zinc-200 dark:border-zinc-800 ml-3 space-y-8 pl-8 py-2">
-                                        <div className="relative group">
-                                            <span className="absolute -left-[41px] top-1 h-5 w-5 rounded-full border-4 border-white dark:border-black bg-emerald-500 group-hover:scale-110 transition-transform"></span>
-                                            <h4 className="font-bold text-lg text-zinc-900 dark:text-zinc-100">Senior Consultant</h4>
-                                            <p className="text-zinc-500 dark:text-zinc-400">{doctor.clinicId?.name} &bull; 2018 - Present</p>
-                                            <p className="text-sm text-zinc-500 dark:text-zinc-400 mt-1">Leading the department of {doctor.specialization}, focusing on advanced treatments.</p>
-                                        </div>
-                                        <div className="relative group">
-                                            <span className="absolute -left-[41px] top-1 h-5 w-5 rounded-full border-4 border-white dark:border-black bg-zinc-300 dark:bg-zinc-700 group-hover:bg-zinc-400 transition-colors"></span>
-                                            <h4 className="font-bold text-lg text-zinc-900 dark:text-zinc-100">Residency in {doctor.specialization}</h4>
-                                            <p className="text-zinc-500">City General Hospital &bull; 2014 - 2018</p>
-                                        </div>
-                                        <div className="relative group">
-                                            <span className="absolute -left-[41px] top-1 h-5 w-5 rounded-full border-4 border-white dark:border-black bg-zinc-300 dark:bg-zinc-700 group-hover:bg-zinc-400 transition-colors"></span>
-                                            <h4 className="font-bold text-lg text-zinc-900 dark:text-zinc-100">{doctor.qualification}</h4>
-                                            <p className="text-zinc-500 dark:text-zinc-400">State Medical University &bull; 2010 - 2014</p>
-                                        </div>
+                                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2"><GraduationCap className="w-5 h-5 text-blue-500" /> Submitted professional details</h3>
+                                    <div className="border-l-2 border-zinc-200 pl-6 dark:border-zinc-800">
+                                        <p className="font-semibold text-zinc-900 dark:text-zinc-100">Qualification: {doctor.qualification}</p>
+                                        <p className="mt-2 text-zinc-500 dark:text-zinc-400">Experience: {doctor.experience} submitted years</p>
+                                        <p className="mt-3 text-sm text-zinc-500 dark:text-zinc-400">Institutions, dates, licenses, board status, and current scope of practice are not published or independently confirmed here.</p>
                                     </div>
                                 </section>
 
@@ -327,21 +303,21 @@ export default function DoctorProfilePage() {
                                     </h3>
                                     <Accordion type="single" collapsible className="w-full">
                                         <AccordionItem value="item-1">
-                                            <AccordionTrigger>What conditions do you treat?</AccordionTrigger>
+                                            <AccordionTrigger>Are credentials confirmed by this page?</AccordionTrigger>
                                             <AccordionContent className="text-zinc-600 dark:text-zinc-400">
-                                                I specialize in treating a wide range of {doctor.specialization} conditions. This includes chronic management, acute care, and preventative screenings.
+                                                No. The page displays submitted profile fields. Confirm identity, license, specialty, and scope directly with the clinician and relevant authority.
                                             </AccordionContent>
                                         </AccordionItem>
                                         <AccordionItem value="item-2">
                                             <AccordionTrigger>Do you offer online consultations?</AccordionTrigger>
                                             <AccordionContent className="text-zinc-600 dark:text-zinc-400">
-                                                Yes, video consultations are available for followup appointments and initial screenings. You can select the video option when booking.
+                                                A video slot may be requested when listed. Suitability, availability, location rules, and care arrangements require direct confirmation.
                                             </AccordionContent>
                                         </AccordionItem>
                                         <AccordionItem value="item-3">
-                                            <AccordionTrigger>What should I bring to my first visit?</AccordionTrigger>
+                                            <AccordionTrigger>Does Curevo confirm insurance or fees?</AccordionTrigger>
                                             <AccordionContent className="text-zinc-600 dark:text-zinc-400">
-                                                Please bring your ID, insurance card, and any relevant medical records or test results from other providers. A list of current medications is also helpful.
+                                                No. Displayed fees are submitted listing data. Confirm fees, insurance, payment, cancellation, and required documents with the clinic before the visit.
                                             </AccordionContent>
                                         </AccordionItem>
                                     </Accordion>
@@ -410,10 +386,6 @@ export default function DoctorProfilePage() {
                                 <DoctorReviews doctorId={doctor._id} doctorName={doctor.userId?.name} />
                             </TabsContent>
                             
-                            {/* INSURANCE CONTENT */}
-                            <TabsContent value="insurance" key="insurance" className="mt-6">
-                                <InsuranceTab />
-                            </TabsContent>
                             </AnimatePresence>
                         </Tabs>
 
@@ -516,9 +488,9 @@ export default function DoctorProfilePage() {
                             <div className="bg-blue-50 dark:bg-blue-950/30 p-4 rounded-xl flex gap-3 items-start border border-blue-100 dark:border-blue-900/50">
                                 <Shield className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 shrink-0" />
                                 <div>
-                                    <h4 className="font-semibold text-blue-900 dark:text-blue-200 text-sm">Safe & Secure</h4>
+                                    <h4 className="font-semibold text-blue-900 dark:text-blue-200 text-sm">Prototype booking</h4>
                                     <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
-                                        Your medical data is encrypted. Booking is instantly confirmed.
+                                        A listed slot may be requested but availability and care are not guaranteed.
                                     </p>
                                 </div>
                             </div>
@@ -526,13 +498,13 @@ export default function DoctorProfilePage() {
                             {/* Additional Info Widget */}
                             <div className="bg-white dark:bg-zinc-950 rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 space-y-4 shadow-sm">
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="text-zinc-500 dark:text-zinc-400">Response Time</span>
-                                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">~ 1 Hour</span>
+                                    <span className="text-zinc-500 dark:text-zinc-400">Response time</span>
+                                    <span className="font-semibold text-zinc-900 dark:text-zinc-100">Not provided</span>
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between items-center text-sm">
-                                    <span className="text-zinc-500">Instant Consultation</span>
-                                    <Badge variant="outline" className="text-emerald-600 bg-emerald-50 border-emerald-100">Available</Badge>
+                                    <span className="text-zinc-500">Immediate consultation</span>
+                                    <Badge variant="outline">Not offered</Badge>
                                 </div>
                             </div>
                         </div>
@@ -550,7 +522,6 @@ export default function DoctorProfilePage() {
         </div>
     );
 }
-
 function SimilarDoctors({ specialization, currentDoctorId }: { specialization: string, currentDoctorId: string }) {
     const router = useRouter();
     const { data } = useQuery({
@@ -770,6 +741,7 @@ function DoctorReviews({ doctorId, doctorName }: { doctorId: string, doctorName?
                                         </Avatar>
                                         <div>
                                             <h4 className="font-bold text-zinc-900 dark:text-zinc-100">{review.patientId?.name || 'Anonymous'}</h4>
+                                            {review.isSynthetic && <span className="text-[10px] font-semibold uppercase text-amber-600 dark:text-amber-400">Synthetic review</span>}
                                             <div className="flex items-center gap-2 mt-1">
                                                 <div className="flex">
                                                     {Array(5).fill(0).map((_, i) => (
@@ -795,66 +767,4 @@ function DoctorReviews({ doctorId, doctorName }: { doctorId: string, doctorName?
             </div>
         </div>
     );
-}
-
-function InsuranceTab() {
-    const [search, setSearch] = useState("");
-    
-    const insurances = {
-        "Major Providers": ["BlueCross BlueShield", "Aetna", "UnitedHealthcare", "Cigna", "Humana"],
-        "State Plans": ["Medicare", "Medicaid", "State Health Plan"],
-        "Other": ["Kaiser Permanente", "Molina Healthcare", "Ambetter", "Oscar Health"]
-    };
-
-    return (
-        <Card className="border-none shadow-sm dark:bg-zinc-900/50 dark:border-zinc-800 text-left">
-            <CardHeader>
-                <CardTitle>Insurance Coverage</CardTitle>
-                <CardDescription>Search for your insurance provider to verify coverage.</CardDescription>
-                
-                <div className="pt-4 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                    <Input 
-                        placeholder="Search insurance provider..." 
-                        className="pl-10 h-11 bg-zinc-50 dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
-                </div>
-            </CardHeader>
-            <CardContent className="space-y-8">
-                {Object.entries(insurances).map(([category, providers]) => {
-                    const filtered = providers.filter(p => p.toLowerCase().includes(search.toLowerCase()));
-                    if (filtered.length === 0) return null;
-                    
-                    return (
-                        <div key={category}>
-                            <h4 className="font-semibold text-zinc-900 dark:text-zinc-100 mb-4 text-sm uppercase tracking-wider">{category}</h4>
-                            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-                                {filtered.map(provider => (
-                                    <div key={provider} className="flex items-center gap-3 p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10 cursor-default transition-all group">
-                                        <div className="h-8 w-8 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/30">
-                                            <Check className="w-4 h-4 text-zinc-400 group-hover:text-emerald-600 dark:group-hover:text-emerald-400" />
-                                        </div>
-                                        <span className="text-zinc-700 dark:text-zinc-200 font-medium text-sm">{provider}</span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    );
-                })}
-                
-                {!Object.values(insurances).flat().some(p => p.toLowerCase().includes(search.toLowerCase())) && (
-                    <div className="text-center py-12 text-zinc-500">
-                        <p>No insurance providers found matching "{search}"</p>
-                    </div>
-                )}
-            </CardContent>
-            <CardFooter className="bg-zinc-50 dark:bg-zinc-900/30 border-t border-zinc-100 dark:border-zinc-800 p-6">
-                <p className="text-sm text-zinc-500 italic">
-                    Note: Insurance plans vary by employer and region. Please contact the clinic directly to verify your specific plan coverage.
-                </p>
-            </CardFooter>
-        </Card>
-    )
 }

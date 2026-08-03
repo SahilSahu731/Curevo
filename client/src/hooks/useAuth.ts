@@ -1,29 +1,33 @@
 import { useAuthStore } from '@/store/authStore';
 
 export const useAuth = () => {
-  const { 
-    user, 
-    token,
-    isLoading, 
+  const {
+    user,
+    isLoading,
     login,
     register,
     logout,
-    getCurrentUser 
+    verifyMfa,
+    mfaRequired,
+    mfaEnrollmentRequired,
+    getCurrentUser
   } = useAuthStore();
 
-  const isAuthenticated = !!token;
+  const isAuthenticated = Boolean(user);
 
   return {
     // User data
     user,
-    token,
     isAuthenticated,
     isLoading,
-    
+
     // Auth actions
     login,
     register,
     logout,
+    verifyMfa,
+    mfaRequired,
+    mfaEnrollmentRequired,
     getCurrentUser,
   };
 };

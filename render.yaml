@@ -9,12 +9,18 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: ALLOW_PRODUCTION_WRITES
+        value: "false"
       - key: CLIENT_URL
         sync: false
       - key: MONGO_URI
         sync: false
-      - key: JWT_SECRET
+      - key: SESSION_SECRET
         sync: false
+      - key: ADDITIONAL_CLIENT_ORIGINS
+        sync: false
+      - key: COOKIE_SAME_SITE
+        value: "none"
       - key: CLOUDINARY_CLOUD_NAME
         sync: false
       - key: CLOUDINARY_API_KEY

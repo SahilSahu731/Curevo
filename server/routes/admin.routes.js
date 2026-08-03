@@ -7,7 +7,8 @@ import {
     getUserAppointments,
     getAllAppointments,
     getDoctorVerifications,
-    reviewDoctorVerification
+    reviewDoctorVerification,
+    downloadDoctorLicense
 } from '../controllers/admin.controller.js';
 import { getAllFeedback, updateFeedback } from '../controllers/feedback.controller.js';
 import { protect, authorize } from '../middlewares/auth.middleware.js';
@@ -26,6 +27,7 @@ router.delete('/users/:id', deleteUser);
 router.get('/users/:id/appointments', getUserAppointments);
 router.get('/appointments', getAllAppointments);
 router.get('/doctor-verifications', getDoctorVerifications);
+router.get('/doctor-verifications/:id/license', downloadDoctorLicense);
 router.patch('/doctor-verifications/:id', validate(verificationSchemas.review), reviewDoctorVerification);
 router.get('/feedback', getAllFeedback);
 router.patch('/feedback/:id', validate(feedbackSchemas.update), updateFeedback);

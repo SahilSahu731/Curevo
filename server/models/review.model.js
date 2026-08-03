@@ -31,6 +31,7 @@ const ReviewSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+ReviewSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
 const Review = mongoose.models.Review || mongoose.model("Review", ReviewSchema);
 export default Review;

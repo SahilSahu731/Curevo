@@ -57,6 +57,9 @@ const DoctorSchema = new mongoose.Schema(
         type: String,
         trim: true,
       },
+      licenseFilePublicId: { type: String, select: false },
+      licenseFileResourceType: { type: String, select: false },
+      licenseFileFormat: { type: String, select: false },
       submittedAt: Date,
       reviewedAt: Date,
       reviewedBy: {
@@ -102,6 +105,7 @@ const DoctorSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+DoctorSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
 // Compound index for quick lookups and ensuring unique clinic-doctor associations
 DoctorSchema.index({ userId: 1, clinicId: 1 }, { unique: true });

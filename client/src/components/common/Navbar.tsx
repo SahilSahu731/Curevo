@@ -36,7 +36,6 @@ const Navbar: React.FC = () => {
 
   // Close menu on resize if it enters desktop view
   useEffect(() => {
-    console.log()
     const handleResize = () => {
       if (window.innerWidth >= 768 && isOpen) {
         setIsOpen(false);

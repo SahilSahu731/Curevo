@@ -1,36 +1,45 @@
-import axios, { AxiosError } from "axios";
-import { useAuthStore } from "@/store/authStore";
+import axios, { AxiosError } from "axios"
+import { getCsrfToken } from "./csrf"
 
 const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
   withCredentials: true,
-});
+  timeout: 15_000,
+  maxContentLength: 10 * 1024 * 1024,
+  maxBodyLength: 10 * 1024 * 1024,
+})
 
-// REQUEST INTERCEPTOR
-apiClient.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token;
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+apiClient.interceptors.request.use(async (config) => {
+  const method = (config.method || "get").toUpperCase()
+  if (!["GET", "HEAD", "OPTIONS"].includes(method)) {
+    config.headers.set("X-CSRF-Token", await getCsrfToken())
   }
-  return config;
-});
+  return config
+})
 
-// RESPONSE INTERCEPTOR
 apiClient.interceptors.response.use(
   (response) => response,
-  (error: AxiosError) => {
-    const status = error.response?.status;
-    if (status === 401) {
-      const requestUrl = error.config?.url ?? '';
-      useAuthStore.getState().logout();
-      
-      const skipRedirect = ['/auth/me', '/auth/login', '/auth/register'].some(url => requestUrl.includes(url));
-      if (!skipRedirect && typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
+  async (error: AxiosError) => {
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      const { clearSessionState } = await import("@/store/authStore")
+      clearSessionState()
+      const requestUrl = error.config?.url || ""
+      const publicAuthRequest = [
+        "/auth/me",
+        "/auth/csrf",
+        "/auth/login",
+        "/auth/register",
+        "/auth/forgot-password",
+        "/auth/reset-password",
+        "/auth/verify-email",
+        "/auth/change-email/confirm",
+        "/auth/mfa/verify",
+      ]
+        .some((path) => requestUrl.includes(path))
+      if (!publicAuthRequest) window.location.assign(`/login?from=${encodeURIComponent(window.location.pathname)}`)
     }
-    return Promise.reject(error);
-  }
-);
+    return Promise.reject(error)
+  },
+)
 
-export default apiClient;
+export default apiClient

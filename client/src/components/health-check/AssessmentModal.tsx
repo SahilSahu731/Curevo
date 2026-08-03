@@ -26,6 +26,7 @@ import {
   AssessmentResult 
 } from "@/lib/healthCalculations";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 
 // Question types
 interface Question {
@@ -63,7 +64,7 @@ const questionSets: Record<string, Question[]> = {
   bmi: [
     { id: "b1", text: "What is your weight?", type: "slider", min: 30, max: 200, unit: "kg" },
     { id: "b2", text: "What is your height?", type: "slider", min: 100, max: 220, unit: "cm" },
-    { id: "b3", text: "What is your age?", type: "slider", min: 10, max: 100, unit: "years" },
+    { id: "b3", text: "What is your age?", type: "slider", min: 18, max: 100, unit: "years" },
     { id: "b4", text: "What is your biological sex?", type: "choice", options: [{ value: 0, label: "Male" }, { value: 1, label: "Female" }] },
     { id: "b5", text: "How would you describe your activity level?", type: "choice", options: [{ value: 0, label: "Sedentary" }, { value: 1, label: "Lightly Active" }, { value: 2, label: "Moderately Active" }, { value: 3, label: "Very Active" }] },
   ],
@@ -116,6 +117,8 @@ export function AssessmentModal({ isOpen, onClose, tool }: AssessmentModalProps)
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<AssessmentResult | null>(null);
+  const [hasAcknowledged, setHasAcknowledged] = useState(false);
+  const [noticeChecked, setNoticeChecked] = useState(false);
 
   const questions = tool ? questionSets[tool.id] || [] : [];
 
@@ -125,6 +128,8 @@ export function AssessmentModal({ isOpen, onClose, tool }: AssessmentModalProps)
       setAnswers({});
       setResult(null);
       setIsAnalyzing(false);
+      setHasAcknowledged(false);
+      setNoticeChecked(false);
     }
   }, [isOpen]);
 
@@ -208,7 +213,7 @@ export function AssessmentModal({ isOpen, onClose, tool }: AssessmentModalProps)
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-white">{tool.title}</h2>
               <p className="text-sm text-slate-500 dark:text-slate-400">
-                {result ? "Your Results" : `Question ${currentStep + 1} of ${questions.length}`}
+                {!hasAcknowledged ? "Read before continuing" : result ? "Your Results" : `Question ${currentStep + 1} of ${questions.length}`}
               </p>
             </div>
           </div>
@@ -218,7 +223,7 @@ export function AssessmentModal({ isOpen, onClose, tool }: AssessmentModalProps)
         </div>
 
         {/* Progress Bar */}
-        {!result && !isAnalyzing && (
+        {hasAcknowledged && !result && !isAnalyzing && (
           <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800">
             <motion.div 
               className="h-full bg-indigo-600"
@@ -231,7 +236,22 @@ export function AssessmentModal({ isOpen, onClose, tool }: AssessmentModalProps)
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-6 md:p-8">
           <AnimatePresence mode="wait">
-            {isAnalyzing ? (
+            {!hasAcknowledged ? (
+              <motion.div key="notice" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-5">
+                <div className="border-l-4 border-amber-500 bg-amber-50 p-4 text-sm leading-6 text-amber-950 dark:bg-amber-950/40 dark:text-amber-100">
+                  This is an unvalidated educational calculator using fixed rules. It is not medical advice, diagnosis, triage, treatment, or an emergency service. A result can be wrong or incomplete.
+                </div>
+                <div className="border-l-4 border-red-500 bg-red-50 p-4 text-sm leading-6 text-red-950 dark:bg-red-950/40 dark:text-red-100">
+                  If you have chest pain, severe breathing difficulty, fainting, signs of stroke, thoughts of self-harm, or another urgent concern, stop and contact local emergency services now.
+                </div>
+                <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">For adults 18 and older. Answers are processed in this browser and are cleared when this page is reloaded. Do not enter another person&apos;s information.</p>
+                <label className="flex items-start gap-3 text-sm text-slate-700 dark:text-slate-200">
+                  <Checkbox checked={noticeChecked} onCheckedChange={(value) => setNoticeChecked(value === true)} />
+                  <span>I understand the limitations and want to continue with an educational wellness reflection.</span>
+                </label>
+                <Button className="w-full" disabled={!noticeChecked} onClick={() => setHasAcknowledged(true)}>Continue</Button>
+              </motion.div>
+            ) : isAnalyzing ? (
               <motion.div 
                 key="analyzing"
                 initial={{ opacity: 0 }}
@@ -243,8 +263,8 @@ export function AssessmentModal({ isOpen, onClose, tool }: AssessmentModalProps)
                   <div className="w-24 h-24 rounded-full border-4 border-slate-200 dark:border-slate-700" />
                   <div className="absolute inset-0 w-24 h-24 rounded-full border-4 border-t-indigo-600 animate-spin" />
                 </div>
-                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Analyzing Your Data</h3>
-                <p className="text-slate-500 dark:text-slate-400">Our AI model is processing your responses...</p>
+                <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">Calculating the summary</h3>
+                <p className="text-slate-500 dark:text-slate-400">Applying fixed rules to your responses...</p>
               </motion.div>
             ) : result ? (
               <motion.div 
@@ -419,7 +439,7 @@ export function AssessmentModal({ isOpen, onClose, tool }: AssessmentModalProps)
         </div>
 
         {/* Footer */}
-        {!result && !isAnalyzing && (
+        {hasAcknowledged && !result && !isAnalyzing && (
           <div className="p-6 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900">
             <Button 
               variant="ghost" 

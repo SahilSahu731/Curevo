@@ -71,6 +71,7 @@ const MedicalRecordSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+MedicalRecordSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
 MedicalRecordSchema.index({ patientId: 1, createdAt: -1 });
 MedicalRecordSchema.index({ doctorId: 1, createdAt: -1 });

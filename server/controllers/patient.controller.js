@@ -1,6 +1,7 @@
 import Appointment from "../models/appointment.model.js";
 import { generateToken } from "../utils/tokenGenerator.js";
 import { addToQueue, removeFromQueue } from "../utils/queueManager.js";
+import { createTelehealthRoomId } from "../utils/telehealth.js";
 
 const getStartOfDay = (value = new Date()) => {
     const dateValue = new Date(value);
@@ -52,7 +53,8 @@ export const bookAppointment = async (req, res) => {
         });
 
         if (appointment.consultationType === 'video') {
-            appointment.telehealthRoomId = `curevo-${appointment._id}`;
+            appointment.telehealthRoomId = createTelehealthRoomId();
+            appointment.telehealthGrantVersion = 1;
             appointment.telehealthUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/telehealth/room/${appointment.telehealthRoomId}`;
             await appointment.save();
         }

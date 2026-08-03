@@ -14,7 +14,7 @@ export default function Footer() {
                             SmartQueue
                         </Link>
                         <p className="text-base leading-relaxed max-w-xs font-body">
-                             Revolutionizing healthcare access with intelligent queue management and real-time scheduling.
+                             A pre-release demonstration of appointment and clinic queue workflows.
                         </p>
                     </div>
                     
@@ -49,13 +49,8 @@ export default function Footer() {
                 </div>
                 
                 <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-6 font-body text-sm">
-                    <p>&copy; {new Date().getFullYear()} SmartQueue Inc. All rights reserved.</p>
-                    <div className="flex gap-6">
-                        <a href="#" className="hover:text-foreground transition-colors">Twitter</a>
-                        <a href="#" className="hover:text-foreground transition-colors">LinkedIn</a>
-                        <a href="#" className="hover:text-foreground transition-colors">GitHub</a>
-                        <a href="#" className="hover:text-foreground transition-colors">Instagram</a>
-                    </div>
+                    <p>&copy; {new Date().getFullYear()} SmartQueue prototype. Public launch is not approved.</p>
+                    <p>Not for emergencies, diagnosis, or treatment.</p>
                 </div>
             </div>
         </footer>

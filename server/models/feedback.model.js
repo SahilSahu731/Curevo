@@ -49,6 +49,7 @@ const FeedbackSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+FeedbackSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
 FeedbackSchema.index({ status: 1, createdAt: -1 });
 

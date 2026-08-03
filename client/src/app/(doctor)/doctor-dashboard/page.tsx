@@ -118,7 +118,7 @@ export default function DoctorDashboard() {
 
         const activeDoctorId = appointments[0]?.doctorId?._id;
         if (activeDoctorId) {
-            socket.emit("join-doctor", activeDoctorId);
+            socket.emit("join-doctor", { doctorId: activeDoctorId });
         }
 
         const refresh = () => fetchTodayAppointments();

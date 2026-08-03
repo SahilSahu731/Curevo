@@ -166,9 +166,10 @@ export const getDoctors = async (req, res) => {
     }
 
     let doctors = await Doctor.find(query)
+      .select('-verification -currentPatient -blockedSlots')
       .populate({
         path: 'userId',
-        select: 'name email profileImage phone gender',
+        select: 'name profileImage gender',
       })
       .populate({
         path: 'clinicId',
@@ -218,6 +219,7 @@ export const getDoctor = async (req, res) => {
     }
 
     const doctor = await Doctor.findById(req.params.id)
+      .select('-verification -currentPatient -blockedSlots')
       .populate({
         path: 'userId',
         select: 'name email profileImage phone bio',
@@ -462,7 +464,7 @@ export const completeConsultation = async (req, res) => {
 
 export const submitVerification = async (req, res) => {
   try {
-    const doctor = await Doctor.findOne({ userId: req.user.id });
+    const doctor = await Doctor.findOne({ userId: req.user.id }).select('+verification.licenseFilePublicId +verification.licenseFileResourceType +verification.licenseFileFormat');
     if (!doctor) {
       return res.status(404).json({ success: false, error: "Doctor profile not found." });
     }
@@ -478,15 +480,26 @@ export const submitVerification = async (req, res) => {
     const b64 = Buffer.from(req.file.buffer).toString("base64");
     const dataURI = `data:${req.file.mimetype};base64,${b64}`;
     const cloudinary = (await import("../config/cloudinary.js")).default;
+    if (doctor.verification?.licenseFilePublicId) {
+      await cloudinary.uploader.destroy(doctor.verification.licenseFilePublicId, {
+        resource_type: doctor.verification.licenseFileResourceType || 'image',
+        type: 'authenticated',
+        invalidate: true,
+      });
+    }
     const result = await cloudinary.uploader.upload(dataURI, {
       folder: "curevo/licenses",
       resource_type: "auto",
+      type: "authenticated",
     });
 
     doctor.verification = {
       status: "pending",
       licenseNumber: licenseNumber.trim(),
-      licenseFileUrl: result.secure_url,
+      licenseFileUrl: undefined,
+      licenseFilePublicId: result.public_id,
+      licenseFileResourceType: result.resource_type,
+      licenseFileFormat: result.format,
       submittedAt: new Date(),
       notes: "",
     };
@@ -615,7 +628,20 @@ export const getAvailableSlots = async (req, res) => {
         return res.status(400).json({ success: false, error: "Date query parameter is required (YYYY-MM-DD)." });
     }
 
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ success: false, error: "Date must use YYYY-MM-DD format." });
+    }
+
     const targetDate = new Date(date);
+    if (Number.isNaN(targetDate.getTime())) {
+        return res.status(400).json({ success: false, error: "Invalid date." });
+    }
+    const today = getStartOfDay();
+    const latestAllowed = getStartOfDay();
+    latestAllowed.setDate(latestAllowed.getDate() + 180);
+    if (targetDate < today || targetDate > latestAllowed) {
+        return res.status(400).json({ success: false, error: "Date must be within the next 180 days." });
+    }
     const dayOfWeek = targetDate.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
 
     const doctor = await Doctor.findById(doctorId).populate('clinicId');
@@ -644,6 +670,9 @@ export const getAvailableSlots = async (req, res) => {
     const workingDays = doctor.availability?.days?.length ? doctor.availability.days : clinic.workingDays;
     if (!workingDays.includes(dayOfWeek)) {
         return res.status(200).json({ success: true, message: `Doctor is unavailable on ${dayOfWeek}.`, data: [] });
+    }
+    if (doctor.verification?.status !== 'approved' || !doctor.isAvailable) {
+        return res.status(409).json({ success: false, error: "This clinician is not currently eligible for booking." });
     }
 
     const effectiveStartTime = doctor.availability?.startTime || openingTime;

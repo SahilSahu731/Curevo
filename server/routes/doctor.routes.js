@@ -17,8 +17,8 @@ import {
     updateDoctor,
     getDoctorAppointments
 } from '../controllers/doctor.controller.js';
-import { protect, authorize } from '../middlewares/auth.middleware.js';
-import upload from '../middlewares/upload.middleware.js';
+import { protect, authorize, requireVerifiedEmail } from '../middlewares/auth.middleware.js';
+import upload, { validateUploadSignature } from '../middlewares/upload.middleware.js';
 
 const router = express.Router();
 
@@ -28,16 +28,16 @@ router.get('/slots/:id', getAvailableSlots);
 
 // Protected routes (Doctor/Admin)
 router.get('/appointments', protect, authorize('doctor'), getDoctorAppointments);
-router.post('/call-next', protect, authorize('doctor'), callNextPatient);
-router.put('/complete-consultation/:id', protect, authorize('doctor'), completeConsultation);
-router.patch('/mark-absent/:id', protect, authorize('doctor'), markPatientAbsent);
+router.post('/call-next', protect, authorize('doctor'), requireVerifiedEmail, callNextPatient);
+router.put('/complete-consultation/:id', protect, authorize('doctor'), requireVerifiedEmail, completeConsultation);
+router.patch('/mark-absent/:id', protect, authorize('doctor'), requireVerifiedEmail, markPatientAbsent);
 router.get('/availability/schedule', protect, authorize('doctor'), getAvailability);
-router.put('/availability/schedule', protect, authorize('doctor'), updateAvailability);
+router.put('/availability/schedule', protect, authorize('doctor'), requireVerifiedEmail, updateAvailability);
 router.get('/verification/me', protect, authorize('doctor'), getMyVerification);
-router.post('/verification/license', protect, authorize('doctor'), upload.single('license'), submitVerification);
-router.post('/', protect, authorize('admin', 'doctor'), createDoctor); 
-router.put('/profile', protect, authorize('doctor'), updateDoctorProfile);
-router.patch('/availability', protect, authorize('doctor'), toggleAvailability);
+router.post('/verification/license', protect, authorize('doctor'), requireVerifiedEmail, upload.single('license'), validateUploadSignature, submitVerification);
+router.post('/', protect, authorize('admin', 'doctor'), requireVerifiedEmail, createDoctor);
+router.put('/profile', protect, authorize('doctor'), requireVerifiedEmail, updateDoctorProfile);
+router.patch('/availability', protect, authorize('doctor'), requireVerifiedEmail, toggleAvailability);
 
 // Admin Management
 router.delete('/:id', protect, authorize('admin'), deleteDoctor);

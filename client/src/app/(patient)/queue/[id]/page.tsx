@@ -33,7 +33,7 @@ export default function QueueTrackingPage() {
     useEffect(() => {
         connect();
         if (socket && id) {
-            socket.emit('join-queue', id);
+            socket.emit('join-queue', { appointmentId: id });
             
             const refreshQueue = () => {
                 queryClient.invalidateQueries({ queryKey: ['queue-position', id] });

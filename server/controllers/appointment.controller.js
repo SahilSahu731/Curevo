@@ -1,8 +1,11 @@
 import mongoose from "mongoose";
 import Appointment from "../models/appointment.model.js";
 import Doctor from "../models/doctor.model.js";
+import Clinic from "../models/clinic.model.js";
 import { generateToken } from "../utils/tokenGenerator.js";
 import { addToQueue, removeFromQueue } from "../utils/queueManager.js";
+import { createTelehealthRoomId, isLegacyRoomId, isTelehealthWindowOpen } from "../utils/telehealth.js";
+import { createRoomGrant } from "../utils/roomGrant.js";
 
 const getStartOfDay = (value = new Date()) => {
   const date = new Date(value);
@@ -34,6 +37,13 @@ const canAccessAppointment = async (user, appointment) => {
   return doctor?._id.toString() === appointment.doctorId?._id?.toString?.() || doctor?._id.toString() === appointment.doctorId?.toString?.();
 };
 
+const canJoinTelehealth = async (user, appointment) => {
+  if (!user?.emailVerifiedAt || !['patient', 'doctor'].includes(user.role)) return false;
+  if (user.role === 'patient') return appointment.patientId?.toString() === user.id;
+  const doctor = await Doctor.findOne({ userId: user.id, _id: appointment.doctorId, 'verification.status': 'approved' }).select('_id').lean();
+  return Boolean(doctor);
+};
+
 const ensureSlotAvailable = async ({ doctorId, clinicId, date, slotTime, excludeId }) => {
   const conflict = await Appointment.findOne({
     _id: excludeId ? { $ne: excludeId } : { $exists: true },
@@ -54,7 +64,10 @@ const attachTelehealth = (appointment) => {
     return;
   }
 
-  appointment.telehealthRoomId = appointment.telehealthRoomId || `curevo-${appointment._id}`;
+  if (!appointment.telehealthRoomId || isLegacyRoomId(appointment.telehealthRoomId)) {
+    appointment.telehealthRoomId = createTelehealthRoomId();
+    appointment.telehealthGrantVersion = (appointment.telehealthGrantVersion || 0) + 1;
+  }
   appointment.telehealthUrl = `${process.env.CLIENT_URL || 'http://localhost:3000'}/telehealth/room/${appointment.telehealthRoomId}`;
 };
 
@@ -115,8 +128,18 @@ export const createAppointment = async (req, res) => {
 
     const doctor = await Doctor.findById(doctorId);
     if (!doctor) return res.status(404).json({ success: false, error: "Doctor not found" });
+    if (doctor.verification?.status !== 'approved' || !doctor.isAvailable) {
+      return res.status(409).json({ success: false, error: "This clinician is not currently eligible for booking" });
+    }
 
     const actualClinicId = clinicId || doctor.clinicId;
+    if (actualClinicId.toString() !== doctor.clinicId.toString()) {
+      return res.status(400).json({ success: false, error: "Clinician is not assigned to the selected clinic" });
+    }
+    const clinic = await Clinic.findById(actualClinicId).select('isActive');
+    if (!clinic?.isActive) {
+      return res.status(409).json({ success: false, error: "This clinic is not currently accepting appointment requests" });
+    }
     const appointmentDate = getStartOfDay(date);
     const available = await ensureSlotAvailable({
       doctorId,
@@ -195,9 +218,13 @@ export const updateAppointment = async (req, res) => {
       if (!available) return res.status(409).json({ success: false, error: "Slot already booked" });
     }
 
+    const statusChanged = req.body.status !== undefined && req.body.status !== appointment.status;
     allowedFields.forEach((field) => {
       if (req.body[field] !== undefined) appointment[field] = req.body[field];
     });
+    if (statusChanged) {
+      appointment.telehealthGrantVersion = (appointment.telehealthGrantVersion || 0) + 1;
+    }
     appointment.date = nextDate;
     attachTelehealth(appointment);
     await appointment.save();
@@ -223,6 +250,7 @@ export const deleteAppointment = async (req, res) => {
     }
 
     appointment.status = 'cancelled';
+    appointment.telehealthGrantVersion = (appointment.telehealthGrantVersion || 0) + 1;
     await appointment.save();
     await removeFromQueue(appointment);
     res.status(200).json({ success: true, message: "Appointment cancelled" });
@@ -236,15 +264,25 @@ export const getTelehealthSession = async (req, res) => {
   try {
     const appointment = await Appointment.findById(req.params.id);
     if (!appointment) return res.status(404).json({ success: false, error: "Appointment not found" });
-    if (!(await canAccessAppointment(req.user, appointment))) {
+    if (!(await canJoinTelehealth(req.user, appointment))) {
       return res.status(403).json({ success: false, error: "Not authorized" });
     }
     if (appointment.consultationType !== 'video') {
       return res.status(400).json({ success: false, error: "This appointment is not a telehealth visit" });
     }
+    if (!isTelehealthWindowOpen(appointment)) {
+      return res.status(403).json({ success: false, error: "The telehealth room is only available during the appointment window" });
+    }
 
     attachTelehealth(appointment);
     await appointment.save();
+    const accessGrant = createRoomGrant({
+      appointmentId: appointment._id,
+      roomId: appointment.telehealthRoomId,
+      userId: req.user._id,
+      role: req.user.role,
+      grantVersion: appointment.telehealthGrantVersion,
+    });
 
     res.status(200).json({
       success: true,
@@ -252,10 +290,42 @@ export const getTelehealthSession = async (req, res) => {
         roomId: appointment.telehealthRoomId,
         url: appointment.telehealthUrl,
         appointmentId: appointment._id,
+        accessGrant,
       }
     });
   } catch (error) {
     console.error("Telehealth Session Error:", error);
     res.status(500).json({ success: false, error: "Server Error" });
+  }
+};
+
+export const getTelehealthAccessByRoom = async (req, res) => {
+  try {
+    const appointment = await Appointment.findOne({
+      telehealthRoomId: req.params.roomId,
+      consultationType: 'video',
+    });
+    if (!appointment) return res.status(404).json({ success: false, error: "Telehealth room not found" });
+    if (!(await canJoinTelehealth(req.user, appointment))) {
+      return res.status(403).json({ success: false, error: "Not authorized" });
+    }
+    if (!isTelehealthWindowOpen(appointment)) {
+      return res.status(403).json({ success: false, error: "The telehealth room is only available during the appointment window" });
+    }
+    attachTelehealth(appointment);
+    await appointment.save();
+    const accessGrant = createRoomGrant({
+      appointmentId: appointment._id,
+      roomId: appointment.telehealthRoomId,
+      userId: req.user._id,
+      role: req.user.role,
+      grantVersion: appointment.telehealthGrantVersion,
+    });
+    res.status(200).json({
+      success: true,
+      data: { roomId: appointment.telehealthRoomId, appointmentId: appointment._id, accessGrant },
+    });
+  } catch {
+    res.status(500).json({ success: false, error: "Telehealth access could not be prepared" });
   }
 };

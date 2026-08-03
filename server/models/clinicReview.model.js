@@ -30,6 +30,7 @@ const ClinicReviewSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+ClinicReviewSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
 // Prevent multiple reviews from the same patient for the same clinic if desired
 // ClinicReviewSchema.index({ clinicId: 1, patientId: 1 }, { unique: true });

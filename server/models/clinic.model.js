@@ -102,6 +102,7 @@ const ClinicSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+ClinicSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
 const Clinic = mongoose.models.Clinic || mongoose.model("Clinic", ClinicSchema);
 export default Clinic;

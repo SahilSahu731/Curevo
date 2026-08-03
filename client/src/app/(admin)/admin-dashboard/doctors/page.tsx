@@ -61,6 +61,14 @@ export default function DoctorsManagementPage() {
         onError: () => toast.error("Failed to update verification")
     });
 
+    const openLicense = async (doctorId: string) => {
+        try {
+            await adminService.downloadDoctorLicense(doctorId);
+        } catch {
+            toast.error("Private license file is unavailable");
+        }
+    };
+
     const handleEdit = (doctor: any) => {
         setEditingDoctor(doctor);
         setIsEditOpen(true);
@@ -200,11 +208,7 @@ export default function DoctorsManagementPage() {
 
                             {doctor.verification?.status === 'pending' && (
                                 <div className="mt-4 grid grid-cols-3 gap-2">
-                                    {doctor.verification?.licenseFileUrl && (
-                                        <Button variant="outline" size="sm" asChild>
-                                            <a href={doctor.verification.licenseFileUrl} target="_blank" rel="noreferrer">License</a>
-                                        </Button>
-                                    )}
+                                    <Button variant="outline" size="sm" onClick={() => openLicense(doctor._id)}>License</Button>
                                     <Button size="sm" disabled={reviewMutation.isPending} onClick={() => reviewMutation.mutate({ id: doctor._id, status: "approved" })}>
                                         Approve
                                     </Button>

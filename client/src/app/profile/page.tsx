@@ -11,10 +11,11 @@ import {
     Camera,
     Loader2,
     User as UserIcon,
-    HeartPulse,
-    Activity,
     FileCheck,
-    Upload
+    Upload,
+    Download,
+    Trash2,
+    Video
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -42,9 +43,12 @@ import {
 } from "@/components/ui/dialog";
 import { UpdateProfileDialog } from "@/components/profile/UpdateProfileDialog";
 import { format } from "date-fns";
+import apiClient from "@/api/client";
+import { useRouter } from "next/navigation";
 
 export default function ProfilePage() {
-    const { user, setUser } = useAuthStore();
+    const { user, setUser, logout } = useAuthStore();
+    const router = useRouter();
     const queryClient = useQueryClient();
     const [isEditOpen, setIsEditOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -55,6 +59,10 @@ export default function ProfilePage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [licenseFile, setLicenseFile] = useState<File | null>(null);
     const [licenseNumber, setLicenseNumber] = useState("");
+    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+    const [deleteEmail, setDeleteEmail] = useState("");
+    const [deletePassword, setDeletePassword] = useState("");
+    const [privacyActionPending, setPrivacyActionPending] = useState(false);
 
     const { data: verificationData } = useQuery({
         queryKey: ["doctor-verification-me"],
@@ -71,7 +79,7 @@ export default function ProfilePage() {
     const imageMutation = useMutation({
         mutationFn: updateProfileImage,
         onSuccess: (updatedUser) => {
-            setUser(updatedUser, useAuthStore.getState().token);
+            setUser(updatedUser);
             toast.success("Profile photo updated successfully");
             closeUploadDialog();
         },
@@ -130,6 +138,50 @@ export default function ProfilePage() {
 
     const triggerFileInput = () => {
         fileInputRef.current?.click();
+    };
+
+    const downloadAccountData = async () => {
+        setPrivacyActionPending(true);
+        try {
+            const response = await apiClient.get("/auth/export", { responseType: "blob" });
+            const url = URL.createObjectURL(response.data);
+            const anchor = document.createElement("a");
+            anchor.href = url;
+            anchor.download = `curevo-export-${new Date().toISOString().slice(0, 10)}.json`;
+            anchor.click();
+            URL.revokeObjectURL(url);
+            toast.success("Account export downloaded");
+        } catch {
+            toast.error("Account export failed");
+        } finally {
+            setPrivacyActionPending(false);
+        }
+    };
+
+    const deleteAccount = async () => {
+        setPrivacyActionPending(true);
+        try {
+            await apiClient.delete("/auth/account", { data: { confirmEmail: deleteEmail, password: deletePassword } });
+            logout();
+            router.replace("/");
+            toast.success("Account deleted");
+        } catch (error: any) {
+            toast.error(error.response?.data?.error || "Account deletion failed");
+        } finally {
+            setPrivacyActionPending(false);
+        }
+    };
+
+    const revokeTelehealthConsent = async () => {
+        setPrivacyActionPending(true);
+        try {
+            await apiClient.post("/auth/consents", { type: "telehealth", accepted: false, policyVersion: "2026-08-03" });
+            toast.success("Video-visit consent revoked");
+        } catch {
+            toast.error("Consent revocation failed");
+        } finally {
+            setPrivacyActionPending(false);
+        }
     };
 
     // Format address helper
@@ -219,40 +271,23 @@ export default function ProfilePage() {
 
                 {/* Right Side Stats / Quick Actions */}
                 <div className="lg:col-span-4 space-y-6">
-                     <Card className="border-none shadow-lg bg-primary text-primary-foreground relative overflow-hidden">
-                        <div className="absolute -right-10 -top-10 h-32 w-32 bg-white/10 rounded-full blur-3xl"></div>
+                     <Card className="border shadow-lg bg-card">
                         <CardHeader className="pb-2">
-                            <CardTitle className="text-lg font-medium opacity-90 flex items-center gap-2">
-                                <Shield className="w-5 h-5" /> Security Level
+                            <CardTitle className="text-lg font-medium flex items-center gap-2">
+                                <Shield className="w-5 h-5 text-primary" /> Privacy & account
                             </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                            <div className="text-3xl font-bold">Strong</div>
-                            <p className="text-primary-foreground/70 text-sm mt-1">2FA Enabled • Verified</p>
-                            <div className="mt-4 flex gap-2">
-                                <Badge className="bg-white/20 hover:bg-white/30 text-white border-0">Email Verified</Badge>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    <Card className="shadow-lg border-l-4 border-l-rose-500">
-                        <CardHeader className="pb-2">
-                             <CardTitle className="text-base flex items-center justify-between">
-                                <span className="flex items-center gap-2"><HeartPulse className="w-4 h-4 text-rose-500" /> Vitals</span>
-                                <span className="text-xs text-muted-foreground">Detailed view &rarr;</span>
-                             </CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <div className="text-2xl font-bold text-foreground">120/80</div>
-                                    <div className="text-xs text-muted-foreground">Blood Pressure</div>
-                                </div>
-                                <div>
-                                    <div className="text-2xl font-bold text-foreground">72 <span className="text-sm font-normal">bpm</span></div>
-                                    <div className="text-xs text-muted-foreground">Heart Rate</div>
-                                </div>
-                            </div>
+                        <CardContent className="space-y-3">
+                            <p className="text-sm leading-6 text-muted-foreground">Download the data linked to this account or permanently delete it.</p>
+                            <Button variant="outline" className="w-full justify-start" onClick={downloadAccountData} disabled={privacyActionPending}>
+                                <Download className="mr-2 h-4 w-4" /> Download my data
+                            </Button>
+                            <Button variant="outline" className="w-full justify-start" onClick={revokeTelehealthConsent} disabled={privacyActionPending}>
+                                <Video className="mr-2 h-4 w-4" /> Revoke video-visit consent
+                            </Button>
+                            <Button variant="destructive" className="w-full justify-start" onClick={() => setIsDeleteOpen(true)} disabled={privacyActionPending}>
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete account
+                            </Button>
                         </CardContent>
                     </Card>
 
@@ -414,6 +449,31 @@ export default function ProfilePage() {
                         >
                             {imageMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                             Confirm & Upload
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Delete this account?</DialogTitle>
+                        <DialogDescription>This removes linked database records and tracked uploads and cannot be undone. Removal from provider backups is not yet verified.</DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-2">
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium" htmlFor="delete-email">Type {user?.email} to confirm</label>
+                            <input id="delete-email" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={deleteEmail} onChange={(event) => setDeleteEmail(event.target.value)} />
+                        </div>
+                        <div className="space-y-2">
+                            <label className="text-sm font-medium" htmlFor="delete-password">Current password (leave blank for Google accounts)</label>
+                            <input id="delete-password" type="password" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
+                        <Button variant="destructive" onClick={deleteAccount} disabled={privacyActionPending || deleteEmail.trim().toLowerCase() !== user?.email?.toLowerCase()}>
+                            {privacyActionPending ? "Deleting..." : "Permanently delete"}
                         </Button>
                     </DialogFooter>
                 </DialogContent>

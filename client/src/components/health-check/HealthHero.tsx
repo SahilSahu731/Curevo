@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Sparkles } from "lucide-react";
+import { Info } from "lucide-react";
 
 export function HealthHero() {
   return (
@@ -23,8 +23,8 @@ export function HealthHero() {
             animate={{ opacity: 1, scale: 1 }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-violet-200 text-sm font-semibold mb-8 backdrop-blur-sm"
           >
-            <Sparkles className="w-4 h-4" />
-            <span>AI-Powered Health Intelligence</span>
+            <Info className="w-4 h-4" />
+            <span>Browser-based wellness education</span>
           </motion.div>
 
           <motion.h1 
@@ -32,8 +32,8 @@ export function HealthHero() {
             animate={{ opacity: 1, y: 0 }}
             className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl md:text-6xl mb-6"
           >
-            Know Your Health <br/>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-indigo-300">Better Than Ever</span>
+            Explore everyday <br/>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-violet-300 to-indigo-300">wellness patterns</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -41,7 +41,7 @@ export function HealthHero() {
             transition={{ delay: 0.1 }}
             className="mb-10 text-lg text-violet-100/80 sm:text-xl max-w-2xl mx-auto"
           >
-            Comprehensive health assessments powered by advanced algorithms. Check your stress levels, heart health, BMI, and get personalized wellness insights instantly.
+            These simple calculators apply fixed rules to your answers in this browser. They are not validated assessments and cannot diagnose, predict risk, recommend treatment, or detect an emergency.
           </motion.p>
           
           {/* Stats */}
@@ -52,9 +52,9 @@ export function HealthHero() {
             className="grid grid-cols-3 gap-4 max-w-md mx-auto"
           >
             {[
-              { value: "50K+", label: "Assessments" },
-              { value: "98%", label: "Accuracy" },
-              { value: "24/7", label: "Available" }
+              { value: "Local", label: "Processing" },
+              { value: "Fixed", label: "Rules" },
+              { value: "18+", label: "Adults only" }
             ].map((stat, i) => (
               <div key={i} className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/10">
                 <div className="text-2xl font-bold text-white">{stat.value}</div>

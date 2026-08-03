@@ -153,14 +153,13 @@ function DoctorsPageContent() {
                         transition={{ duration: 0.6 }}
                     >
                         <Badge variant="outline" className="mb-6 px-4 py-1.5 border-emerald-500/30 text-emerald-400 bg-emerald-500/10 backdrop-blur-sm rounded-full text-sm uppercase tracking-widest font-semibold">
-                            World-Class Care
+                            Prototype provider directory
                         </Badge>
                         <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
                             Find Your <span className="text-emerald-400">Specialist</span>
                         </h1>
                         <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                            Book appointments with top-rated doctors across various specializations. 
-                            Prioritize your health with our seamless, premium experience.
+                            Browse submitted profile information and request a listed slot. Credentials, availability, and suitability require independent confirmation.
                         </p>
                         
                         {/* Show active search query */}
@@ -413,13 +412,14 @@ function DoctorCard({ doctor }: { doctor: any }) {
                                         <h3 className="text-xl font-bold text-foreground hover:text-primary transition-colors cursor-pointer">
                                             <Link href={`/doctors/${doctor._id}`}>{doctor.userId?.name}</Link>
                                         </h3>
+                                        {doctor.isSynthetic && <Badge variant="secondary" className="mt-1">Synthetic demo</Badge>}
                                         <p className="text-primary font-medium flex items-center gap-1.5 text-sm mt-0.5">
                                             <Stethoscope className="h-3.5 w-3.5" />
                                             {doctor.specialization}
                                         </p>
                                     </div>
                                     <Badge variant="outline" className={`${doctor.isAvailable ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                                        {doctor.isAvailable ? 'Available' : 'Unavailable'}
+                                        {doctor.isAvailable ? 'Marked available' : 'Marked unavailable'}
                                     </Badge>
                                 </div>
 

@@ -580,7 +580,7 @@ function BookingPageContent() {
                     <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg flex gap-2 items-start">
                       <Shield className="w-4 h-4 text-blue-600 mt-0.5" />
                       <p className="text-xs text-blue-700 dark:text-blue-300">
-                        Your booking is secure and protected. Free cancellation up to 24 hours before.
+                        This creates a prototype appointment request. Confirm availability, fees, cancellation terms, and care directly with the clinic.
                       </p>
                     </div>
                   </>

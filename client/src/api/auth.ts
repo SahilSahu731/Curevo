@@ -1,26 +1,31 @@
-import apiClient from "./client";
-import { User } from "@/store/authStore";
+import apiClient from "./client"
+import type { User } from "@/store/authStore"
 
-interface LoginResponse {
-  user: User;
-  token: string;
+type AuthData = {
+  user?: User
+  mfaRequired?: boolean
+  mfaEnrollmentRequired?: boolean
+  emailVerificationRequired?: boolean
+  session?: { mfaEnrollmentRequired?: boolean }
+  recoveryCodes?: string[]
 }
 
 export const authAPI = {
-  login: async (data: { email: string; password: string }) => {
-    const response = await apiClient.post<LoginResponse>("/auth/login", data);
-    return response.data;
-  },
+  login: async (data: { email: string; password: string; remember?: boolean }) =>
+    (await apiClient.post<{ data: AuthData }>("/auth/login", data)).data.data,
 
-  register: async (data: FormData) => {
-    const response = await apiClient.post("/auth/register", data);
-    return response.data;
-  },
+  register: async (data: FormData) =>
+    (await apiClient.post<{ data: AuthData }>("/auth/register", data)).data.data,
 
-  me: async (token?: string) => {
-    const response = await apiClient.get<{ success: boolean; data: User }>("/auth/me", {
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    });
-    return response.data.data;
-  },
-};
+  me: async () =>
+    (await apiClient.get<{ data: AuthData }>("/auth/me")).data.data,
+
+  logout: async () => apiClient.post("/auth/logout"),
+  logoutAll: async () => apiClient.post("/auth/logout-all"),
+  verifyMfa: async (data: { code?: string; recoveryCode?: string }) =>
+    (await apiClient.post<{ data: AuthData }>("/auth/mfa/verify", data)).data.data,
+  setupMfa: async () =>
+    (await apiClient.post<{ data: { secret: string; uri: string; expiresAt: string } }>("/auth/mfa/setup")).data.data,
+  confirmMfa: async (code: string) =>
+    (await apiClient.post<{ data: AuthData }>("/auth/mfa/confirm", { code })).data.data,
+}

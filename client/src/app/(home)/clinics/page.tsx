@@ -95,8 +95,6 @@ export default function ClinicsPage() {
         document.getElementById("clinic-results")?.scrollIntoView({ behavior: "smooth", block: "start" });
     };
 
-    const filters = ['Open Now', '24/7', 'Parking Available', 'Wheelchair Access'];
-
     return (
         <div className="min-h-screen bg-zinc-50 dark:bg-black font-body mb-20 dark:text-zinc-200">
              {/* --- Hero Section --- */}
@@ -104,10 +102,10 @@ export default function ClinicsPage() {
                 <div className="container mx-auto px-4 max-w-7xl">
                     <div className="max-w-2xl">
                         <h1 className="text-4xl md:text-5xl font-bold text-zinc-900 dark:text-white mb-6 font-heading tracking-tight">
-                            Find Top-Rated <span className="text-emerald-600 dark:text-emerald-400">Clinics</span> Near You
+                            Browse listed <span className="text-emerald-600 dark:text-emerald-400">clinics</span>
                         </h1>
                         <p className="text-lg text-zinc-500 dark:text-zinc-400 mb-8 leading-relaxed">
-                            Discover accredited medical facilities with state-of-the-art technology and experienced specialists. Book appointments instantly.
+                            Review submitted clinic details and request an appointment. Services, hours, accessibility, and availability require confirmation with the clinic.
                         </p>
                         
                         <div className="flex gap-2 relative">
@@ -135,23 +133,6 @@ export default function ClinicsPage() {
                         {filteredClinics.length} {filteredClinics.length === 1 ? 'Facilities' : 'Facilities'} Found
                     </h2>
                     
-                    {/* Tags/Filters */}
-                    <div className="hidden md:flex gap-3">
-                         {filters.map(tag => (
-                             <Badge 
-                                key={tag} 
-                                variant={activeFilters.includes(tag) ? "default" : "outline"}
-                                className={`px-3 py-1.5 cursor-pointer font-medium transition-colors ${
-                                    activeFilters.includes(tag) 
-                                        ? "bg-emerald-600 hover:bg-emerald-700 text-white border-transparent" 
-                                        : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"
-                                }`}
-                                onClick={() => toggleFilter(tag)}
-                             >
-                                 {tag}
-                             </Badge>
-                         ))}
-                    </div>
                 </div>
 
                 {isLoading ? (
@@ -163,7 +144,6 @@ export default function ClinicsPage() {
                 ) : filteredClinics.length > 0 ? (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                         {visibleClinics.map((clinic: any) => {
-                            const isOpen = checkIsOpen(clinic);
                             return (
                                 <motion.div 
                                     key={clinic._id}
@@ -184,16 +164,6 @@ export default function ClinicsPage() {
                                                 alt={clinic.name} 
                                                 className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                                             />
-                                            {/* Top Right Badges */}
-                                            <div className="absolute top-4 right-4 z-20 flex flex-col gap-2 items-end">
-                                                <div className="bg-white/90 dark:bg-black/80 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm">
-                                                    <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" /> 4.8
-                                                </div>
-                                                <Badge className={`border-none ${isOpen ? 'bg-emerald-500/90 text-white' : 'bg-red-500/90 text-white'}`}>
-                                                    {isOpen ? 'Open Now' : 'Closed'}
-                                                </Badge>
-                                            </div>
-                                            
                                             <div className="absolute bottom-4 left-4 z-20 text-white">
                                                 <div className="flex items-center gap-1.5 text-xs font-medium bg-black/40 backdrop-blur-md px-2 py-1 rounded-md text-zinc-100 w-fit mb-1 border border-white/10">
                                                     <Clock className="w-3 h-3" /> {clinic.openingTime} - {clinic.closingTime}
@@ -205,20 +175,21 @@ export default function ClinicsPage() {
                                             <h3 className="font-bold text-xl text-zinc-900 dark:text-white mb-2 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
                                                 {clinic.name}
                                             </h3>
+                                            {clinic.isSynthetic && <Badge variant="secondary" className="mb-3">Synthetic demo</Badge>}
                                             <div className="flex items-start gap-2 text-zinc-500 dark:text-zinc-400 text-sm mb-4">
                                                 <MapPin className="w-4 h-4 shrink-0 mt-0.5 text-zinc-400" />
                                                 <span className="line-clamp-2">{clinic.address}, {clinic.city}</span>
                                             </div>
                                             
                                             <div className="flex flex-wrap gap-2 mb-4">
-                                                {(clinic.services || ['General Medicine', 'Consultation', 'Emergency']).slice(0, 3).map((s: string, i: number) => (
+                                                {(clinic.services || []).slice(0, 3).map((s: string, i: number) => (
                                                     <span key={i} className="text-[10px] uppercase font-bold tracking-wider bg-zinc-100 dark:bg-zinc-900 text-zinc-600 dark:text-zinc-400 px-2 py-1 rounded-sm">
                                                         {s}
                                                     </span>
                                                 ))}
-                                                {(clinic.services?.length || 3) > 3 && (
+                                                {(clinic.services?.length || 0) > 3 && (
                                                     <span className="text-[10px] uppercase font-bold tracking-wider bg-zinc-50 dark:bg-zinc-900 text-zinc-400 px-2 py-1 rounded-sm">
-                                                        +{(clinic.services?.length || 3) - 3}
+                                                        +{(clinic.services?.length || 0) - 3}
                                                     </span>
                                                 )}
                                             </div>

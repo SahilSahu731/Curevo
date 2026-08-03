@@ -19,23 +19,23 @@ export default function CtaSection() {
                     
                     <div className="relative z-10 max-w-3xl mx-auto space-y-8">
                         <h2 className="text-4xl md:text-6xl font-extrabold tracking-tight leading-tight font-heading">
-                            Ready to transform your healthcare experience?
+                            Ready to evaluate the prototype?
                         </h2>
                         <p className="text-white/90 text-lg md:text-xl font-light font-body">
-                            Join thousands of happy patients who have said goodbye to long waiting hours.
+                            Create a test account and use synthetic information while this release remains under review.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
                             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                 <Link href="/register">
                                     <Button size="lg" className="h-14 px-8 text-lg bg-background text-foreground hover:bg-background/90 w-full sm:w-auto font-bold border-2 border-transparent font-heading">
-                                        Get Started Now
+                                        Create Test Account
                                     </Button>
                                 </Link>
                             </motion.div>
                             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                                 <Link href="/book">
                                     <Button size="lg" variant="outline" className="h-14 px-8 text-lg border-2 border-white/30 text-white hover:bg-white/10 bg-transparent w-full sm:w-auto font-medium font-heading">
-                                        Book First Appointment
+                                        Explore Scheduling
                                     </Button>
                                 </Link>
                             </motion.div>

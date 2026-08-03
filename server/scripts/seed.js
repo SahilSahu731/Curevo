@@ -7,13 +7,16 @@ import { fileURLToPath } from "url";
 import Appointment from "../models/appointment.model.js";
 import Clinic from "../models/clinic.model.js";
 import ClinicReview from "../models/clinicReview.model.js";
+import Consent from "../models/consent.model.js";
 import Doctor from "../models/doctor.model.js";
 import Feedback from "../models/feedback.model.js";
 import MedicalRecord from "../models/medicalRecord.model.js";
 import Notification from "../models/notification.model.js";
+import PrivacyRequest from "../models/privacyRequest.model.js";
 import Queue from "../models/queue.model.js";
 import Review from "../models/review.model.js";
 import User from "../models/user.model.js";
+import { createTelehealthRoomId } from "../utils/telehealth.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,6 +39,8 @@ const COUNTS = {
 
 const DEFAULT_PASSWORD = "Password123!";
 const SEED_ADMIN_EMAIL = "admin.seed@curevo.com";
+const SEED_BATCH = `synthetic-${new Date().toISOString().replace(/[:.]/g, "-")}`;
+const synthetic = { isSynthetic: true, seedBatch: SEED_BATCH };
 
 const firstNames = [
   "Aarav", "Aditi", "Aisha", "Akash", "Amelia", "Ananya", "Arjun", "Ava", "Benjamin", "Charlotte",
@@ -62,7 +67,7 @@ const specializations = [
   "Ophthalmology", "Dentistry", "ENT", "Gynecology", "Endocrinology", "Gastroenterology", "Pulmonology",
 ];
 const services = [
-  "General Consultation", "Preventive Care", "Diagnostics", "Emergency Care", "Pediatrics", "Cardiology",
+  "General Consultation", "Preventive Care", "Diagnostics", "Urgent Visit Requests", "Pediatrics", "Cardiology",
   "Dermatology", "Vaccination", "Health Screening", "Telehealth", "Pharmacy", "Laboratory Services",
 ];
 const symptoms = [
@@ -127,24 +132,34 @@ const connectDB = async () => {
 };
 
 const clearSeedableData = async () => {
-  console.log("Clearing application data while preserving existing admin accounts...");
+  const models = [Notification, Queue, MedicalRecord, Review, ClinicReview, Feedback, Appointment, Doctor, Clinic, User];
+  const unmarkedCounts = await Promise.all(models.map((model) => model.countDocuments({ isSynthetic: { $ne: true } })));
+  const hasUnmarkedData = unmarkedCounts.some((count) => count > 0);
+  const target = new URL(process.env.MONGO_URI);
+  const isLocal = ["127.0.0.1", "localhost"].includes(target.hostname);
+
+  if (hasUnmarkedData && !(isLocal && process.env.RESET_ALL_DATA === "true")) {
+    throw new Error("Unmarked data exists. Seed aborted to prevent data loss. Inspect it first; for a disposable local database only, set RESET_ALL_DATA=true.");
+  }
+
+  console.log(hasUnmarkedData ? "Local destructive reset explicitly approved." : "Clearing previously tagged synthetic fixtures...");
+  const filter = hasUnmarkedData ? {} : { isSynthetic: true };
+  const usersToDelete = await User.find(filter).select('_id').lean();
+  const userIds = usersToDelete.map(({ _id }) => _id);
   await Promise.all([
-    Notification.deleteMany({}),
-    Queue.deleteMany({}),
-    MedicalRecord.deleteMany({}),
-    Review.deleteMany({}),
-    ClinicReview.deleteMany({}),
-    Feedback.deleteMany({}),
-    Appointment.deleteMany({}),
+    Notification.deleteMany(filter),
+    Queue.deleteMany(filter),
+    MedicalRecord.deleteMany(filter),
+    Review.deleteMany(filter),
+    ClinicReview.deleteMany(filter),
+    Feedback.deleteMany(filter),
+    Appointment.deleteMany(filter),
+    Consent.deleteMany(hasUnmarkedData ? {} : { $or: [{ isSynthetic: true }, { userId: { $in: userIds } }] }),
+    PrivacyRequest.deleteMany(hasUnmarkedData ? {} : { isSynthetic: true }),
   ]);
-  await Doctor.deleteMany({});
-  await Clinic.deleteMany({});
-  await User.deleteMany({
-    $or: [
-      { role: { $in: ["patient", "doctor"] } },
-      { email: SEED_ADMIN_EMAIL },
-    ],
-  });
+  await Doctor.deleteMany(filter);
+  await Clinic.deleteMany(filter);
+  await User.deleteMany(filter);
 };
 
 const seedUsersAndClinics = async (password) => {
@@ -153,12 +168,13 @@ const seedUsersAndClinics = async (password) => {
     const clinicServices = Array.from({ length: 5 }, (__, serviceIndex) => pick(services, index + serviceIndex * 2));
 
     return {
+      ...synthetic,
       name: `${pick(clinicPrefixes, index)} ${city} ${pick(clinicSuffixes, index * 2)} ${pad(index + 1)}`,
       address: `${20 + index} Healthcare Avenue, ${city}`,
       city,
       state,
       zipCode,
-      description: `A patient-focused healthcare facility in ${city} offering coordinated outpatient, diagnostic, and virtual care.`,
+      description: `Synthetic clinic fixture in ${city} for testing submitted outpatient, diagnostic, and virtual-care listings.`,
       images: [pick(clinicImages, index), pick(clinicImages, index, 1), pick(clinicImages, index, 2)],
       services: [...new Set(clinicServices)],
       phone: `+9122${String(60000000 + index).padStart(8, "0")}`,
@@ -179,6 +195,7 @@ const seedUsersAndClinics = async (password) => {
   const doctorUsers = await User.insertMany(Array.from({ length: COUNTS.doctors }, (_, index) => {
     const [city, state, zipCode] = pick(cities, index);
     return {
+      ...synthetic,
       name: `Dr. ${nameFor(index)}`,
       email: `doctor${pad(index + 1)}@seed.curevo.com`,
       password,
@@ -188,13 +205,14 @@ const seedUsersAndClinics = async (password) => {
       dateOfBirth: new Date(1972 + (index % 20), index % 12, 1 + (index % 25)),
       profileImage: pick(avatarUrls, index),
       address: { street: `${100 + index} Medical Lane`, city, state, zipCode, country: "India" },
-      bio: `${pick(specializations, index)} specialist focused on clear communication and evidence-based care.`,
+      bio: `Synthetic ${pick(specializations, index)} profile for interface testing; not a real clinician or credential.`,
     };
   }));
 
   const patientUsers = await User.insertMany(Array.from({ length: COUNTS.patients }, (_, index) => {
     const [city, state, zipCode] = pick(cities, index * 2);
     return {
+      ...synthetic,
       name: nameFor(index + COUNTS.doctors),
       email: `patient${pad(index + 1)}@seed.curevo.com`,
       password,
@@ -209,6 +227,7 @@ const seedUsersAndClinics = async (password) => {
   }));
 
   const [admin] = await User.insertMany([{
+    ...synthetic,
     name: "Curevo Seed Admin",
     email: SEED_ADMIN_EMAIL,
     password,
@@ -222,6 +241,7 @@ const seedUsersAndClinics = async (password) => {
 
 const seedDoctors = async (clinics, doctorUsers, admin) => Doctor.insertMany(
   doctorUsers.map((user, index) => ({
+    ...synthetic,
     userId: user._id,
     clinicId: clinics[index % clinics.length]._id,
     specialization: pick(specializations, index),
@@ -231,12 +251,12 @@ const seedDoctors = async (clinics, doctorUsers, admin) => Doctor.insertMany(
     isAvailable: index % 9 !== 0,
     verification: {
       status: index % 12 === 0 ? "pending" : "approved",
-      licenseNumber: `MCI-${2026 - (index % 20)}-${pad(index + 1, 5)}`,
+      licenseNumber: `SYNTHETIC-NOT-A-LICENSE-${pad(index + 1, 5)}`,
       licenseFileUrl: `https://example.com/licenses/doctor-${pad(index + 1)}.pdf`,
       submittedAt: dateAtOffset(-40 - (index % 20)),
       reviewedAt: index % 12 === 0 ? undefined : dateAtOffset(-20 - (index % 10)),
       reviewedBy: index % 12 === 0 ? undefined : admin._id,
-      notes: index % 12 === 0 ? "Awaiting document review" : "Credentials verified",
+      notes: index % 12 === 0 ? "Synthetic fixture awaiting workflow review" : "Synthetic approved state; no credentialing was performed",
     },
     availability: {
       days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
@@ -264,11 +284,13 @@ const seedAppointmentsAndQueues = async (clinics, doctors, patients) => {
     const hour = 8 + Math.floor((tokenNumber - 1) / 2);
     const minute = tokenNumber % 2 === 0 ? "30" : "00";
     const isVideo = consultationType === "video";
+    const telehealthRoomId = isVideo ? createTelehealthRoomId() : undefined;
     const checkInTime = ["waiting", "in-progress", "completed"].includes(status)
       ? new Date(date.getTime() + Math.max(0, hour - 8) * 60 * 60 * 1000)
       : undefined;
 
     appointmentData.push({
+      ...synthetic,
       patientId: patients[patientIndex % patients.length]._id,
       doctorId: doctor._id,
       clinicId: clinic._id,
@@ -279,8 +301,9 @@ const seedAppointmentsAndQueues = async (clinics, doctors, patients) => {
       priority,
       symptoms: pick(symptoms, appointmentData.length),
       consultationType,
-      telehealthRoomId: isVideo ? `curevo-room-${pad(appointmentData.length + 1, 5)}` : undefined,
-      telehealthUrl: isVideo ? `http://localhost:3000/telehealth/room/curevo-room-${pad(appointmentData.length + 1, 5)}` : undefined,
+      telehealthRoomId,
+      telehealthUrl: telehealthRoomId ? `http://localhost:3000/telehealth/room/${telehealthRoomId}` : undefined,
+      telehealthGrantVersion: isVideo ? 1 : 0,
       estimatedWaitTime: Math.max(0, (tokenNumber - 1) * 15),
       actualWaitTime: status === "completed" ? 5 + (appointmentData.length % 35) : undefined,
       checkInTime,
@@ -334,6 +357,7 @@ const seedAppointmentsAndQueues = async (clinics, doctors, patients) => {
       (index + 1) * COUNTS.todayAppointmentsPerDoctor,
     );
     return {
+      ...synthetic,
       clinicId: clinics[index % clinics.length]._id,
       doctorId: doctor._id,
       date: dateAtOffset(0),
@@ -355,6 +379,7 @@ const seedAppointmentsAndQueues = async (clinics, doctors, patients) => {
 const seedMedicalRecords = async (appointments) => {
   const completedAppointments = appointments.filter((appointment) => appointment.status === "completed");
   return MedicalRecord.insertMany(completedAppointments.slice(0, COUNTS.medicalRecords).map((appointment, index) => ({
+    ...synthetic,
     patientId: appointment.patientId,
     doctorId: appointment.doctorId,
     appointmentId: appointment._id,
@@ -387,6 +412,7 @@ const seedMedicalRecords = async (appointments) => {
 
 const seedReviewsAndFeedback = async (clinics, doctors, patients, admin) => {
   const reviews = await Review.insertMany(Array.from({ length: COUNTS.reviews }, (_, index) => ({
+    ...synthetic,
     doctorId: doctors[index % doctors.length]._id,
     patientId: patients[(index * 7) % patients.length]._id,
     rating: 3 + (index % 3),
@@ -396,6 +422,7 @@ const seedReviewsAndFeedback = async (clinics, doctors, patients, admin) => {
   })));
 
   const clinicReviews = await ClinicReview.insertMany(Array.from({ length: COUNTS.clinicReviews }, (_, index) => ({
+    ...synthetic,
     clinicId: clinics[index % clinics.length]._id,
     patientId: patients[(index * 11) % patients.length]._id,
     rating: 3 + ((index + 1) % 3),
@@ -408,6 +435,7 @@ const seedReviewsAndFeedback = async (clinics, doctors, patients, admin) => {
     const status = pick(["open", "in-review", "resolved", "closed"], index);
     const resolved = ["resolved", "closed"].includes(status);
     return {
+      ...synthetic,
       userId: patients[index % patients.length]._id,
       category: pick(["complaint", "bug", "billing", "feature", "clinical", "other"], index),
       subject: pick(feedbackSubjects, index),
@@ -439,6 +467,7 @@ const seedNotifications = async (appointments, patients) => Notification.insertM
     };
 
     return {
+      ...synthetic,
       userId: index < appointments.length ? appointment.patientId : patients[index % patients.length]._id,
       appointmentId: type === "system-alert" ? undefined : appointment._id,
       type,

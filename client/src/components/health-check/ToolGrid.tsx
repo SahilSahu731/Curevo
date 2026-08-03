@@ -31,8 +31,8 @@ export interface HealthTool {
 export const healthTools: HealthTool[] = [
   {
     id: "stress",
-    title: "Stress & Anxiety Test",
-    description: "Evaluate your mental well-being with our clinical-grade PSS assessment.",
+    title: "Stress Reflection",
+    description: "Reflect on recent feelings using an unvalidated demonstration score.",
     icon: Brain,
     color: "text-purple-600 dark:text-purple-400",
     bgColor: "bg-purple-100 dark:bg-purple-900/30",
@@ -42,8 +42,8 @@ export const healthTools: HealthTool[] = [
   },
   {
     id: "heart",
-    title: "Heart Health Risk",
-    description: "Assess your cardiovascular risk based on lifestyle and health metrics.",
+    title: "Heart-health Habits",
+    description: "Review lifestyle answers without estimating or predicting medical risk.",
     icon: Heart,
     color: "text-rose-600 dark:text-rose-400",
     bgColor: "bg-rose-100 dark:bg-rose-900/30",
@@ -53,8 +53,8 @@ export const healthTools: HealthTool[] = [
   },
   {
     id: "bmi",
-    title: "BMI & Body Analysis",
-    description: "Advanced body composition calculator with metabolic insights.",
+    title: "BMI Calculator",
+    description: "Calculate BMI from height and weight for general education.",
     icon: Scale,
     color: "text-emerald-600 dark:text-emerald-400",
     bgColor: "bg-emerald-100 dark:bg-emerald-900/30",
@@ -64,8 +64,8 @@ export const healthTools: HealthTool[] = [
   },
   {
     id: "sleep",
-    title: "Sleep Quality Score",
-    description: "Analyze your sleep patterns and get tips for better rest.",
+    title: "Sleep Habits",
+    description: "Summarize self-reported sleep habits with fixed rules.",
     icon: Moon,
     color: "text-indigo-600 dark:text-indigo-400",
     bgColor: "bg-indigo-100 dark:bg-indigo-900/30",
@@ -76,7 +76,7 @@ export const healthTools: HealthTool[] = [
   {
     id: "hydration",
     title: "Hydration Check",
-    description: "Are you drinking enough water? Find out your hydration level.",
+    description: "Review self-reported drinking habits for general education.",
     icon: Droplets,
     color: "text-cyan-600 dark:text-cyan-400",
     bgColor: "bg-cyan-100 dark:bg-cyan-900/30",
@@ -87,7 +87,7 @@ export const healthTools: HealthTool[] = [
   {
     id: "eyestrain",
     title: "Digital Eye Strain",
-    description: "Check if screen time is affecting your eye health.",
+    description: "Reflect on screen habits and reported discomfort.",
     icon: Eye,
     color: "text-amber-600 dark:text-amber-400",
     bgColor: "bg-amber-100 dark:bg-amber-900/30",
@@ -97,8 +97,8 @@ export const healthTools: HealthTool[] = [
   },
   {
     id: "fitness",
-    title: "Fitness Readiness",
-    description: "Evaluate your physical readiness for exercise routines.",
+    title: "Activity Habits",
+    description: "Review activity habits; this cannot determine exercise safety.",
     icon: Dumbbell,
     color: "text-orange-600 dark:text-orange-400",
     bgColor: "bg-orange-100 dark:bg-orange-900/30",
@@ -108,8 +108,8 @@ export const healthTools: HealthTool[] = [
   },
   {
     id: "nutrition",
-    title: "Nutrition Score",
-    description: "Analyze your eating habits and get personalized diet tips.",
+    title: "Nutrition Habits",
+    description: "Summarize self-reported eating habits with fixed rules.",
     icon: Apple,
     color: "text-green-600 dark:text-green-400",
     bgColor: "bg-green-100 dark:bg-green-900/30",
@@ -121,19 +121,21 @@ export const healthTools: HealthTool[] = [
 
 interface ToolGridProps {
   onSelect: (tool: HealthTool) => void;
+  disabled?: boolean;
 }
 
-export function ToolGrid({ onSelect }: ToolGridProps) {
+export function ToolGrid({ onSelect, disabled = false }: ToolGridProps) {
   return (
     <div className="py-16 bg-slate-50 dark:bg-slate-950">
       <div className="container px-4 mx-auto">
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4">
-            Choose Your Assessment
+            Choose a wellness reflection
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-lg max-w-2xl mx-auto">
-            Select any tool below to begin your personalized health journey. All data is private and processed locally.
+            Answers stay in this browser unless you download a report. Do not use a score to make a medical decision.
           </p>
+          {disabled && <p className="mt-4 font-semibold text-amber-700 dark:text-amber-300">Unavailable while clinical-safety review is pending.</p>}
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
@@ -146,8 +148,8 @@ export function ToolGrid({ onSelect }: ToolGridProps) {
               transition={{ delay: idx * 0.05 }}
             >
               <Card 
-                className={`h-full cursor-pointer transition-all hover:shadow-xl hover:-translate-y-1 border-2 ${tool.borderColor} bg-white dark:bg-slate-900`}
-                onClick={() => onSelect(tool)}
+                className={`h-full transition-all border-2 ${tool.borderColor} bg-white dark:bg-slate-900 ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:-translate-y-1 hover:shadow-xl'}`}
+                onClick={() => !disabled && onSelect(tool)}
               >
                 <CardContent className="p-6">
                   <div className={`w-14 h-14 rounded-2xl ${tool.bgColor} flex items-center justify-center mb-5`}>

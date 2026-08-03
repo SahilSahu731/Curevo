@@ -12,7 +12,7 @@ export default function BentoGrid() {
                More than just <span className="text-gradient-brand">queueing</span>.
            </h2>
            <p className="text-lg text-muted-foreground font-body">
-               We built an operating system for modern clinics. Every pixel serves a purpose.
+               Explore connected scheduling and queue screens in a pre-release workflow.
            </p>
         </div>
 
@@ -29,7 +29,7 @@ export default function BentoGrid() {
                     </div>
                     <h3 className="text-2xl font-bold text-foreground mb-2 font-heading">Real-time Live Sync</h3>
                     <p className="text-muted-foreground max-w-xs font-body">
-                        Don't refresh. Positions update instantly via WebSockets across all devices.
+                        Authorized appointment participants receive queue events over an authenticated WebSocket connection.
                     </p>
                 </div>
                 <div className="absolute right-0 bottom-0 top-1/2 w-1/2 bg-muted/50 rounded-tl-3xl p-6 transition-transform group-hover:translate-x-2 translate-y-4">
@@ -55,7 +55,7 @@ export default function BentoGrid() {
                 <Bell className="h-8 w-8 text-white/90" />
                 <div>
                     <h3 className="text-xl font-bold font-heading mb-1">Smart Alerts</h3>
-                    <p className="text-sm text-white/90 font-body">"Leave via Taxi now to arrive on time."</p>
+                    <p className="text-sm text-white/90 font-body">Prototype appointment and queue status messages.</p>
                 </div>
             </motion.div>
 
@@ -65,7 +65,7 @@ export default function BentoGrid() {
                      <BarChart className="h-5 w-5 text-secondary" />
                  </div>
                  <h3 className="text-lg font-bold text-foreground font-heading">Clinic Analytics</h3>
-                 <p className="text-xs text-muted-foreground mt-2 font-body">Optimize flow with data.</p>
+                 <p className="text-xs text-muted-foreground mt-2 font-body">Review demonstration counts and states.</p>
             </motion.div>
 
             {/* M1: Security */}
@@ -73,8 +73,8 @@ export default function BentoGrid() {
                  <div className="relative z-10 h-full flex flex-col justify-between">
                      <Shield className="h-8 w-8 text-muted-foreground" />
                      <div className="mt-8">
-                         <h3 className="text-xl font-bold font-heading mb-2">Enterprise Grade</h3>
-                         <p className="text-sm text-muted-foreground font-body">HIPAA compliant architecture. Your health data is encrypted at rest.</p>
+                         <h3 className="text-xl font-bold font-heading mb-2">Review Controls</h3>
+                         <p className="text-sm text-muted-foreground font-body">Authenticated routes, role checks, and production write containment are implemented; formal assurance is pending.</p>
                      </div>
                  </div>
                  <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-10"></div>
@@ -85,8 +85,8 @@ export default function BentoGrid() {
                  <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:scale-125 transition-transform duration-500">
                      <Zap className="h-24 w-24 text-foreground" />
                  </div>
-                 <h3 className="text-lg font-bold text-foreground font-heading mb-2">Instant Booking</h3>
-                 <p className="text-sm text-muted-foreground font-body">Book in 3 clicks. No phone calls.</p>
+                 <h3 className="text-lg font-bold text-foreground font-heading mb-2">Slot Requests</h3>
+                 <p className="text-sm text-muted-foreground font-body">Choose a date and an available listed time.</p>
                  <div className="mt-4 flex gap-2">
                      <div className="h-8 w-16 bg-muted rounded-lg animate-pulse"></div>
                      <div className="h-8 w-16 bg-primary/20 rounded-lg"></div>

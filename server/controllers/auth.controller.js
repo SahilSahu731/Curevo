@@ -1,201 +1,224 @@
+import Consent from "../models/consent.model.js";
+import Session from "../models/session.model.js";
 import User from "../models/user.model.js";
-import { sendTokenResponse, generateToken } from "../utils/generateToken.js";
+import { POLICY_VERSION } from "./privacy.controller.js";
+import { clearLoginFailures, recordLoginFailure } from "../middlewares/authRateLimit.middleware.js";
+import { createAccountToken } from "../utils/accountToken.js";
+import { sendVerificationEmail } from "../utils/accountEmails.js";
+import { writeAuditEvent } from "../utils/audit.js";
+import { validatePasswordPolicy } from "../utils/passwordPolicy.js";
+import {
+  clearAuthCookie,
+  cookieOptions,
+  createSession,
+  MFA_COOKIE,
+  revokeSessionToken,
+  revokeUserSessions,
+  SESSION_COOKIE,
+} from "../utils/session.js";
+
+export const safeUser = (user) => {
+  const value = user.toObject ? user.toObject() : { ...user };
+  delete value.password;
+  delete value.providerId;
+  delete value.profileImagePublicId;
+  if (value.mfa) value.mfa = { enabled: Boolean(value.mfa.enabled), enabledAt: value.mfa.enabledAt };
+  return value;
+};
+
+const authResponse = (res, status, user, extra = {}) => res.status(status).json({
+  success: true,
+  data: { user: safeUser(user), ...extra },
+});
 
 export const register = async (req, res) => {
+  const { name, email, password, role, acceptedTerms, policyVersion, remember = false } = req.body;
   try {
-    const { name, email, password, role } = req.body;
-
-    // Check if user exists
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ success: false, message: "User already exists" });
+    if (!acceptedTerms || policyVersion !== POLICY_VERSION) {
+      return res.status(400).json({ success: false, error: "Review and accept the current Terms and Privacy Notice", requestId: req.id });
+    }
+    const passwordError = await validatePasswordPolicy(password, { name, email });
+    if (passwordError) return res.status(400).json({ success: false, error: passwordError, requestId: req.id });
+    if (await User.exists({ email })) {
+      await writeAuditEvent(req, "registration", "blocked", { metadata: { reason: "duplicate" } });
+      return res.status(400).json({ success: false, error: "Unable to create an account with these details", requestId: req.id });
     }
 
-    // Create user (Validations from Model will run here)
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role,
+    const user = await User.create({ name, email, password, role, provider: "local" });
+    try {
+      await Consent.create({
+        userId: user._id,
+        type: "terms-and-privacy",
+        policyVersion: POLICY_VERSION,
+        accepted: true,
+        acceptedAt: new Date(),
+        source: "email-registration",
+      });
+    } catch (error) {
+      await User.deleteOne({ _id: user._id });
+      throw error;
+    }
+
+    const delivery = await sendVerificationEmail(user);
+    const enrollmentRequired = process.env.NODE_ENV === "production" && user.role === "admin" && !user.mfa?.enabled;
+    await createSession({ user, req, res, remember, enrollmentRequired });
+    await writeAuditEvent(req, "registration", "success", {
+      actorUserId: user._id,
+      targetUserId: user._id,
+      metadata: { verificationDelivery: delivery.delivered ? "sent" : delivery.reason },
     });
-
-    sendTokenResponse(user, 201, res);
+    return authResponse(res, 201, user, { emailVerificationRequired: true, enrollmentRequired });
   } catch (error) {
-    if (error.name === "ValidationError") {
-        const messages = Object.values(error.errors).map((val) => val.message);
-        return res.status(400).json({ success: false, error: messages });
-    }
-    console.log(error)
-    res.status(500).json({ success: false, error: error.message });
+    await writeAuditEvent(req, "registration", "failure", { metadata: { reason: error.name || "error" } });
+    const validation = error.name === "ValidationError";
+    return res.status(validation ? 400 : 500).json({
+      success: false,
+      error: validation ? "Unable to create an account with these details" : "Account creation failed",
+      requestId: req.id,
+    });
   }
 };
 
-// login 
 export const login = async (req, res) => {
+  const { email, password, remember = false } = req.body;
   try {
-    const { email, password } = req.body;
+    const user = await User.findOne({ email }).select("+password");
+    const valid = user && user.provider === "local" && await user.comparePassword(password);
+    if (!valid || user.status !== "active") {
+      recordLoginFailure(req.loginRateKey);
+      await writeAuditEvent(req, "login", "failure", { targetUserId: user?._id, metadata: { reason: "invalid-credentials" } });
+      return res.status(401).json({ success: false, error: "Invalid email or password", requestId: req.id });
+    }
+    clearLoginFailures(req.loginRateKey);
 
-    if (!email || !password) {
-      return res.status(400).json({ success: false, error: "Please provide an email and password" });
+    if (user.mfa?.enabled) {
+      const { rawToken } = await createAccountToken({
+        userId: user._id,
+        type: "mfa-login",
+        ttlMinutes: 5,
+        metadata: { remember: Boolean(remember) },
+      });
+      res.cookie(MFA_COOKIE, rawToken, cookieOptions(5 * 60 * 1000));
+      await writeAuditEvent(req, "login", "success", { actorUserId: user._id, metadata: { stage: "password", mfaRequired: true } });
+      return res.status(200).json({ success: true, data: { mfaRequired: true } });
     }
 
-    // Check for user and select password (if you set select: false in schema later)
-    const user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(401).json({ success: false, error: "Invalid credentials" });
-    }
-
-    // Check if password matches using the Model method
-    const isMatch = await user.comparePassword(password);
-
-    if (!isMatch) {
-      return res.status(401).json({ success: false, error: "Invalid credentials" });
-    }
-
-    sendTokenResponse(user, 200, res);
-  } catch (error) {
-    console.log(error)
-    res.status(500).json({ success: false, error: error.message });
+    const enrollmentRequired = process.env.NODE_ENV === "production" && user.role === "admin";
+    await createSession({ user, req, res, remember, enrollmentRequired });
+    await writeAuditEvent(req, "login", "success", { actorUserId: user._id, metadata: { mfaRequired: false } });
+    return authResponse(res, 200, user, { mfaEnrollmentRequired: enrollmentRequired });
+  } catch {
+    recordLoginFailure(req.loginRateKey);
+    return res.status(500).json({ success: false, error: "Sign-in failed", requestId: req.id });
   }
 };
 
-// logout
 export const logout = async (req, res) => {
-  res.cookie("token", "none", {
-    expires: new Date(Date.now() + 10 * 1000),
-    httpOnly: true,
-  });
-
+  await revokeSessionToken(req.cookies[SESSION_COOKIE], "logout");
+  const { disconnectSession } = await import("../config/socket.js");
+  disconnectSession(req.authSession?._id?.toString());
+  clearAuthCookie(res);
+  clearAuthCookie(res, MFA_COOKIE);
+  await writeAuditEvent(req, "session-revocation", "success", { metadata: { scope: "current" } });
   res.status(200).json({ success: true, data: {} });
 };
 
-// get current user
-export const getMe = async (req, res) => {
-  try {
-    // req.user is usually set by your 'protect' middleware
-    const user = await User.findById(req.user.id);
-
-    res.status(200).json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
+export const logoutAll = async (req, res) => {
+  await revokeUserSessions(req.user._id, "logout-all");
+  const { disconnectUserSessions } = await import("../config/socket.js");
+  disconnectUserSessions(req.user._id.toString());
+  clearAuthCookie(res);
+  clearAuthCookie(res, MFA_COOKIE);
+  await writeAuditEvent(req, "session-revocation", "success", { metadata: { scope: "all" } });
+  res.status(200).json({ success: true, data: {} });
 };
 
-// update password
+export const getMe = (req, res) => authResponse(res, 200, req.user, {
+  session: {
+    id: req.authSession._id,
+    expiresAt: req.authSession.expiresAt,
+    mfaEnrollmentRequired: req.authSession.mfaEnrollmentRequired,
+  },
+});
+
+export const listSessions = async (req, res) => {
+  const sessions = await Session.find({ userId: req.user._id, revokedAt: null, expiresAt: { $gt: new Date() } })
+    .select("createdAt lastSeenAt expiresAt userAgent remember mfaVerifiedAt")
+    .sort({ lastSeenAt: -1 })
+    .lean();
+  res.status(200).json({
+    success: true,
+    data: sessions.map((session) => ({ ...session, current: session._id.toString() === req.authSession._id.toString() })),
+  });
+};
+
 export const updatePassword = async (req, res) => {
   try {
     const { currentPassword, newPassword } = req.body;
-
-    const user = await User.findById(req.user.id);
-
-    if (!(await user.comparePassword(currentPassword))) {
-      return res.status(401).json({ success: false, error: "Incorrect current password" });
+    const user = await User.findById(req.user._id).select("+password");
+    if (!await user.comparePassword(currentPassword)) {
+      await writeAuditEvent(req, "password-change", "failure", { metadata: { reason: "invalid-current-password" } });
+      return res.status(401).json({ success: false, error: "Current password is incorrect", requestId: req.id });
     }
-
+    const passwordError = await validatePasswordPolicy(newPassword, user);
+    if (passwordError) return res.status(400).json({ success: false, error: passwordError, requestId: req.id });
     user.password = newPassword;
-    
     await user.save();
-
-    sendTokenResponse(user, 200, res);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    await revokeUserSessions(user._id, "password-change");
+    await createSession({ user, req, res, remember: false, mfaVerified: Boolean(user.mfa?.enabled) });
+    await writeAuditEvent(req, "password-change", "success");
+    return authResponse(res, 200, user);
+  } catch {
+    return res.status(500).json({ success: false, error: "Password change failed", requestId: req.id });
   }
 };
 
-// ... existing code
-
-// Update User Details
 export const updateDetails = async (req, res) => {
   try {
-    const fieldsToUpdate = {
-      name: req.body.name,
-      email: req.body.email, // keeping email updatable for now, though often restricted
-      phone: req.body.phone,
-      address: req.body.address,
-      gender: req.body.gender,
-      dateOfBirth: req.body.dateOfBirth,
-      bio: req.body.bio
-    };
-
-    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-      new: true,
-      runValidators: true,
-    });
-
-    res.status(200).json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    const allowed = ["name", "phone", "address", "gender", "dateOfBirth", "bio"];
+    const updates = Object.fromEntries(allowed.filter((field) => req.body[field] !== undefined).map((field) => [field, req.body[field]]));
+    const user = await User.findByIdAndUpdate(req.user._id, updates, { new: true, runValidators: true });
+    return authResponse(res, 200, user);
+  } catch {
+    return res.status(400).json({ success: false, error: "Profile update failed", requestId: req.id });
   }
 };
 
-// Update Profile Image
 export const updateProfileImage = async (req, res) => {
-    try {
-        if (!req.file) {
-            return res.status(400).json({ success: false, error: "No image file provided" });
-        }
-
-        const b64 = Buffer.from(req.file.buffer).toString("base64");
-        let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-        
-        // Import cloudinary dynamically or from config
-        const cloudinary = (await import("../config/cloudinary.js")).default;
-
-        const result = await cloudinary.uploader.upload(dataURI, {
-            folder: "curevo/profiles",
-            resource_type: "auto"
-        });
-
-        const user = await User.findByIdAndUpdate(req.user.id, {
-            profileImage: result.secure_url
-        }, { new: true });
-
-        res.status(200).json({
-            success: true,
-            data: user,
-            message: "Profile image updated successfully"
-        });
-
-    } catch (error) {
-        console.error("Upload Error:", error);
-        res.status(500).json({ success: false, error: "Image upload failed" });
-    }
+  try {
+    if (!req.file) return res.status(400).json({ success: false, error: "No image file provided", requestId: req.id });
+    const dataURI = `data:${req.file.mimetype};base64,${Buffer.from(req.file.buffer).toString("base64")}`;
+    const cloudinary = (await import("../config/cloudinary.js")).default;
+    const result = await cloudinary.uploader.upload(dataURI, { folder: "curevo/profiles", resource_type: "image" });
+    const current = await User.findById(req.user._id).select("+profileImagePublicId");
+    if (current?.profileImagePublicId) await cloudinary.uploader.destroy(current.profileImagePublicId, { invalidate: true });
+    const user = await User.findByIdAndUpdate(req.user._id, {
+      profileImage: result.secure_url,
+      profileImagePublicId: result.public_id,
+    }, { new: true });
+    return authResponse(res, 200, user);
+  } catch {
+    return res.status(500).json({ success: false, error: "Image upload failed", requestId: req.id });
+  }
 };
 
-// Google Callback
 export const googleCallback = async (req, res) => {
-// ... existing code
   try {
-    // Passport middleware attaches user to req.user
     const user = req.user;
-    const token = generateToken(user._id);
-
-    // Cookie options
-    const options = {
-      expires: new Date(
-        Date.now() + (process.env.JWT_COOKIE_EXPIRE || 30) * 24 * 60 * 60 * 1000
-      ),
-      httpOnly: true,
-      // secure: process.env.NODE_ENV === "production"
-    };
-
-    if (process.env.NODE_ENV === "production") {
-      options.secure = true;
-    }
-
-    res.cookie("token", token, options);
-
-    // The fragment is not sent in HTTP requests and is removed by the client immediately.
-    res.redirect(`${process.env.CLIENT_URL}/auth/callback#token=${encodeURIComponent(token)}`);
-  } catch (error) {
-    console.error(error);
-    res.status(500).redirect(`${process.env.CLIENT_URL}/login?error=Server%20Error`);
+    await Consent.create({
+      userId: user._id,
+      type: "terms-and-privacy",
+      policyVersion: POLICY_VERSION,
+      accepted: true,
+      acceptedAt: new Date(),
+      source: "google-oauth",
+    });
+    const enrollmentRequired = process.env.NODE_ENV === "production" && user.role === "admin" && !user.mfa?.enabled;
+    await createSession({ user, req, res, remember: true, enrollmentRequired });
+    await writeAuditEvent(req, "login", "success", { actorUserId: user._id, metadata: { provider: "google" } });
+    const target = encodeURIComponent(req.oauthReturn || "");
+    res.redirect(`${process.env.CLIENT_URL}/auth/callback${target ? `?redirect=${target}` : ""}`);
+  } catch {
+    res.redirect(`${process.env.CLIENT_URL}/login?error=google_auth_failed`);
   }
 };

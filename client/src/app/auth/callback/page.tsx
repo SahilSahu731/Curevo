@@ -22,17 +22,17 @@ export default function GoogleAuthCallbackPage() {
     if (started.current) return
     started.current = true
 
-    const params = new URLSearchParams(window.location.hash.slice(1))
-    const token = params.get("token")
+    const params = new URLSearchParams(window.location.search)
+    const requestedRedirect = params.get("redirect") || ""
     window.history.replaceState(null, "", window.location.pathname)
 
-    if (!token) {
-      queueMicrotask(() => setError("Google did not return a valid sign-in token."))
-      return
-    }
-
-    completeGoogleAuth(token)
-      .then((user) => router.replace(dashboardFor(user)))
+    completeGoogleAuth()
+      .then((user) => {
+        const safeRedirect = requestedRedirect.startsWith("/") && !requestedRedirect.startsWith("//")
+          ? requestedRedirect
+          : dashboardFor(user)
+        router.replace(safeRedirect)
+      })
       .catch(() => setError("We could not finish signing you in. Please try again."))
   }, [completeGoogleAuth, router])
 
@@ -45,7 +45,7 @@ export default function GoogleAuthCallbackPage() {
         <div>
           <h1 className="text-xl font-bold">{error ? "Google sign-in failed" : "Finishing your sign-in"}</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            {error || "One moment while we securely connect your account."}
+            {error || "One moment while we connect your account."}
           </p>
         </div>
         {error && (

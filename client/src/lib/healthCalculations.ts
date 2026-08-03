@@ -322,7 +322,7 @@ export const generatePDFReport = (result: AssessmentResult): void => {
   doc.setTextColor(255, 255, 255);
   doc.setFontSize(24);
   doc.setFont("helvetica", "bold");
-  doc.text("Health Assessment Report", 20, 25);
+  doc.text("Educational Wellness Summary", 20, 25);
   
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
@@ -419,8 +419,8 @@ export const generatePDFReport = (result: AssessmentResult): void => {
   // Footer
   doc.setFontSize(8);
   doc.setTextColor(...mutedColor);
-  doc.text("This report is for informational purposes only and does not constitute medical advice.", 20, 280);
-  doc.text("Please consult a healthcare professional for medical guidance.", 20, 285);
+  doc.text("Unvalidated fixed-rule output. Not advice, diagnosis, triage, treatment, or an emergency service.", 20, 280);
+  doc.text("A result may be wrong. For urgent symptoms, contact local emergency services now.", 20, 285);
   
   // Save
   doc.save(`${result.toolTitle.replace(/\s+/g, "_")}_Report_${new Date().toISOString().split("T")[0]}.pdf`);

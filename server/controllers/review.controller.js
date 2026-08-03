@@ -1,4 +1,6 @@
 import Review from "../models/review.model.js";
+import Appointment from "../models/appointment.model.js";
+import mongoose from "mongoose";
 
 // Get reviews for a specific doctor
 export const getDoctorReviews = async (req, res) => {
@@ -18,10 +20,22 @@ export const getDoctorReviews = async (req, res) => {
 export const createReview = async (req, res) => {
   try {
     const { doctorId, rating, comment } = req.body;
-    const patientId = req.user._id; // Assuming auth middleware sets req.user
+    const patientId = req.user._id;
 
-    // Prevent duplicate reviews if needed? For now, allow multiple.
-    
+    if (!mongoose.Types.ObjectId.isValid(doctorId) || !Number.isInteger(Number(rating)) || rating < 1 || rating > 5 || !comment?.trim()) {
+      return res.status(400).json({ message: "A valid doctor, rating from 1 to 5, and comment are required" });
+    }
+
+    const completedVisit = await Appointment.exists({ doctorId, patientId, status: "completed" });
+    if (!completedVisit) {
+      return res.status(403).json({ message: "Only patients with a completed visit can review this clinician" });
+    }
+
+    const existingReview = await Review.findOne({ doctorId, patientId });
+    if (existingReview) {
+      return res.status(409).json({ message: "You have already reviewed this clinician" });
+    }
+
     const newReview = new Review({
       doctorId,
       patientId,

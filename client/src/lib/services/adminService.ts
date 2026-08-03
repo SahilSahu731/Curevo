@@ -42,6 +42,13 @@ export const adminService = {
       return response.data;
   },
 
+  downloadDoctorLicense: async (doctorId: string) => {
+      const response = await api.get(`/admin/doctor-verifications/${doctorId}/license`, { responseType: "blob" });
+      const url = URL.createObjectURL(response.data);
+      window.open(url, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+  },
+
   getFeedback: async (params?: { status?: string; category?: string }) => {
       const response = await api.get("/admin/feedback", { params });
       return response.data;

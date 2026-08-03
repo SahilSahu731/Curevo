@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  if (process.env.NEXT_PUBLIC_ALLOW_INDEXING !== "true") return [];
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
   const routes = [
     "",

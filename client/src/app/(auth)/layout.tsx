@@ -1,25 +1,35 @@
 "use client"
 
 import React, { useEffect } from 'react'
-import { useAuthStore, useIsAuthenticated } from '@/store/authStore'
+import { useAuthStore } from '@/store/authStore'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { HeartPulse, Check, Shield, Zap, UserCheck } from 'lucide-react'
+import { HeartPulse, Check, CalendarClock, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
 import './auth.css'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-    const isAuthenticated = useIsAuthenticated();
-    const _hydrated = useAuthStore((state) => state._hydrated);
+    const { user, initialized, mfaEnrollmentRequired, getCurrentUser } = useAuthStore();
     const router = useRouter();
 
     useEffect(() => {
-        if (_hydrated && isAuthenticated) {
-            router.push('/');
+        if (!initialized) {
+            getCurrentUser();
+            return;
         }
-    }, [_hydrated, isAuthenticated, router]);
+        if (user) {
+            if (mfaEnrollmentRequired) {
+                router.replace('/mfa-setup');
+                return;
+            }
+            const destination = user.role === 'doctor'
+                ? '/doctor-dashboard'
+                : user.role === 'admin' ? '/admin-dashboard' : '/patient-dashboard';
+            router.replace(destination);
+        }
+    }, [getCurrentUser, initialized, mfaEnrollmentRequired, router, user]);
 
-    if (!_hydrated) return null;
+    if (!initialized || user) return null;
 
     return (
         <div className="min-h-screen grid lg:grid-cols-2 bg-background font-body transition-colors duration-300">
@@ -60,17 +70,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                                  </span>
                              </h2>
                              <p className="text-lg text-slate-300 font-light leading-relaxed border-l-2 border-indigo-400/30 pl-4">
-                                 Join thousands of providers and patients experiencing the future of effortless healthcare scheduling.
+                                 Explore appointment scheduling, queue updates, and video-visit workflows in this pre-release prototype.
                              </p>
                          </motion.div>
 
                          {/* Aesthetic Feature Grid */}
                          <div className="grid grid-cols-2 gap-4">
                             {[
-                                { icon: Zap, label: "Instant Booking", desc: "No phone calls needed" },
-                                { icon: Shield, label: "HIPAA Secure", desc: "Enterprise protection" },
+                                { icon: CalendarClock, label: "Appointment Requests", desc: "Subject to confirmation" },
+                                { icon: Users, label: "Account Roles", desc: "Patient and clinician views" },
                                 { icon: Check, label: "Real-time Sync", desc: "Live queue updates" },
-                                { icon: UserCheck, label: "Verified Doctors", desc: "Top rated specialists" }
+                                { icon: HeartPulse, label: "Prototype Tools", desc: "Not for emergency care" }
                             ].map((item, i) => (
                                 <motion.div 
                                     key={i}
@@ -88,10 +98,10 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
                      </div>
 
                      <div className="flex items-center gap-6 text-xs font-medium text-slate-400">
-                         <span>&copy; SmartQueue Inc.</span>
+                         <span>&copy; SmartQueue prototype</span>
                          <div className="h-1 w-1 bg-slate-600 rounded-full"></div>
-                         <span className="hover:text-white cursor-pointer transition-colors">Privacy Policy</span>
-                         <span className="hover:text-white cursor-pointer transition-colors">Terms of Service</span>
+                         <Link href="/privacy" className="hover:text-white transition-colors">Privacy Notice</Link>
+                         <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
                      </div>
                  </div>
             </div>

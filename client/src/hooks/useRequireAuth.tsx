@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
-
 
 type Options = {
   role?: 'patient' | 'doctor' | 'admin'
@@ -11,61 +10,34 @@ type Options = {
   redirectIfAuthenticated?: boolean
 }
 
-export default function useRequireAuth(opts: Options = {}) {
-  const { role, redirectTo = '/login', redirectIfAuthenticated = false } = opts
+const dashboardFor = (role?: string) => {
+  if (role === 'doctor') return '/doctor-dashboard'
+  if (role === 'admin') return '/admin-dashboard'
+  return '/patient-dashboard'
+}
+
+export default function useRequireAuth({ role, redirectTo = '/login', redirectIfAuthenticated = false }: Options = {}) {
   const router = useRouter()
-  const { token, user, isLoading, getCurrentUser, _hydrated } = useAuthStore()
-  const [checking, setChecking] = useState(true)
+  const { user, initialized, mfaEnrollmentRequired, getCurrentUser } = useAuthStore()
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const verifyAuth = async () => {
-      // 0. Wait for hydration
-      if (!_hydrated) return; 
-
-      // 1. If no token, redirect immediately
-      if (!token) {
-        if (!redirectIfAuthenticated) {
-             router.replace(redirectTo)
-        }
-        setChecking(false)
-        return
-      }
-
-      // 2. If token exists but no user (and not loading), try fetching user
-      if (!user) {
-         try {
-             await getCurrentUser();
-             // After fetch, if user is still null (e.g. invalid token), store handles logout
-             // We can re-check user here if we want, but store updates are async in React state terms
-         } catch (e) {
-             // Store handles logout on error
-             return;
-         }
-      }
-      
-      // 3. Authenticated logic
-      if (redirectIfAuthenticated) {
-         if (user?.role === 'doctor') router.replace('/doctor-dashboard')
-         else if (user?.role === 'patient') router.replace('/patient-dashboard')
-         else if (user?.role === 'admin') router.replace('/admin-dashboard')
-         else router.replace('/')
-         return
-      }
-
-      // 4. Role check
-      if (role && user) {
-          if (user.role !== role) {
-              router.replace('/')
-          }
-      }
-      
-      setChecking(false)
+    if (!initialized) {
+      getCurrentUser()
+      return
     }
+    if (mfaEnrollmentRequired) {
+      router.replace('/mfa-setup')
+    } else if (redirectIfAuthenticated && user) {
+      router.replace(dashboardFor(user.role))
+    } else if (!redirectIfAuthenticated && !user) {
+      router.replace(redirectTo)
+    } else if (role && user?.role !== role) {
+      router.replace(dashboardFor(user?.role))
+    }
+  }, [getCurrentUser, initialized, mfaEnrollmentRequired, redirectIfAuthenticated, redirectTo, role, router, user])
 
-    verifyAuth();
-  }, [token, user, role, redirectIfAuthenticated, redirectTo, getCurrentUser, router, _hydrated])
-
-  return { checking, user, token }
+  return {
+    checking: !initialized || (!redirectIfAuthenticated && !user) || Boolean(role && user && user.role !== role) || mfaEnrollmentRequired,
+    user,
+  }
 }

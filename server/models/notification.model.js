@@ -28,6 +28,7 @@ const NotificationSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+NotificationSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
 // Index for quick fetching of unread notifications for a user
 NotificationSchema.index({ userId: 1, isRead: 1 });

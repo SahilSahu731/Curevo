@@ -7,10 +7,12 @@ import { AssessmentModal } from "@/components/health-check/AssessmentModal";
 import { FeaturesSection } from "@/components/health-check/FeaturesSection";
 
 export default function HealthCheckPage() {
+  const toolsEnabled = process.env.NEXT_PUBLIC_ENABLE_WELLNESS_TOOLS === "true";
   const [selectedTool, setSelectedTool] = useState<HealthTool | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleSelectTool = (tool: HealthTool) => {
+    if (!toolsEnabled) return;
     setSelectedTool(tool);
     setIsModalOpen(true);
   };
@@ -23,7 +25,7 @@ export default function HealthCheckPage() {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       <HealthHero />
-      <ToolGrid onSelect={handleSelectTool} />
+      <ToolGrid onSelect={handleSelectTool} disabled={!toolsEnabled} />
       <FeaturesSection />
       
       <AssessmentModal 

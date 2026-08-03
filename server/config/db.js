@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 
+mongoose.set("sanitizeFilter", true);
+mongoose.set("strictQuery", true);
+
 const DEFAULT_SERVER_SELECTION_TIMEOUT_MS = 10000;
 
 const getMongoHost = (uri) => {

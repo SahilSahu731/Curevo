@@ -6,8 +6,8 @@ export default function HowItWorks() {
     const steps = [
         { num: 1, title: "Book Online", desc: "Choose your doctor and preferred slot from home." },
         { num: 2, title: "Check In", desc: "Mark your arrival digitally when you reach." },
-        { num: 3, title: "Track Queue", desc: "Watch your position move live on your phone." },
-        { num: 4, title: "Consult", desc: "Walk in exactly when it's your turn." }
+        { num: 3, title: "View Queue", desc: "View the latest position reported by the clinic workflow." },
+        { num: 4, title: "Confirm", desc: "Follow the clinic's own instructions; displayed timing is an estimate." }
     ];
 
     return (
@@ -15,7 +15,7 @@ export default function HowItWorks() {
             <div className="container px-4 md:px-6 mx-auto">
                  <div className="text-center mb-16 max-w-2xl mx-auto">
                      <h2 className="text-3xl font-bold font-heading text-foreground mb-4">How It Works</h2>
-                     <p className="text-muted-foreground font-body">Simple steps to a hassle-free visit</p>
+                     <p className="text-muted-foreground font-body">A demonstration flow from slot request to queue status</p>
                  </div>
 
                  <div className="grid md:grid-cols-4 gap-8 relative">

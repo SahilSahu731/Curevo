@@ -140,6 +140,16 @@ export const getQueuePositionForPatient = async (req, res) => {
             return res.status(400).json({ success: false, error: "Invalid Appointment ID" });
         }
 
+        const appointment = await Appointment.findById(appointmentId).select('patientId doctorId');
+        if (!appointment) {
+            return res.status(404).json({ success: false, error: "Appointment not found" });
+        }
+        const isOwner = appointment.patientId.toString() === req.user.id;
+        const canManage = await canManageDoctorQueue(req.user, appointment.doctorId);
+        if (!isOwner && !canManage) {
+            return res.status(403).json({ success: false, error: "Not authorized to view this queue position" });
+        }
+
         const stats = await getQueuePosition(appointmentId);
 
         if (stats.position === null) {

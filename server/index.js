@@ -22,6 +22,9 @@ import feedbackRoutes from './routes/feedback.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import reviewRoutes from './routes/review.routes.js';
 import clinicReviewRoutes from './routes/clinicReview.routes.js';
+import { enforceProductionFreeze } from './middlewares/productionFreeze.middleware.js';
+import { validateCsrf } from './middlewares/csrf.middleware.js';
+import { correlationId, noStore, rejectOperatorInjection } from './middlewares/requestSecurity.middleware.js';
 
 const PORT = process.env.PORT || 5000;
 const app = express();
@@ -35,7 +38,8 @@ initSocket(httpServer);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 })); 
-app.use(morgan('dev'));
+app.use(correlationId);
+app.use(morgan(':method :url :status :response-time ms'));
 app.use(compression());
 
 const apiLimiter = rateLimit({
@@ -47,11 +51,20 @@ const apiLimiter = rateLimit({
 });
 
 // Standard Middleware
-app.use(express.json());
-app.use(express.urlencoded({extended:true}))
+app.set('query parser', 'simple');
+app.use(express.json({ limit: '100kb', strict: true }));
+app.use(express.urlencoded({ extended: false, limit: '32kb', parameterLimit: 100 }));
 app.use(cookieParser());
+const allowedClientOrigins = new Set([
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    ...(process.env.ADDITIONAL_CLIENT_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean),
+].map((origin) => origin.replace(/\/$/, '')));
+
 app.use(cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      if (!origin || allowedClientOrigins.has(origin.replace(/\/$/, ''))) return callback(null, true);
+      return callback(new Error('Origin is not allowed'));
+    },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     credentials: true
 }));
@@ -60,7 +73,11 @@ app.use(cors({
 app.use(passport.initialize());
 
 // API Routes
+app.use("/api", noStore);
 app.use("/api", apiLimiter);
+app.use("/api", rejectOperatorInjection);
+app.use("/api", validateCsrf);
+app.use("/api", enforceProductionFreeze);
 app.use("/api/auth", authRoutes);
 app.use("/api/clinics", clinicRoutes)
 app.use("/api/doctors", doctorRoutes);
@@ -83,10 +100,11 @@ app.use((req, res) => {
 });
 
 app.use((error, req, res, next) => {
-  console.error("Unhandled API Error:", error);
+  if (process.env.NODE_ENV !== 'production') console.error("Unhandled API Error:", error.message);
   res.status(error.status || 500).json({
     success: false,
     error: process.env.NODE_ENV === 'production' ? "Internal Server Error" : error.message,
+    requestId: req.id,
   });
 });
 

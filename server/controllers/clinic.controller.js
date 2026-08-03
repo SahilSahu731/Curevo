@@ -72,7 +72,9 @@ export const createClinic = async (req, res) => {
 export const getClinics = async (req, res) => {
   try {
     // Optionally add pagination/filtering logic here
-    const clinics = await Clinic.find().sort({ name: 1 });
+    const clinics = await Clinic.find()
+      .select('name address city state zipCode description images services phone email openingTime closingTime workingDays averageConsultationTime maxPatientsPerDay slotBufferMinutes breakSlots isActive isSynthetic')
+      .sort({ name: 1 });
     
     res.status(200).json({
       success: true,
@@ -90,7 +92,8 @@ export const getClinic = async (req, res) => {
         return res.status(400).json({ success: false, error: "Invalid Clinic ID format." });
     }
 
-    const clinic = await Clinic.findById(req.params.id);
+    const clinic = await Clinic.findById(req.params.id)
+      .select('name address city state zipCode description images services phone email openingTime closingTime workingDays averageConsultationTime maxPatientsPerDay slotBufferMinutes breakSlots isActive isSynthetic');
 
     if (!clinic) {
       return res.status(404).json({ success: false, error: "Clinic not found" });

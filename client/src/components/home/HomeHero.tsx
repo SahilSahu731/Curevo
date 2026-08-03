@@ -35,16 +35,16 @@ export default function HomeHero() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary"></span>
                 </span>
-                LIVE QUEUE V2.0
+                REVIEW-ONLY PROTOTYPE
              </motion.div>
 
             <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-foreground leading-[1.05] mb-6 font-heading">
-              Healthcare <br className="hidden lg:block"/>
-              <span className="text-gradient-brand">Without The Wait</span>
+              Clinic scheduling <br className="hidden lg:block"/>
+              <span className="text-gradient-brand">and queue workflows</span>
             </h1>
             
             <p className="text-xl text-muted-foreground max-w-xl mx-auto lg:mx-0 leading-relaxed font-body">
-              Join the 10,000+ patients using SmartQueue to book instantly, track live, and reclaim their time.
+              Request a listed appointment and view server-reported queue updates. Timing, availability, and care are not guaranteed.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start pt-6">
@@ -63,11 +63,11 @@ export default function HomeHero() {
             <div className="pt-8 flex items-center justify-center lg:justify-start gap-8 text-sm font-medium text-muted-foreground font-body">
                 <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-secondary" />
-                    <span>No Login Required</span>
+                    <span>Account required</span>
                 </div>
                 <div className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-secondary" />
-                    <span>Instant SMS Alerts</span>
+                    <span>In-app status updates</span>
                 </div>
             </div>
           </motion.div>
@@ -98,11 +98,11 @@ export default function HomeHero() {
                         {/* Central Number */}
                         <div className="bg-gradient-to-br from-primary/90 to-accent/90 rounded-3xl p-8 text-white relative overflow-hidden mb-6 group">
                             <div className="absolute -right-10 -top-10 h-40 w-40 bg-white/20 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-700"></div>
-                            <p className="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">Your Token</p>
+                            <p className="text-sm font-medium opacity-80 uppercase tracking-widest mb-1">Example token</p>
                             <div className="text-8xl font-black tracking-tighter font-heading">04</div>
                             <div className="mt-4 flex items-center gap-2 text-sm font-medium bg-black/20 w-fit px-3 py-1 rounded-full backdrop-blur-md">
                                 <Clock className="h-3 w-3" />
-                                <span>~14 mins wait</span>
+                                <span>Sample estimate: 14 min</span>
                             </div>
                         </div>
 

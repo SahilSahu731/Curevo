@@ -3,6 +3,8 @@ import Doctor from "../models/doctor.model.js";
 import Clinic from "../models/clinic.model.js";
 import Appointment from "../models/appointment.model.js";
 import Feedback from "../models/feedback.model.js";
+import { writeAuditEvent } from "../utils/audit.js";
+import { revokeUserSessions } from "../utils/session.js";
 
 // ... (existing imports)
 
@@ -70,7 +72,6 @@ export const getDashboardStats = async (req, res) => {
         });
 
     } catch (error) {
-        console.error("Admin Stats Error:", error);
         res.status(500).json({ success: false, error: "Server Error" });
     }
 };
@@ -120,6 +121,30 @@ export const reviewDoctorVerification = async (req, res) => {
     }
 };
 
+export const downloadDoctorLicense = async (req, res) => {
+    try {
+        const doctor = await Doctor.findById(req.params.id)
+            .select('+verification.licenseFilePublicId +verification.licenseFileResourceType +verification.licenseFileFormat');
+        if (!doctor?.verification?.licenseFilePublicId) {
+            return res.status(404).json({ success: false, error: "Private license file not found" });
+        }
+        const cloudinary = (await import('../config/cloudinary.js')).default;
+        const url = cloudinary.utils.private_download_url(
+            doctor.verification.licenseFilePublicId,
+            doctor.verification.licenseFileFormat,
+            {
+                resource_type: doctor.verification.licenseFileResourceType || 'image',
+                type: 'authenticated',
+                expires_at: Math.floor(Date.now() / 1000) + 300,
+            },
+        );
+        res.set('Cache-Control', 'no-store');
+        return res.redirect(302, url);
+    } catch (error) {
+        return res.status(500).json({ success: false, error: "License download failed" });
+    }
+};
+
 export const getAllUsers = async (req, res) => {
     try {
         const users = await User.find({}).select('-password').sort({ createdAt: -1 });
@@ -132,12 +157,9 @@ export const getAllUsers = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { id } = req.params;
-        const updates = req.body;
-        
-        // Prevent password update via this route for simplicity, or handle hashing if needed.
-        // For now, let's exclude password updates here.
-        delete updates.password;
-
+        const allowed = ['name', 'phone', 'address', 'gender', 'dateOfBirth', 'bio', 'role', 'status'];
+        const updates = Object.fromEntries(Object.entries(req.body).filter(([key]) => allowed.includes(key)));
+        const previous = await User.findById(id).select('role status');
         const user = await User.findByIdAndUpdate(id, updates, { new: true, runValidators: true }).select('-password');
         
         if (!user) return res.status(404).json({ success: false, error: "User not found" });
@@ -150,12 +172,22 @@ export const updateUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
     try {
-        const user = await User.findByIdAndDelete(req.params.id);
+        const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ success: false, error: "User not found" });
-        
-        // Optional: Cleanup related data (Appointments, Doctor profile if any)
-        
-        res.status(200).json({ success: true, message: "User deleted successfully" });
+
+        if (previous.role !== user.role || previous.status !== user.status) {
+            await revokeUserSessions(user._id, previous.role !== user.role ? 'role-change' : 'account-status-change');
+            const { disconnectUserSessions } = await import('../config/socket.js');
+            disconnectUserSessions(user._id.toString());
+            await writeAuditEvent(req, previous.role !== user.role ? 'role-change' : 'account-status-change', 'success', {
+                targetUserId: user._id,
+                metadata: { from: previous.role !== user.role ? previous.role : previous.status, to: previous.role !== user.role ? user.role : user.status },
+            });
+        }
+        res.status(409).json({
+            success: false,
+            error: "Direct admin deletion is disabled because it can orphan health records. Use the approved privacy deletion workflow.",
+        });
     } catch (error) {
         res.status(500).json({ success: false, error: "Server Error" });
     }
@@ -213,7 +245,6 @@ export const getAllAppointments = async (req, res) => {
             data: appointments
         });
     } catch (error) {
-        console.error("Admin All Appointments Error:", error);
         res.status(500).json({ success: false, error: "Server Error" });
     }
 };

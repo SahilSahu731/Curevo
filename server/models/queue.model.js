@@ -41,6 +41,7 @@ const QueueSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+QueueSchema.add({ isSynthetic: { type: Boolean, default: false, index: true }, seedBatch: { type: String, index: true } });
 
 // Compound index to ensure only ONE queue exists per Doctor/Clinic per Day
 QueueSchema.index({ doctorId: 1, clinicId: 1, date: 1 }, { unique: true });

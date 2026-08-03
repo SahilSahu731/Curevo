@@ -1,43 +1,43 @@
 "use client";
 
-import { Zap, Shield, Smartphone, Clock, Users, Activity } from "lucide-react";
+import { CalendarClock, Info, Smartphone, Clock, Users, Activity } from "lucide-react";
 import { motion, Variants } from "framer-motion";
 
 const features = [
   {
     title: "Real-Time Tracking",
-    description: "Track your position in the queue live from your phone. No more guessing when it's your turn.",
+    description: "View queue updates sent by the clinic workflow. Displayed times remain estimates.",
     icon: Clock,
     color: "bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400",
   },
   {
-    title: "Instant Booking",
-    description: "Book appointments in seconds. Choose your preferred doctor and time slot with ease.",
-    icon: Zap,
+    title: "Appointment Requests",
+    description: "Select a listed clinician and available slot. A request does not guarantee care or availability.",
+    icon: CalendarClock,
     color: "bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400",
   },
   {
     title: "Smart Notifications",
-    description: "Get notified when you need to leave for the clinic. We handle the timing for you.",
+    description: "View prototype queue notifications when the server emits an appointment update.",
     icon: Smartphone,
     color: "bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400",
   },
   {
     title: "Doctor Dashboard",
-    description: "Powerful tools for doctors to manage patient flow and reduce administrative burden.",
+    description: "Role-restricted views demonstrate appointment and queue management.",
     icon: Activity,
     color: "bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400",
   },
   {
     title: "Crowd Management",
-    description: "Reduce waiting room congestion and maintain a safer, healthier environment.",
+    description: "Review a proposed queue order and update appointment status.",
     icon: Users,
     color: "bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400",
   },
   {
-    title: "Secure & Private",
-    description: "Your health data is encrypted and protected with enterprise-grade security.",
-    icon: Shield,
+    title: "Know the Limitations",
+    description: "Review privacy and safety notices before entering data or joining a video visit.",
+    icon: Info,
     color: "bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400",
   },
 ];
@@ -78,7 +78,7 @@ export default function FeaturesGrid() {
             transition={{ delay: 0.1 }}
             className="text-lg text-slate-600 dark:text-slate-400 leading-relaxed"
           >
-            We've streamlined the entire process from booking to consultation, making healthcare accessible, predictable, and stress-free.
+            These are prototype workflows for evaluation. They do not promise access, timing, availability, or clinical outcomes.
           </motion.p>
         </div>
 

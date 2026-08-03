@@ -8,10 +8,10 @@ export default function StatsSection() {
         <div className="container px-4 md:px-6 mx-auto relative z-10">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center divide-x divide-background/10">
                 {[
-                    { val: "10k+", label: "Patients Served" },
-                    { val: "500+", label: "Doctors" },
-                    { val: "99.9%", label: "Uptime" },
-                    { val: "15m", label: "Avg Wait Time" },
+                    { val: "01", label: "Choose a provider" },
+                    { val: "02", label: "Request a slot" },
+                    { val: "03", label: "View queue status" },
+                    { val: "04", label: "Review visit records" },
                 ].map((stat, i) => (
                     <motion.div 
                         key={i}
