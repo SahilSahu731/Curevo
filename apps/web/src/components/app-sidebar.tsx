@@ -1,0 +1,139 @@
+"use client"
+
+import * as React from "react"
+import {
+  Calendar,
+  Home,
+  Inbox,
+  Search,
+  Settings,
+  User,
+  Stethoscope,
+  Users,
+  Activity,
+  Clock,
+  LogOut,
+  Building2,
+  LayoutDashboard,
+  Bell,
+} from "lucide-react"
+
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarRail,
+  SidebarSeparator,
+} from "@/components/ui/sidebar"
+import { useAuthStore } from "@/store/authStore"
+import { usePathname, useRouter } from "next/navigation"
+import { BrandLogo } from "@/components/brand/BrandLogo"
+
+export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user, logout } = useAuthStore()
+  const pathname = usePathname()
+  const router = useRouter()
+
+  const doctorItems = [
+    { title: "Dashboard", url: "/doctor-dashboard", icon: Home },
+    { title: "Queue Management", url: "/doctor-dashboard", icon: Clock },
+    { title: "Patients", url: "/doctor-dashboard/appointments", icon: Users },
+    { title: "Appointments", url: "/doctor-dashboard/appointments", icon: Calendar },
+    { title: "Notifications", url: "/doctor-dashboard/notifications", icon: Bell },
+    { title: "Profile", url: "/profile", icon: User },
+    { title: "Settings", url: "/profile", icon: Settings },
+  ]
+
+  const patientItems = [
+    { title: "Home", url: "/patient-dashboard", icon: Home },
+    { title: "My Appointments", url: "/patient-dashboard/appointments", icon: Calendar },
+    { title: "Find Doctors", url: "/doctors", icon: Search },
+    { title: "Medical Records", url: "/patient-dashboard/records", icon: Activity },
+    { title: "Feedback", url: "/patient-dashboard/feedback", icon: Inbox },
+    { title: "Notifications", url: "/patient-dashboard/notifications", icon: Bell },
+    { title: "Profile", url: "/profile", icon: User },
+    { title: "Settings", url: "/profile", icon: Settings },
+  ]
+
+  const adminItems = [
+    { title: "Dashboard", url: "/admin-dashboard", icon: LayoutDashboard },
+    { title: "Appointments", url: "/admin-dashboard/appointments", icon: Calendar },
+    { title: "Clinics", url: "/admin-dashboard/clinics", icon: Building2 },
+    { title: "Doctors", url: "/admin-dashboard/doctors", icon: Stethoscope },
+    { title: "Users", url: "/admin-dashboard/users", icon: Users },
+    { title: "Feedback", url: "/admin-dashboard/feedback", icon: Inbox },
+    { title: "Notifications", url: "/admin-dashboard/notifications", icon: Bell },
+    { title: "Profile", url: "/profile", icon: User },
+    { title: "Settings", url: "/profile", icon: Settings },
+  ]
+  
+  let items = patientItems;
+  if (user?.role === 'doctor') items = doctorItems;
+  else if (user?.role === 'admin') items = adminItems;
+
+  const getPortalName = () => {
+      switch(user?.role) {
+          case 'doctor': return 'Doctor Portal';
+          case 'admin': return 'Admin Console';
+          default: return 'Patient Portal';
+      }
+  }
+
+  return (
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader>
+        <div className="flex items-center gap-2 px-2 py-1">
+          <BrandLogo compact />
+          <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
+            <span className="text-xs text-muted-foreground">{getPortalName()}</span>
+          </div>
+        </div>
+      </SidebarHeader>
+      <SidebarSeparator />
+      <SidebarContent>
+        <SidebarGroup>
+          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {items.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
+                    <a href={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+      </SidebarContent>
+      <SidebarFooter>
+         <SidebarMenu>
+            <SidebarMenuItem>
+                <SidebarMenuButton 
+                    onClick={() => {
+                        logout();
+                        router.push('/login');
+                    }}
+                    tooltip="Log out"
+                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                    <LogOut />
+                    <span>Log out</span>
+                </SidebarMenuButton>
+            </SidebarMenuItem>
+         </SidebarMenu>
+      </SidebarFooter>
+      <SidebarRail />
+    </Sidebar>
+  )
+}

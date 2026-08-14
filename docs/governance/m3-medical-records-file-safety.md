@@ -11,7 +11,7 @@
 | Attachments | Metadata/read through authorized signed download | Upload/read | Break-glass release/download | Never |
 | Audit/revision metadata | No sensitive internals | Own workflow metadata | Compliance access | Never |
 
-Medical records now expose a public projection that removes legacy `doctorNotes`, storage keys, and private note fields. Clinician notes live in `ClinicalNote`; revisions and addenda are separately recorded. Finalized records cannot be silently overwritten. Run `npm run migrate:m3-records` once against an approved backup to backfill legacy notes and author metadata.
+Medical records now expose a public projection that removes legacy `doctorNotes`, storage keys, and private note fields. Clinician notes live in `ClinicalNote`; revisions and addenda are separately recorded. Finalized records cannot be silently overwritten. From the repository root, run `npm run migrate:m3-records --workspace @curevo/web` once against an approved backup to backfill legacy notes and author metadata.
 
 ## File controls
 
@@ -19,4 +19,4 @@ Uploads are memory-bounded, purpose-checked, signature-inspected, dimension/page
 
 ## Lifecycle and deployment gates
 
-Account deletion is an authenticated anonymization/deactivation workflow: clinical appointments, records, revisions, and audit evidence are retained; personal account identifiers and non-required communications are scrubbed. Admin user deletion is deactivation, never destructive graph deletion. Production requires TLS client/API/database/storage/TURN configuration, managed secret storage and rotation, a real antivirus/quarantine service, retention jobs, encrypted backups, and privacy/legal confirmation of jurisdiction-specific medical-record retention.
+Account deletion is an authenticated anonymization/deactivation workflow: clinical appointments, records, revisions, and audit evidence are retained; personal account identifiers and non-required communications are scrubbed. Admin user deletion is deactivation, never destructive graph deletion. Production requires TLS at the unified application ingress and for database/storage/TURN connections, managed secret storage and rotation, a real antivirus/quarantine service, retention jobs, encrypted backups, and privacy/legal confirmation of jurisdiction-specific medical-record retention.

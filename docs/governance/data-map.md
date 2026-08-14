@@ -1,6 +1,6 @@
 # Data map
 
-Status: code-derived interim inventory, reviewed 2026-08-03. Lawful basis/authorization is **UNDECIDED** until operator, users, customers, jurisdictions, and regulated roles are selected. “Retention” describes current code, not a legally approved schedule.
+Status: code-derived interim inventory, reviewed 2026-08-03 and path/deployment mapping updated 2026-08-14. Lawful basis/authorization is **UNDECIDED** until operator, users, customers, jurisdictions, and regulated roles are selected. “Retention” describes current code, not a legally approved schedule. Colocating the browser, REST API, and Socket.IO runtime in `apps/web` did not change the data categories, purposes, or unresolved retention decisions below.
 
 | Data / model | Fields | Purpose | Storage / recipients | Current retention and deletion | Sensitivity |
 |---|---|---|---|---|---|
@@ -20,13 +20,13 @@ Status: code-derived interim inventory, reviewed 2026-08-03. Lawful basis/author
 | Privacy request audit | user while active, one-way email hash, request type/status, policy version/time | Prove export/deletion processing without retaining account content | MongoDB; operator access only | TTL index deletes after 90 days; user ID removed after deletion | Pseudonymous audit metadata |
 | Wellness assessment | answers, generated score/report | Browser-only educational calculator | React memory; optional PDF on user device | Cleared on reload/close; downloaded file controlled by user | Self-reported wellness/health data |
 | Video metadata/media | room ID, appointment authorization, participant display name, SDP/ICE; live audio/video | Connect scheduled participants | Socket.IO signaling server; peer browsers; public Google STUN; host network logs | Not intentionally recorded; provider/log retention unknown | Highly sensitive communications and network identifiers |
-| HTTP/security logs | method/path/status, errors, IP/user agent at host/proxy | Operations and security | Express Morgan output, Render/Vercel/provider logs | Provider retention unknown | Identifiers; paths may expose object IDs |
+| HTTP/security logs | method/path/status, errors, IP/user agent at host/proxy | Operations and security | Unified Next.js/Express/Socket.IO process output and Render/provider logs; any legacy split-host logs remain to be inventoried | Provider retention unknown | Identifiers; paths may expose object IDs |
 | Browser state | non-sensitive UI/theme state; in-memory account object only | Session/UI continuity | User browser memory | Cleared on logout, expiry, refresh, or account deletion; no auth token or health data is persisted | Personal data while active |
 | Authentication cookie | opaque `curevo_session` value; server stores only an HMAC hash | API and Socket.IO session lookup | HttpOnly browser cookie, server-side Session collection | Eight hours by default or 30 days with Remember me; revocation and expiry invalidate it | Credential |
 | Backups | copies of database, objects, logs if enabled | Recovery | Mongo/Cloudinary/host providers | Configuration and deletion behavior unknown | Same as source data |
 
 ## Recipient and agreement decision log
 
-Potential recipients/subprocessors found in code are MongoDB hosting, Cloudinary, Google OAuth/STUN, Render, and Vercel. No executed data-processing agreement, healthcare agreement, region selection, subprocessors list, or customer agreement is evidenced in the repository. Do not represent that any vendor configuration is approved for regulated data.
+Potential recipients/subprocessors found in the current code or deployment configuration are MongoDB hosting, Cloudinary, Google OAuth/STUN, and Render. A prior Vercel client configuration was removed during colocation, but any still-live Vercel project, preview, logs, or backups remain potential recipients until independently inventoried and decommissioned. No executed data-processing agreement, healthcare agreement, region selection, subprocessors list, or customer agreement is evidenced in the repository. Do not represent that any vendor configuration is approved for regulated data.
 
 For US analysis, HHS explains that status depends on whether an entity is a covered entity or acts as a business associate, and that relevant cloud providers can require business associate agreements: [HHS covered entities and business associates](https://www.hhs.gov/hipaa/for-professionals/covered-entities/index.html). Non-HIPAA health applications can still face other obligations, including the [FTC Health Breach Notification Rule](https://www.ftc.gov/business-guidance/resources/health-breach-notification-rule-basics-business). These links are scoping inputs, not a conclusion that US law is the target or only applicable law.

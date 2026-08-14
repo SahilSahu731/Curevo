@@ -4,22 +4,21 @@
 
 Only trust, safety, privacy, security, accessibility, and reliability remediation in M0-M4 is permitted until every release gate is signed. In production, all mutating API requests are denied by default with `PRODUCTION_REVIEW_ONLY`. The only exceptions are sign-in and sign-out; creation of a new Google account is separately blocked. Enabling writes requires `ALLOW_PRODUCTION_WRITES=true` and completed release approval. Search indexing is disabled unless `NEXT_PUBLIC_ALLOW_INDEXING=true`.
 
-The wellness calculators are also disabled unless `NEXT_PUBLIC_ENABLE_WELLNESS_TOOLS=true`. That flag requires clinical-safety approval; it is not set in repository deployment configuration.
+The wellness calculators are also disabled unless `NEXT_PUBLIC_ENABLE_WELLNESS_TOOLS=true`. That flag requires clinical-safety approval; the repository deployment configuration explicitly sets it to `false`.
 
 ## Deployment inventory
 
 | Surface | Evidence | URL / location | Data source | Intended audience | Accountable owner | Status |
 |---|---|---|---|---|---|---|
-| Local Next.js client | `client/package.json` | `http://localhost:3000` by convention | Local API | Developer only | UNASSIGNED | Review only |
-| Local Express/Socket.IO API | `server/package.json` | `http://localhost:5000` | Local MongoDB | Developer only | UNASSIGNED | Review only |
+| Local full-stack workspace | root `package.json`; `apps/web/package.json`; `apps/web/server.mjs` | `http://localhost:3000` | Same-origin Next.js pages, Express REST API, Socket.IO, and local MongoDB | Developer only | UNASSIGNED | Review only; writes remain governed by the production freeze |
 | Local MongoDB container | `docker-compose.yml`; observed container `curevo-mongo` | `127.0.0.1:27017/curevo` | Docker volume `curevo-mongo-data` | Developer only | UNASSIGNED | Contains generated demonstration records; inspect before reuse |
-| Render API configuration | `render.yaml`, service `curevo-api` | Live URL and account not discoverable from repository | Secret `MONGO_URI` | Must remain private/review-only | UNASSIGNED | Existence and collected data unverified |
-| Vercel client configuration | `client/vercel.json` | Project, previews, URL, and account not discoverable from repository | Configured API URL | Must remain private/review-only | UNASSIGNED | Existence unverified |
+| Render persistent web-service configuration | `render.yaml`, service `curevo` | Live URL and account not discoverable from repository | Same-origin web/API/socket process; secret `MONGO_URI` | Must remain private/review-only | UNASSIGNED | Repository configuration exists; deployed state and collected data remain unverified |
+| Legacy split deployments | Previous Render API and Vercel client configuration; current repository no longer configures the split | URLs, projects, previews, and accounts not discoverable from repository | Any prior database, logs, browser deployment, or API origin | None until independently inventoried and approved | UNASSIGNED | Must be found, access-reviewed, write-frozen, and decommissioned or documented; absence from source does not prove deletion |
 | GitHub repository | git remote `SahilSahu731/Curevo` | SSH remote; visibility not verified | Source only | Maintainers | Repository account owner | Access review required |
-| Cloudinary | server configuration and upload controllers | Account, region, objects, and logs not discoverable | Profile photos and clinician license files | Authorized workflow users/admin | UNASSIGNED | Deletion and contract unverified |
-| Google OAuth | Passport configuration | OAuth project/consent screen not discoverable | Name, email, Google subject, photo | Account users | UNASSIGNED | Production settings and consent review required |
+| Cloudinary | `apps/web/src/server/config/cloudinary.js` and upload controllers | Account, region, objects, and logs not discoverable | Profile photos, clinician license files, and medical attachments | Authorized workflow users/admin | UNASSIGNED | Deletion and contract unverified |
+| Google OAuth | Passport configuration under `apps/web/src/server` | OAuth project/consent screen not discoverable | Name, email, Google subject, photo | Account users | UNASSIGNED | Same-origin callback, production settings, and consent review required |
 
-The project owner must add every Vercel preview, Render instance, database, object store, domain, log sink, backup, and OAuth project before release. Unknown does not mean absent.
+The project owner must add every current or legacy preview, Render or Vercel instance, database, object store, domain, log sink, backup, and OAuth project before release. The repository migration does not delete an external deployment. Unknown does not mean absent.
 
 ## Existing data determination
 
@@ -36,4 +35,6 @@ Required operator action before any reset or release:
 
 ## Product and jurisdiction decision
 
-Current classification is **prototype only**. Target country/region, patient/clinic/direct-to-consumer customer type, operator identity, healthcare provider relationship, controller/processor role, and medical-device/telehealth/marketplace classification are all `UNDECIDED`. The UI uses jurisdiction-neutral emergency language because it cannot safely name a number without this decision.
+Current classification is **prototype only**. Target country/region, patient/clinic/direct-to-consumer customer type, operator identity, healthcare provider relationship, controller/processor role, and medical-device/telehealth/marketplace classification are all `UNDECIDED`. The requested self-guided focus and wellbeing direction is a proposal, not an approval or a change to this classification. The UI uses jurisdiction-neutral emergency language because it cannot safely name a number without this decision.
+
+The workspace migration colocates the browser, API, and realtime code; it does not remove or approve the legacy clinician, appointment, medical-record, queue, review, or telehealth domains. Those domains remain review-only and must not be relabeled as a non-clinical product without a documented disposition for their routes, data, retention, and users.
