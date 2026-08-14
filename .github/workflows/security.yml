@@ -18,40 +18,23 @@ jobs:
       - name: Check tracked files for credential assignments
         shell: bash
         run: |
-          if git grep -nE '(SESSION_SECRET|JWT_SECRET|CLOUDINARY_API_SECRET|GOOGLE_CLIENT_SECRET|MONGO_URI)=.{8,}' -- ':!*.example' ':!docs/**'; then
+          if git grep -nE '(SESSION_SECRET|JWT_SECRET|CLOUDINARY_API_SECRET|GOOGLE_CLIENT_SECRET|MONGO_URI).{0,4}[:=].{0,4}[^<[:space:]][^[:space:]]{7,}' -- ':!*.example' ':!docs/**'; then
             echo "Tracked credential assignment detected" >&2
             exit 1
           fi
 
-  frontend:
+  web:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: client
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: client/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci
-      - run: npm audit --omit=dev --audit-level=high
+      - run: npm audit --audit-level=high
+      - run: npm run check:links
       - run: npm run lint
+      - run: npm test
       - run: npm run build
-
-  backend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: server
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: server/package-lock.json
-      - run: npm ci
-      - run: npm audit --omit=dev --audit-level=high
-      - run: npm run verify:m3

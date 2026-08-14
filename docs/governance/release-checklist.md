@@ -12,11 +12,13 @@ Every item requires evidence and a named signer. Empty or role-only sign-off mea
 - [ ] `ALLOW_PRODUCTION_WRITES` remains false until all approvals are complete
 - [ ] Indexing remains disabled on review/preview environments
 - [ ] Content claims inventory has evidence/owner/approval/expiry for every claim
-- [ ] `npm run verify:m0` passes and rendered desktop/mobile pages are reviewed
+- [ ] `npm run verify` and `npm run verify:m0 --workspace @curevo/web` pass, and rendered desktop/mobile pages are reviewed
 - [ ] Export and deletion tested against database, object store, logs, and backups
 - [ ] Incident exercise and emergency escalation test completed
-- [ ] `npm audit --omit=dev --audit-level=high` passes for client and server; dependency review record is current
-- [ ] Session, CSRF, OAuth state, recovery-token, MFA, and logout-all tests pass on the deployed origin layout
+- [ ] `npm audit --omit=dev --audit-level=high` passes against the root workspace lockfile; dependency review record is current
+- [ ] Session, CSRF, OAuth state/callback, recovery-token, MFA, logout-all, and Socket.IO tests pass on the deployed same-origin layout; any legacy split origins are disabled or explicitly inventoried
+- [ ] The Express `/api` fallback and Next App Router handlers are integration-tested so neither routing layer shadows the other
+- [ ] `NEXT_PUBLIC_ENABLE_WELLNESS_TOOLS` remains false until the clinical-safety reviewer approves a documented intended use or the legacy tools are removed
 - [ ] Residual risks signed individually with scope and expiry
 
 Final decision: **BLOCKED** until all boxes are complete.
