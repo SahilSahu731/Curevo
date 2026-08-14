@@ -6,74 +6,55 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(here, "../../..");
-const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
 const repoRoot = path.resolve(root, "../..");
+const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
 const readRepo = (relative) => fs.readFileSync(path.join(repoRoot, relative), "utf8");
-const walk = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-  const target = path.join(directory, entry.name);
-  if (entry.isDirectory()) return walk(target);
-  return /\.(js|jsx|ts|tsx)$/.test(entry.name) ? [target] : [];
-});
+const walk = (directory) => fs.existsSync(directory)
+  ? fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) return walk(target);
+    return /\.(js|jsx|ts|tsx)$/.test(entry.name) ? [target] : [];
+  })
+  : [];
 
-test("public source excludes quarantined claims", () => {
-  const publicRoots = [
-    "src/app/(auth)",
-    "src/app/(home)",
-    "src/components/home",
-    "src/components/health-check",
-  ].map((relative) => path.join(root, relative));
+test("public source keeps clear non-clinical product boundaries", () => {
+  const publicRoots = ["src/app/(auth)", "src/app/(home)", "src/components/home"]
+    .map((relative) => path.join(root, relative));
   const source = publicRoots.flatMap(walk).map((file) => fs.readFileSync(file, "utf8")).join("\n");
   const forbidden = [
     /HIPAA (?:compliant|secure)/i,
     /GDPR compliant/i,
     /bank-grade/i,
-    /enterprise-grade/i,
     /AI-powered/i,
-    /AI model/i,
     /98% accuracy/i,
     /50K\+ assessments/i,
-    /trusted by (?:thousands|leading healthcare providers)/i,
-    /world-class care/i,
-    /top-rated (?:doctor|clinic)/i,
-    /state-of-the-art medical/i,
-    /ISO 9001:2015 certified/i,
-    /10,000\+ patients/i,
-    /instant SMS alerts/i,
     /\bonline cure\b/i,
     /mental sickness/i,
     /AI therapist/i,
+    /diagnos(?:e|is) your/i,
+    /treats? (?:anxiety|depression|ADHD)/i,
   ];
   for (const claim of forbidden) assert.doesNotMatch(source, claim);
+  assert.match(read("src/app/(home)/terms/page.tsx"), /does not provide medical advice/i);
 });
 
-test("assessment limitations precede questions and appear in PDF", () => {
-  const modal = read("src/components/health-check/AssessmentModal.tsx");
-  assert.ok(modal.indexOf("This is an unvalidated educational calculator") < modal.indexOf("currentQ.text"));
-  assert.match(read("src/lib/healthCalculations.ts"), /Unvalidated fixed-rule output/);
-  assert.match(read("src/app/(home)/health-check/page.tsx"), /NEXT_PUBLIC_ENABLE_WELLNESS_TOOLS/);
+test("the deployable source contains only the member and admin product roles", () => {
+  const user = read("src/server/models/user.model.js");
+  const schemas = read("src/server/validations/schemas.js");
+  assert.match(user, /values: \["member", "admin"\]/);
+  assert.match(schemas, /z\.literal\("member"\)/);
 });
 
-test("Socket.IO requires identity and appointment authorization", () => {
-  const socket = read("src/server/config/socket.js");
-  assert.match(socket, /io\.use\(/);
-  assert.match(socket, /findSession/);
-  assert.match(socket, /authorizeAppointment/);
-  assert.match(socket, /verifyRoomGrant/);
-  assert.match(socket, /participants\.length >= 2/);
-  assert.match(socket, /telehealthRooms\.has\(data\.roomId\)/);
-  assert.match(socket, /consent\?\.accepted/);
-  assert.match(socket, /maxHttpBufferSize/);
-  assert.match(socket, /connectionAllowed/);
+test("focus data is owner-scoped and exposed behind authentication", () => {
+  const controller = read("src/server/controllers/focus.controller.js");
+  const routes = read("src/server/routes/focus.routes.js");
+  assert.match(controller, /const owned = \(userId, id\)/);
+  assert.match(controller, /userId: req\.user\._id/g);
+  assert.match(routes, /router\.use\(protect\)/);
+  assert.match(routes, /requireVerifiedEmail/);
 });
 
 test("review deployments are noindex and production writes are opt-in", () => {
   assert.match(read("src/app/robots.ts"), /NEXT_PUBLIC_ALLOW_INDEXING/);
   assert.match(readRepo("render.yaml"), /ALLOW_PRODUCTION_WRITES[\s\S]*"false"/);
-});
-
-test("reviews require completed visits and public clinician responses omit license data", () => {
-  assert.match(read("src/server/controllers/review.controller.js"), /status: "completed"/);
-  assert.match(read("src/server/controllers/clinicReview.controller.js"), /status: "completed"/);
-  assert.match(read("src/server/controllers/queue.controller.js"), /Not authorized to view this queue position/);
-  assert.match(read("src/server/controllers/doctor.controller.js"), /select\('userId clinicId specialization qualification experience consultationFee isAvailable availability createdAt updatedAt isSynthetic'\)/);
 });

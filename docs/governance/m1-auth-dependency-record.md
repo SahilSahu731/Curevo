@@ -4,7 +4,7 @@ Original review date: 2026-08-03. Workspace migration review: 2026-08-14. This i
 
 ## Dependency disposition
 
-The repository now has one npm workspace lockfile at the root. Application dependencies live in `apps/web/package.json`, while security-sensitive transitive overrides are owned by the root `package.json` so npm applies them to the workspace. The root production tree passed `npm audit --omit=dev --audit-level=high` on 2026-08-14 with no reported advisory; that point-in-time result is not an exploitability assessment or security certification. Direct and transitive paths are constrained with package-manager overrides for `dompurify`, `form-data`, `postcss`, `sharp`, `socket.io-parser`, `ws`, `engine.io`, `path-to-regexp`, and `socket.io-adapter`. The MongoDB development container remains pinned to `mongo:8.2.9` rather than `latest`.
+The repository has one npm workspace lockfile at the root. Application dependencies live in `apps/web/package.json`, while security-sensitive transitive overrides are owned by the root package. The production tree passed `npm audit --omit=dev --audit-level=high` on 2026-08-14 with no reported advisory; that point-in-time result is not an exploitability assessment or security certification. Current overrides cover `dompurify`, `form-data`, `postcss`, `sharp`, and `path-to-regexp`. Socket.IO and its realtime dependency tree were removed with the telehealth/queue domain. The MongoDB development container remains pinned rather than using `latest`.
 
 The repository workflow `.github/workflows/security.yml` performs one clean root install and audit on pull requests, main-branch pushes, and weekly. It then checks internal links, lint, the Node regression suite, and the Next.js build for `apps/web`. A high or critical advisory fails CI; an advisory cannot be accepted silently because the risk register and release checklist require an owner, exploitability assessment, evidence, and expiry.
 
@@ -12,9 +12,9 @@ Dependency upgrades were applied through lockfile-aware package updates and then
 
 ## Authentication architecture
 
-The application uses an opaque, random, server-side session token. Only a hash is stored in `Session`; the raw value is sent in a `Secure`/`HttpOnly` cookie with explicit path, SameSite, max-age, and optional domain. Normal sessions last eight hours; “Remember me” sessions last 30 days. Logout revokes the current session, logout-all revokes all user sessions, and password reset/change, email change, MFA changes, and account deletion revoke prior sessions. Socket handshakes resolve the same session record and are disconnected on revocation.
+The application uses an opaque, random, server-side session token. Only a hash is stored in `Session`; the raw value is sent in a `Secure`/`HttpOnly` cookie with explicit path, SameSite, max-age, and optional domain. Normal sessions last eight hours; “Remember me” sessions last 30 days. Logout revokes the current session, logout-all revokes all user sessions, and password reset/change, email change, MFA changes, and account deletion revoke prior sessions.
 
-Browser code does not persist authentication tokens, profiles, or health data in local or session storage. API writes require a signed double-submit CSRF token and same-origin checks. API responses are marked `no-store`; browser query caches and sockets are cleared on logout and a BroadcastChannel propagates logout to other tabs.
+Browser code does not persist authentication tokens, profiles, or focus data in local or session storage. API writes require a signed double-submit CSRF token and same-origin checks. API responses are marked `no-store`; browser query caches are cleared on logout and a BroadcastChannel propagates logout to other tabs.
 
 OAuth uses a signed, expiring, SameSite state cookie, verified Google email, duplicate-provider checks, explicit account-linking rules, and a relative redirect allowlist. The callback completes through the session cookie; no token is placed in a URL fragment or returned to JavaScript.
 

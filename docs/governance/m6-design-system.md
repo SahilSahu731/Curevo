@@ -3,11 +3,11 @@
 ## Approved identity
 
 - Product name: **Curevo**
-- Descriptor: **Care coordination prototype**
+- Descriptor: **Self-guided focus and everyday-wellbeing prototype**
 - Product status language: **pre-release**, **prototype**, and **review environment**
 - Do not use: SmartQueue, Medical OS, ClinicOS, public launch, trusted by, instant confirmation, or production-ready
 
-The requested self-guided focus and wellbeing direction has not been approved as a wellness product and does not supersede this identity record. Do not describe Curevo as an “online cure,” use stigmatizing “mental sickness” language, or imply diagnosis, therapy, treatment, clinician oversight, crisis response, or validated outcomes without a separately reviewed intended use and evidence record.
+This descriptor describes product scope, not public-launch or outcome approval. Do not describe Curevo as an “online cure,” use stigmatizing “mental sickness” language, or imply diagnosis, therapy, treatment, clinician oversight, crisis response, or validated outcomes.
 
 `BrandLogo` in `apps/web/src/components/brand/BrandLogo.tsx` is the canonical in-product logo. The app icon and social image use the same Curevo name and emerald accent.
 

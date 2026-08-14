@@ -1,51 +1,12 @@
-import Link from "next/link";
-import { AlertTriangle, CalendarClock, ListChecks, Video } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BookHeart, Focus, Leaf, ShieldCheck } from "lucide-react";
 
-const scope = [
-  { icon: CalendarClock, title: "Appointments", text: "Demonstrates selecting a clinic, clinician, date, and available slot." },
-  { icon: ListChecks, title: "Clinic queues", text: "Demonstrates status and position updates for authorized accounts." },
-  { icon: Video, title: "Video visits", text: "Demonstrates a scheduled browser-to-browser call between appointment participants." },
+const principles = [
+  { icon: Focus, title: "Attention with a stopping point", text: "Short focus blocks make room for one intention without turning the whole day into a performance." },
+  { icon: Leaf, title: "Routines that stay flexible", text: "Helpful cues can be paused, changed, or skipped. A routine is meant to support the week, not judge it." },
+  { icon: BookHeart, title: "Reflection without scoring", text: "Private notes help members notice conditions and patterns without diagnostic labels or automated wellbeing scores." },
+  { icon: ShieldCheck, title: "Boundaries stated clearly", text: "Curevo is self-guided focus and wellbeing support. It does not provide diagnosis, treatment, therapy, or crisis response." },
 ];
 
 export default function AboutPage() {
-  return (
-    <main className="min-h-screen bg-background pb-24 pt-32 text-foreground">
-      <section className="mx-auto max-w-5xl px-4">
-        <p className="text-sm font-semibold uppercase text-emerald-700 dark:text-emerald-400">Pre-release product</p>
-        <h1 className="mt-4 max-w-3xl text-4xl font-bold md:text-6xl">About the Curevo prototype</h1>
-        <p className="mt-6 max-w-3xl text-lg leading-8 text-muted-foreground">
-          Curevo is a software prototype for evaluating appointment, clinic-queue, record, and video-visit workflows. No public-launch jurisdiction, operating company, clinical sponsor, or healthcare-regulatory role has been approved.
-        </p>
-
-        <div className="mt-12 border-l-4 border-amber-500 bg-amber-500/10 p-5">
-          <div className="flex gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
-            <p className="text-sm leading-6">Do not enter real patient, clinician-license, or medical information into a review deployment. This service is not approved for diagnosis, treatment, triage, or emergencies.</p>
-          </div>
-        </div>
-
-        <div className="mt-16 grid gap-8 border-y border-border py-12 md:grid-cols-3">
-          {scope.map(({ icon: Icon, title, text }) => (
-            <div key={title}>
-              <Icon className="h-6 w-6 text-primary" />
-              <h2 className="mt-4 text-xl font-semibold">{title}</h2>
-              <p className="mt-2 leading-7 text-muted-foreground">{text}</p>
-            </div>
-          ))}
-        </div>
-
-        <section className="mt-16 max-w-3xl">
-          <h2 className="text-2xl font-bold">Governance status</h2>
-          <p className="mt-3 leading-7 text-muted-foreground">
-            Public launch remains blocked until product, security, privacy, and clinical-safety owners approve the target jurisdiction, intended users, operational controls, and residual risks. Provider listings and seed records may be synthetic demonstration data.
-          </p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button asChild><Link href="/privacy">Read the Privacy Notice</Link></Button>
-            <Button asChild variant="outline"><Link href="/terms">Read the Terms</Link></Button>
-          </div>
-        </section>
-      </section>
-    </main>
-  );
+  return <main className="min-h-screen bg-background pb-24 pt-32 text-foreground"><div className="mx-auto max-w-6xl px-5"><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">About Curevo</p><h1 className="mt-4 max-w-4xl text-balance text-5xl font-semibold tracking-[-0.05em] sm:text-7xl">A practical place to return to your attention.</h1><p className="mt-7 max-w-3xl text-lg leading-8 text-muted-foreground">Curevo is being built for people who feel stuck, distracted, overloaded, or caught in unhelpful loops. It offers small focus practices, flexible routines, and private reflection—without pretending everyday software can replace professional care.</p><section className="mt-16 grid gap-4 sm:grid-cols-2">{principles.map((item) => <article key={item.title} className="rounded-[2rem] border bg-card p-7"><div className="grid size-11 place-items-center rounded-2xl bg-primary/10 text-primary"><item.icon className="size-5" /></div><h2 className="mt-7 text-2xl font-semibold tracking-tight">{item.title}</h2><p className="mt-3 leading-7 text-muted-foreground">{item.text}</p></article>)}</section><section className="mt-16 rounded-[2rem] bg-[#284c3c] p-8 text-white sm:p-12"><p className="text-xs font-bold uppercase tracking-[0.2em] text-emerald-100/60">Current status</p><h2 className="mt-4 text-3xl font-semibold sm:text-5xl">Still a review-only prototype.</h2><p className="mt-5 max-w-3xl leading-7 text-white/70">Public launch remains blocked until the operating entity, target users and jurisdictions, privacy ownership, accessibility evidence, security controls, crisis-language review, and support operations are approved. Review environments should use synthetic information only.</p></section></div></main>;
 }

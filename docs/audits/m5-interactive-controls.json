@@ -1,205 +1,7 @@
 {
-  "generatedAt": "2026-08-14T03:47:34.041Z",
-  "count": 407,
+  "generatedAt": "2026-08-14T04:56:03.910Z",
+  "count": 203,
   "records": [
-    {
-      "file": "src/app/(admin)/admin-dashboard/appointments/page.tsx",
-      "line": 116,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/appointments/page.tsx",
-      "line": 122,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/appointments/page.tsx",
-      "line": 131,
-      "control": "Select",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/appointments/page.tsx",
-      "line": 144,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/appointments/page.tsx",
-      "line": 152,
-      "control": "Select",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/appointments/page.tsx",
-      "line": 181,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/appointments/page.tsx",
-      "line": 219,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/appointments/page.tsx",
-      "line": 231,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/clinics/page.tsx",
-      "line": 87,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/clinics/page.tsx",
-      "line": 104,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/clinics/page.tsx",
-      "line": 129,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/clinics/page.tsx",
-      "line": 134,
-      "control": "DropdownMenuItem",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/clinics/page.tsx",
-      "line": 138,
-      "control": "DropdownMenuItem",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/clinics/page.tsx",
-      "line": 195,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/clinics/page.tsx",
-      "line": 197,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/clinics/page.tsx",
-      "line": 197,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/clinics/page.tsx",
-      "line": 198,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 121,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 137,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 161,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 166,
-      "control": "DropdownMenuItem",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 170,
-      "control": "DropdownMenuItem",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 227,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 228,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 231,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 259,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 265,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 267,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 268,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 273,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 275,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 275,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/doctors/page.tsx",
-      "line": 276,
-      "control": "Button",
-      "classification": "implemented"
-    },
     {
       "file": "src/app/(admin)/admin-dashboard/feedback/page.tsx",
       "line": 56,
@@ -262,56 +64,26 @@
     },
     {
       "file": "src/app/(admin)/admin-dashboard/page.tsx",
-      "line": 49,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/page.tsx",
-      "line": 50,
+      "line": 24,
       "control": "Link",
       "classification": "implemented"
     },
     {
       "file": "src/app/(admin)/admin-dashboard/page.tsx",
-      "line": 57,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/page.tsx",
-      "line": 72,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/page.tsx",
-      "line": 94,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/page.tsx",
-      "line": 109,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/page.tsx",
-      "line": 109,
+      "line": 24,
       "control": "Button",
       "classification": "implemented"
+    },
+    {
+      "file": "src/app/(admin)/admin-dashboard/page.tsx",
+      "line": 24,
+      "control": "Card",
+      "classification": "intentionally-informational"
     },
     {
       "file": "src/app/(admin)/admin-dashboard/users/page.tsx",
-      "line": 68,
+      "line": 69,
       "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(admin)/admin-dashboard/users/page.tsx",
-      "line": 70,
-      "control": "Select",
       "classification": "implemented"
     },
     {
@@ -328,7 +100,13 @@
     },
     {
       "file": "src/app/(admin)/admin-dashboard/users/page.tsx",
-      "line": 80,
+      "line": 73,
+      "control": "Select",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/(admin)/admin-dashboard/users/page.tsx",
+      "line": 81,
       "control": "Button",
       "classification": "implemented"
     },
@@ -382,7 +160,13 @@
     },
     {
       "file": "src/app/(auth)/layout.tsx",
-      "line": 97,
+      "line": 96,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/(auth)/layout.tsx",
+      "line": 140,
       "control": "Link",
       "classification": "implemented"
     },
@@ -394,278 +178,80 @@
     },
     {
       "file": "src/app/(auth)/layout.tsx",
-      "line": 142,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(auth)/layout.tsx",
-      "line": 149,
+      "line": 148,
       "control": "Link",
       "classification": "implemented"
     },
     {
       "file": "src/app/(auth)/login/page.tsx",
-      "line": 87,
+      "line": 86,
       "control": "form",
       "classification": "implemented"
     },
     {
       "file": "src/app/(auth)/login/page.tsx",
-      "line": 114,
+      "line": 113,
       "control": "Button",
       "classification": "implemented"
     },
     {
       "file": "src/app/(auth)/login/page.tsx",
-      "line": 136,
+      "line": 135,
       "control": "Link",
       "classification": "implemented"
     },
     {
       "file": "src/app/(auth)/login/page.tsx",
-      "line": 149,
+      "line": 148,
       "control": "form",
       "classification": "implemented"
     },
     {
       "file": "src/app/(auth)/login/page.tsx",
-      "line": 167,
+      "line": 166,
       "control": "Link",
       "classification": "implemented"
     },
     {
       "file": "src/app/(auth)/login/page.tsx",
+      "line": 193,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/(auth)/login/page.tsx",
+      "line": 201,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/(auth)/register/page.tsx",
+      "line": 82,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/(auth)/register/page.tsx",
+      "line": 95,
+      "control": "form",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/(auth)/register/page.tsx",
+      "line": 180,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/(auth)/register/page.tsx",
+      "line": 186,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/(auth)/register/page.tsx",
       "line": 194,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(auth)/login/page.tsx",
-      "line": 202,
       "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(auth)/register/page.tsx",
-      "line": 83,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(auth)/register/page.tsx",
-      "line": 96,
-      "control": "form",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(auth)/register/page.tsx",
-      "line": 181,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(auth)/register/page.tsx",
-      "line": 187,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(auth)/register/page.tsx",
-      "line": 195,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 183,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 189,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 212,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 248,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 273,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 280,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 284,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 292,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 300,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 361,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 367,
-      "control": "DropdownMenuItem",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 368,
-      "control": "DropdownMenuItem",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/appointments/page.tsx",
-      "line": 370,
-      "control": "DropdownMenuItem",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 210,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 218,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 227,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 236,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 250,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 294,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 304,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 314,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 325,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 355,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 356,
-      "control": "a",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 361,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 370,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 380,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(doctor)/doctor-dashboard/page.tsx",
-      "line": 394,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/about/page.tsx",
-      "line": 44,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/about/page.tsx",
-      "line": 44,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/about/page.tsx",
-      "line": 45,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/about/page.tsx",
-      "line": 45,
-      "control": "Button",
       "classification": "implemented"
     },
     {
@@ -701,264 +287,6 @@
     {
       "file": "src/app/(home)/blog/page.tsx",
       "line": 42,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 199,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 204,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 205,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 215,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 218,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 218,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 229,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 230,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 291,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 415,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 435,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 446,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 458,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 461,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 481,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 545,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 548,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 573,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 603,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 604,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 606,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 607,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 619,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/book/page.tsx",
-      "line": 681,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 89,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 175,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 189,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 223,
-      "control": "Card",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 241,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 259,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 283,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 323,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 435,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 459,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 461,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 473,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 486,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 495,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/[id]/page.tsx",
-      "line": 514,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/clinics/page.tsx",
-      "line": 114,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/page.tsx",
-      "line": 121,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/page.tsx",
-      "line": 155,
-      "control": "Card",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/clinics/page.tsx",
-      "line": 219,
       "control": "Button",
       "classification": "implemented"
     },
@@ -1029,246 +357,6 @@
       "classification": "implemented"
     },
     {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 327,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 359,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 395,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 435,
-      "control": "button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 459,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 469,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 476,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 539,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 544,
-      "control": "Card",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 570,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 666,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 690,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 692,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 704,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 717,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 726,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/[id]/page.tsx",
-      "line": 745,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 172,
-      "control": "button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 180,
-      "control": "button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 196,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 203,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 215,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 229,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 241,
-      "control": "Select",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 276,
-      "control": "Select",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 290,
-      "control": "Select",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 305,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 327,
-      "control": "Select",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 348,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 364,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 391,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 414,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 453,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 454,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 458,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/doctors/page.tsx",
-      "line": 459,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/lab-tests/page.tsx",
-      "line": 19,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/lab-tests/page.tsx",
-      "line": 19,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/medicines/page.tsx",
-      "line": 19,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/medicines/page.tsx",
-      "line": 19,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
       "file": "src/app/(home)/page.tsx",
       "line": 216,
       "control": "a",
@@ -1287,236 +375,8 @@
       "classification": "implemented"
     },
     {
-      "file": "src/app/(home)/privacy/page.tsx",
-      "line": 28,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/telehealth/page.tsx",
-      "line": 16,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/telehealth/page.tsx",
-      "line": 16,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/telehealth/room/[roomId]/page.tsx",
-      "line": 218,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(home)/telehealth/room/[roomId]/page.tsx",
-      "line": 220,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 114,
-      "control": "Select",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 125,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 142,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 184,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 193,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 194,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 200,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 201,
-      "control": "a",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 207,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 208,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/appointments/page.tsx",
-      "line": 220,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/feedback/page.tsx",
-      "line": 51,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/feedback/page.tsx",
-      "line": 61,
-      "control": "Select",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/feedback/page.tsx",
-      "line": 77,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/feedback/page.tsx",
-      "line": 81,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/feedback/page.tsx",
-      "line": 94,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 121,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 162,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 172,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 177,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 178,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 184,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 185,
-      "control": "a",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 190,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 203,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 282,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 289,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/page.tsx",
-      "line": 290,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/records/page.tsx",
-      "line": 145,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(patient)/patient-dashboard/records/page.tsx",
-      "line": 157,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/queue/[id]/page.tsx",
-      "line": 82,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/(patient)/queue/[id]/page.tsx",
-      "line": 90,
-      "control": "a",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/(patient)/queue/[id]/page.tsx",
-      "line": 115,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
       "file": "src/app/auth/callback/page.tsx",
-      "line": 52,
+      "line": 51,
       "control": "button",
       "classification": "implemented"
     },
@@ -1524,6 +384,258 @@
       "file": "src/app/confirm-email-change/page.tsx",
       "line": 22,
       "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/feedback/page.tsx",
+      "line": 31,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/feedback/page.tsx",
+      "line": 31,
+      "control": "Input",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/feedback/page.tsx",
+      "line": 31,
+      "control": "Textarea",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/feedback/page.tsx",
+      "line": 31,
+      "control": "Select",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/feedback/page.tsx",
+      "line": 31,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 80,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 83,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 87,
+      "control": "Input",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 89,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 90,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 91,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 98,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 98,
+      "control": "Textarea",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 98,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 103,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/focus/page.tsx",
+      "line": 103,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/layout.tsx",
+      "line": 52,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/progress/page.tsx",
+      "line": 36,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/progress/page.tsx",
+      "line": 40,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/progress/page.tsx",
+      "line": 42,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/progress/page.tsx",
+      "line": 43,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/progress/page.tsx",
+      "line": 47,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 17,
+      "control": "button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 44,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 49,
+      "control": "button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 50,
+      "control": "Textarea",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 51,
+      "control": "Textarea",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 52,
+      "control": "Textarea",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 53,
+      "control": "Textarea",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 54,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 62,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/reflections/page.tsx",
+      "line": 62,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 54,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 57,
+      "control": "Input",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 58,
+      "control": "Textarea",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 59,
+      "control": "Input",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 60,
+      "control": "button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 61,
+      "control": "Select",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 62,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 69,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 72,
+      "control": "button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/dashboard/routines/page.tsx",
+      "line": 74,
+      "control": "Button",
       "classification": "implemented"
     },
     {
@@ -1600,105 +712,39 @@
     },
     {
       "file": "src/app/profile/page.tsx",
-      "line": 198,
-      "control": "Card",
-      "classification": "intentionally-informational"
+      "line": 61,
+      "control": "a",
+      "classification": "implemented"
     },
     {
       "file": "src/app/profile/page.tsx",
-      "line": 216,
+      "line": 61,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/app/profile/page.tsx",
+      "line": 61,
       "control": "button",
       "classification": "implemented"
     },
     {
       "file": "src/app/profile/page.tsx",
-      "line": 265,
-      "control": "Button",
+      "line": 61,
+      "control": "Input",
       "classification": "implemented"
     },
     {
       "file": "src/app/profile/page.tsx",
-      "line": 274,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 282,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 285,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 288,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 295,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 318,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 331,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 366,
-      "control": "Card",
-      "classification": "intentionally-informational"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 416,
+      "line": 61,
       "control": "Dialog",
       "classification": "implemented"
     },
     {
       "file": "src/app/profile/page.tsx",
-      "line": 436,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 444,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 457,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 474,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/app/profile/page.tsx",
-      "line": 475,
-      "control": "Button",
-      "classification": "implemented"
+      "line": 61,
+      "control": "Card",
+      "classification": "intentionally-informational"
     },
     {
       "file": "src/app/reset-password/page.tsx",
@@ -1734,204 +780,6 @@
       "file": "src/app/verify-email/page.tsx",
       "line": 22,
       "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 85,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 87,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 92,
-      "control": "form",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 105,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 112,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 117,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 124,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 131,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 136,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 141,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 170,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/CreateClinicDialog.tsx",
-      "line": 171,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 104,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 106,
-      "control": "form",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 119,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 126,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 131,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 138,
-      "control": "Textarea",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 145,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 150,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 155,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 196,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditClinicDialog.tsx",
-      "line": 197,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 76,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 78,
-      "control": "form",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 97,
-      "control": "Input",
-      "classification": "intentionally-disabled"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 101,
-      "control": "Input",
-      "classification": "intentionally-disabled"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 114,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 119,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 129,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 137,
-      "control": "Input",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 157,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/admin/EditDoctorDialog.tsx",
-      "line": 158,
-      "control": "Button",
       "classification": "implemented"
     },
     {
@@ -1984,8 +832,20 @@
     },
     {
       "file": "src/components/app-sidebar.tsx",
-      "line": 108,
-      "control": "a",
+      "line": 80,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/app-sidebar.tsx",
+      "line": 102,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/app-sidebar.tsx",
+      "line": 106,
+      "control": "Link",
       "classification": "implemented"
     },
     {
@@ -2001,118 +861,94 @@
       "classification": "implemented"
     },
     {
-      "file": "src/components/health-check/AssessmentModal.tsx",
-      "line": 201,
-      "control": "Dialog",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/health-check/AssessmentModal.tsx",
-      "line": 220,
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 32,
       "control": "Button",
       "classification": "implemented"
     },
     {
-      "file": "src/components/health-check/AssessmentModal.tsx",
-      "line": 252,
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 48,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 48,
       "control": "Button",
       "classification": "implemented"
     },
     {
-      "file": "src/components/health-check/AssessmentModal.tsx",
-      "line": 362,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/health-check/AssessmentModal.tsx",
-      "line": 368,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/health-check/AssessmentModal.tsx",
-      "line": 397,
-      "control": "button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/health-check/AssessmentModal.tsx",
-      "line": 444,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/health-check/AssessmentModal.tsx",
-      "line": 453,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/health-check/FeaturesSection.tsx",
-      "line": 74,
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 59,
       "control": "Card",
       "classification": "intentionally-informational"
     },
     {
-      "file": "src/components/health-check/SmartBodyMetrics.tsx",
-      "line": 33,
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 64,
+      "control": "Card",
+      "classification": "intentionally-informational"
+    },
+    {
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 65,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 65,
       "control": "Button",
       "classification": "implemented"
     },
     {
-      "file": "src/components/health-check/StressTest.tsx",
-      "line": 106,
-      "control": "Button",
-      "classification": "implemented"
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 78,
+      "control": "Card",
+      "classification": "intentionally-informational"
     },
     {
-      "file": "src/components/health-check/StressTest.tsx",
-      "line": 109,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/health-check/StressTest.tsx",
-      "line": 120,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/health-check/StressTest.tsx",
-      "line": 156,
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 83,
       "control": "button",
       "classification": "implemented"
     },
     {
-      "file": "src/components/health-check/ToolGrid.tsx",
-      "line": 150,
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 87,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 87,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 93,
       "control": "Card",
-      "classification": "intentionally-disabled"
+      "classification": "intentionally-informational"
     },
     {
-      "file": "src/components/home/CtaSection.tsx",
-      "line": 29,
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 94,
       "control": "Link",
       "classification": "implemented"
     },
     {
-      "file": "src/components/home/CtaSection.tsx",
-      "line": 30,
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 94,
       "control": "Button",
       "classification": "implemented"
     },
     {
-      "file": "src/components/home/CtaSection.tsx",
-      "line": 36,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/home/CtaSection.tsx",
-      "line": 37,
-      "control": "Button",
-      "classification": "implemented"
+      "file": "src/components/focus/FocusOverview.tsx",
+      "line": 94,
+      "control": "Card",
+      "classification": "intentionally-informational"
     },
     {
       "file": "src/components/home/Footer.tsx",
@@ -2134,32 +970,44 @@
     },
     {
       "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 126,
+      "line": 125,
       "control": "Button",
       "classification": "implemented"
     },
     {
       "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 140,
+      "line": 139,
       "control": "DropdownMenuItem",
       "classification": "implemented"
     },
     {
       "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 143,
+      "line": 142,
       "control": "DropdownMenuItem",
       "classification": "implemented"
     },
     {
       "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 146,
+      "line": 145,
       "control": "DropdownMenuItem",
       "classification": "implemented"
     },
     {
       "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 150,
+      "line": 149,
       "control": "DropdownMenuItem",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/home/GlobalNavbar.tsx",
+      "line": 156,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/home/GlobalNavbar.tsx",
+      "line": 156,
+      "control": "Button",
       "classification": "implemented"
     },
     {
@@ -2176,25 +1024,25 @@
     },
     {
       "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 158,
+      "line": 164,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/home/GlobalNavbar.tsx",
+      "line": 176,
+      "control": "Button",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/home/GlobalNavbar.tsx",
+      "line": 197,
       "control": "Link",
       "classification": "implemented"
     },
     {
       "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 158,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 165,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 177,
+      "line": 197,
       "control": "Button",
       "classification": "implemented"
     },
@@ -2213,18 +1061,18 @@
     {
       "file": "src/components/home/GlobalNavbar.tsx",
       "line": 199,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 199,
       "control": "Button",
       "classification": "implemented"
     },
     {
       "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 200,
+      "line": 203,
+      "control": "Link",
+      "classification": "implemented"
+    },
+    {
+      "file": "src/components/home/GlobalNavbar.tsx",
+      "line": 203,
       "control": "Button",
       "classification": "implemented"
     },
@@ -2241,94 +1089,22 @@
       "classification": "implemented"
     },
     {
-      "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 205,
-      "control": "Link",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/home/GlobalNavbar.tsx",
-      "line": 205,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/home/SearchHero.tsx",
-      "line": 73,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
       "file": "src/components/notifications/NotificationCenter.tsx",
-      "line": 53,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/notifications/NotificationCenter.tsx",
-      "line": 69,
+      "line": 41,
       "control": "Link",
       "classification": "implemented"
     },
     {
       "file": "src/components/notifications/NotificationCenter.tsx",
-      "line": 69,
+      "line": 41,
       "control": "Button",
       "classification": "implemented"
     },
     {
       "file": "src/components/notifications/NotificationCenter.tsx",
-      "line": 70,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/notifications/NotificationCenter.tsx",
-      "line": 77,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/notifications/NotificationCenter.tsx",
-      "line": 79,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/patient/booking/ClinicStep.tsx",
-      "line": 30,
-      "control": "Card",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/patient/booking/DateTimeStep.tsx",
-      "line": 56,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/patient/booking/DateTimeStep.tsx",
-      "line": 86,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/patient/booking/DateTimeStep.tsx",
-      "line": 111,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/patient/booking/DoctorStep.tsx",
-      "line": 36,
-      "control": "Button",
-      "classification": "implemented"
-    },
-    {
-      "file": "src/components/patient/booking/DoctorStep.tsx",
       "line": 41,
       "control": "Card",
-      "classification": "implemented"
+      "classification": "intentionally-informational"
     },
     {
       "file": "src/components/profile/UpdateProfileDialog.tsx",

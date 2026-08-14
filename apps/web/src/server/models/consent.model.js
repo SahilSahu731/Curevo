@@ -10,7 +10,7 @@ const ConsentSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["terms-and-privacy", "telehealth"],
+      enum: ["terms-and-privacy"],
       required: true,
       index: true,
     },
@@ -18,7 +18,7 @@ const ConsentSchema = new mongoose.Schema(
     accepted: { type: Boolean, required: true },
     source: {
       type: String,
-      enum: ["email-registration", "google-oauth", "telehealth-prejoin", "settings"],
+      enum: ["email-registration", "google-oauth", "settings"],
       required: true,
     },
     acceptedAt: Date,

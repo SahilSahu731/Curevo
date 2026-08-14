@@ -1,32 +1,28 @@
 # Data map
 
-Status: code-derived interim inventory, reviewed 2026-08-03 and path/deployment mapping updated 2026-08-14. Lawful basis/authorization is **UNDECIDED** until operator, users, customers, jurisdictions, and regulated roles are selected. “Retention” describes current code, not a legally approved schedule. Colocating the browser, REST API, and Socket.IO runtime in `apps/web` did not change the data categories, purposes, or unresolved retention decisions below.
+Status: code-derived interim inventory, reviewed 2026-08-14. Lawful basis,
+jurisdictions, operator roles, retention approval, and provider contracts remain
+**UNDECIDED**.
 
-| Data / model | Fields | Purpose | Storage / recipients | Current retention and deletion | Sensitivity |
-|---|---|---|---|---|---|
-| User account | name, email, password hash, role, phone, address, gender, birth date, bio, timestamps | Authentication, identity display, role routing | MongoDB; role-authorized UI/API | Until account deletion; deleted by self-service cascade | Personal; credentials; some profile fields sensitive |
-| Google identity | provider, Google subject, name, email, photo | Optional sign-in/account linking | Google, MongoDB, browser/API | Until account deletion; Google-side retention controlled by Google/user | Identifier/account-linkage |
-| Profile photo | image bytes, Cloudinary URL/public ID | Account avatar | API memory during upload; Cloudinary; URL in MongoDB | Current/previous tracked object is deleted on replace/account deletion; legacy rows without public IDs require manual cleanup | Personal image |
-| Clinic | name, address, city/state/postcode, description, images, services, phone/email, hours, capacity, breaks, active flag | Listing and scheduling configuration | MongoDB; public pages | No automated retention; admin/operator removal only | Business/contact; may be inaccurate |
-| Clinician | linked user/clinic, specialization, qualification, experience, fee, availability, current patient, blocked slots | Listing, scheduling, queue workflow | MongoDB; public and role-authorized pages | Removed in user deletion for clinician | Professional data; current-patient link is sensitive |
-| License submission | number, private Cloudinary public ID/type/format, status, dates, reviewer, notes | Prototype admin review | Authenticated Cloudinary object, MongoDB, short-lived admin-only download | Tracked object deleted on replace/account deletion; legacy public URL fixtures require review | Highly sensitive identity/credential document |
-| Appointment | patient, clinician, clinic, date/time, token, status, priority, symptoms, type, wait/visit timestamps, notes, video room | Scheduling, queue, video and visit workflow | MongoDB; patient, assigned clinician, admin; Socket.IO emits status | Removed on account deletion; no time-based schedule | Health and care relationship; highly sensitive |
-| Queue | clinic, clinician, date, current token, appointment IDs, emergency list, update time | Queue order/status | MongoDB; authorized Socket.IO rooms and dashboards | No time-based purge; appointment references pulled on deletion | Health-service metadata; prioritization |
-| Medical record | patient, clinician, appointment, diagnosis, symptoms, prescriptions, treatment plan, private notes, follow-up, attachments | Visit-record demonstration | MongoDB; patient, assigned clinician, admin; attachment host named by URL | Removed with related patient/clinician; remote attachment deletion not implemented | Highly sensitive health data |
-| Reviews | clinician/clinic, patient, rating, comment, helpful count | User feedback displayed on listings | MongoDB; public display with account relationship in API | Removed when reviewer or clinician account is deleted; moderation retention absent | Personal opinion; can reveal care relationship |
-| Feedback | user, category, subject/message, status, priority, response, handler | Product/complaint workflow | MongoDB; submitting user/admin | Removed with user; no complaint retention schedule | May contain sensitive free text; UI warns against it |
-| Notifications | user, appointment, type, message, read status | In-product workflow updates | MongoDB; account UI | Removed with user; no time-based purge | Appointment metadata |
-| Consent | user, type, policy version, accepted/revoked state/times, source | Evidence of current notice action | MongoDB; API/exports | Removed with account; included in export | Legal/audit metadata |
-| Privacy request audit | user while active, one-way email hash, request type/status, policy version/time | Prove export/deletion processing without retaining account content | MongoDB; operator access only | TTL index deletes after 90 days; user ID removed after deletion | Pseudonymous audit metadata |
-| Wellness assessment | answers, generated score/report | Browser-only educational calculator | React memory; optional PDF on user device | Cleared on reload/close; downloaded file controlled by user | Self-reported wellness/health data |
-| Video metadata/media | room ID, appointment authorization, participant display name, SDP/ICE; live audio/video | Connect scheduled participants | Socket.IO signaling server; peer browsers; public Google STUN; host network logs | Not intentionally recorded; provider/log retention unknown | Highly sensitive communications and network identifiers |
-| HTTP/security logs | method/path/status, errors, IP/user agent at host/proxy | Operations and security | Unified Next.js/Express/Socket.IO process output and Render/provider logs; any legacy split-host logs remain to be inventoried | Provider retention unknown | Identifiers; paths may expose object IDs |
-| Browser state | non-sensitive UI/theme state; in-memory account object only | Session/UI continuity | User browser memory | Cleared on logout, expiry, refresh, or account deletion; no auth token or health data is persisted | Personal data while active |
-| Authentication cookie | opaque `curevo_session` value; server stores only an HMAC hash | API and Socket.IO session lookup | HttpOnly browser cookie, server-side Session collection | Eight hours by default or 30 days with Remember me; revocation and expiry invalidate it | Credential |
-| Backups | copies of database, objects, logs if enabled | Recovery | Mongo/Cloudinary/host providers | Configuration and deletion behavior unknown | Same as source data |
+| Data | Purpose | Storage/recipient | Current lifecycle | Sensitivity |
+|---|---|---|---|---|
+| Account/profile | Authentication, account display, preferences | MongoDB; optional Cloudinary profile image | Exported; personal datasets deleted and account anonymized on deletion | Personal and credential data |
+| Google identity | Optional sign-in/linking | Google and MongoDB | Removed from active account on deletion; Google lifecycle is external | Identifier/linkage |
+| Session/account tokens | Authentication, recovery, verification, MFA | Hashed tokens in MongoDB; HTTP-only cookie contains opaque value | TTL/revocation; deleted with account | Credentials |
+| Focus sessions | Intention, times, duration, status, distraction count, closing note | MongoDB; owning member | Export/delete with account; retention sweep currently reports only | Private activity/free text |
+| Routines | Title, cue, schedule, duration, completion metadata | MongoDB; owning member | Export/delete with account | Private habit/activity data |
+| Reflections | Self-described focus, energy, feeling, wins, friction, next step, notes | MongoDB; owning member | Export/delete with account; not shown to administrators | Potentially sensitive free text |
+| Feedback/support | Product/account requests and administrator response | MongoDB; email delivery if configured | Feedback deleted with account; support retention configured separately | Free text may be sensitive |
+| Notifications/preferences | Routine/system messages and delivery choices | MongoDB; SMTP provider when email enabled | Export/delete with account | Activity metadata |
+| Consent/privacy audit | Policy action and one-way email hash for request evidence | MongoDB | Consent deleted with account; privacy request TTL is 90 days | Legal/audit metadata |
+| Security/audit logs | Request status, IP/user-agent metadata, admin/account events | Application host/provider and MongoDB | Configurable audit TTL; host retention unknown | Identifiers and security events |
+| Backups | Recovery copies if enabled | MongoDB, Cloudinary, host/provider | Configuration and deletion propagation unknown | Same as source data |
 
-## Recipient and agreement decision log
+Potential recipients are MongoDB hosting, Cloudinary, Google OAuth, SMTP, and the
+application host. No provider agreement, region choice, subprocessors list, or
+backup-deletion guarantee is evidenced in the repository.
 
-Potential recipients/subprocessors found in the current code or deployment configuration are MongoDB hosting, Cloudinary, Google OAuth/STUN, and Render. A prior Vercel client configuration was removed during colocation, but any still-live Vercel project, preview, logs, or backups remain potential recipients until independently inventoried and decommissioned. No executed data-processing agreement, healthcare agreement, region selection, subprocessors list, or customer agreement is evidenced in the repository. Do not represent that any vendor configuration is approved for regulated data.
-
-For US analysis, HHS explains that status depends on whether an entity is a covered entity or acts as a business associate, and that relevant cloud providers can require business associate agreements: [HHS covered entities and business associates](https://www.hhs.gov/hipaa/for-professionals/covered-entities/index.html). Non-HIPAA health applications can still face other obligations, including the [FTC Health Breach Notification Rule](https://www.ftc.gov/business-guidance/resources/health-breach-notification-rule-basics-business). These links are scoping inputs, not a conclusion that US law is the target or only applicable law.
+Clinical collections and objects from older deployments are no longer referenced by
+the runtime. They remain an external inventory and quarantine problem; do not delete
+or migrate them without a named data owner, backup, retention decision, and tested
+rollback.

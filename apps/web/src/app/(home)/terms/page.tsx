@@ -1,20 +1,12 @@
+const terms = [
+  ["Prototype status", "Curevo is a review-only prototype for self-guided focus, habits, and everyday wellbeing. No operating entity, launch jurisdiction, customer contract, or governing law has been approved."],
+  ["Permitted use", "Use the service only with information you control and, while launch remains blocked, only synthetic information. You must be at least 18 and must not upload another person's data, malicious files, unlawful content, or credentials you do not own."],
+  ["No medical or emergency service", "Curevo does not provide medical advice, diagnosis, treatment, therapy, clinical triage, prescriptions, or emergency response. If you may be in immediate danger, contact the emergency service for your location and do not wait for this website."],
+  ["Accounts and acceptable use", "Keep your credentials confidential. Do not bypass access controls, probe other accounts, scrape private content, overload the service, or use its output to make medical or safety-critical decisions."],
+  ["Your content", "You remain responsible for routine names, reflections, feedback, and profile information you submit. Avoid content you would not place in a prototype environment."],
+  ["Availability and changes", "Features may change, pause, or be removed during review. No uptime, outcome, productivity, or wellbeing guarantee is made."],
+];
+
 export default function TermsPage() {
-  return (
-    <main className="min-h-screen bg-background pb-24 pt-32 text-foreground">
-      <article className="mx-auto max-w-3xl px-4">
-        <h1 className="text-4xl font-bold">Prototype Terms</h1>
-        <p className="mt-3 text-muted-foreground">Version 2026-08-03 · Effective 3 August 2026 · Pre-release, not legally approved</p>
-        <div className="mt-8 border-l-4 border-amber-500 bg-amber-500/10 p-5 text-sm leading-6">No operating entity, launch jurisdiction, customer contract, clinical sponsor, or governing law has been selected. These terms are a product-accurate interim notice, not final legal approval.</div>
-        <div className="mt-12 space-y-10 leading-7 text-muted-foreground">
-          <section><h2 className="text-xl font-semibold text-foreground">Permitted use</h2><p className="mt-3">Use the service only to evaluate the prototype with synthetic information. You must be at least 18, control the account you use, and must not upload another person&apos;s information, clinician credentials, malicious files, or unlawful content.</p></section>
-          <section><h2 className="text-xl font-semibold text-foreground">No medical or emergency service</h2><p className="mt-3">The software does not provide medical advice, diagnosis, clinical triage, treatment, prescriptions, emergency response, or a guarantee that a listed clinician, clinic, time, queue position, or video visit is available or suitable. For urgent symptoms or danger, contact the emergency service for your location immediately.</p></section>
-          <section><h2 className="text-xl font-semibold text-foreground">Provider and record limitations</h2><p className="mt-3">Listings and seed records may be synthetic. A verification status only reflects an internal prototype workflow and is not a credentialing decision. Users must independently verify providers and care arrangements outside this prototype.</p></section>
-          <section><h2 className="text-xl font-semibold text-foreground">Accounts and acceptable use</h2><p className="mt-3">Keep credentials confidential. Do not bypass access controls, manipulate queues or reviews, probe other accounts or rooms, overload the service, scrape sensitive data, or use the software for clinical decisions.</p></section>
-          <section><h2 className="text-xl font-semibold text-foreground">Availability and changes</h2><p className="mt-3">The prototype may be suspended, reset, changed, or withdrawn without notice. Data may be lost. Production writes are disabled by default while governance review is incomplete.</p></section>
-          <section><h2 className="text-xl font-semibold text-foreground">Privacy and consent</h2><p className="mt-3">The Privacy Notice describes current code behavior and unresolved risks. Registration records acceptance of the current Terms and Privacy Notice. Video visits require a separate pre-join acknowledgement.</p></section>
-          <section><h2 className="text-xl font-semibold text-foreground">Complaints and disputes</h2><p className="mt-3">A verified legal contact, complaint process, jurisdiction, governing law, liability allocation, and dispute process remain launch blockers. Do not publicly release or contract on this draft.</p></section>
-        </div>
-      </article>
-    </main>
-  );
+  return <main className="min-h-screen bg-background pb-24 pt-32 text-foreground"><article className="mx-auto max-w-4xl px-5"><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Terms · interim prototype notice</p><h1 className="mt-4 text-5xl font-semibold tracking-[-0.05em] sm:text-7xl">Use Curevo with clear expectations.</h1><p className="mt-6 text-lg leading-8 text-muted-foreground">These terms describe the current review build. They are not final launch terms or a substitute for jurisdiction-specific legal review.</p><div className="mt-12 space-y-4">{terms.map(([title, text], index) => <section key={title} className="rounded-3xl border bg-card p-6 sm:p-8"><p className="text-xs font-bold text-primary">0{index + 1}</p><h2 className="mt-3 text-xl font-semibold">{title}</h2><p className="mt-3 leading-7 text-muted-foreground">{text}</p></section>)}</div></article></main>;
 }

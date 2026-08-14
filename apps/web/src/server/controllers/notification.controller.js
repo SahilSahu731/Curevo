@@ -24,11 +24,9 @@ export const markNotificationRead = async (req, res) => {
 export const getNotificationPreferences = async (req, res) => res.json({ success: true, data: req.user.notificationPreferences });
 
 export const updateNotificationPreferences = async (req, res) => {
-  const allowed = ["inApp", "email", "appointmentUpdates", "reminders", "locale"];
+  const allowed = ["inApp", "email", "focusUpdates", "reminders", "locale"];
   const updates = {};
   for (const key of allowed) if (req.body[key] !== undefined) updates[`notificationPreferences.${key}`] = req.body[key];
-  // SMS is intentionally unavailable until a consented provider is configured.
-  updates["notificationPreferences.sms"] = false;
   const user = await User.findByIdAndUpdate(req.user._id, { $set: updates }, { new: true, runValidators: true }).select("notificationPreferences");
   return res.json({ success: true, data: user.notificationPreferences });
 };

@@ -15,7 +15,7 @@ export const enforceProductionFreeze = (req, res, next) => {
     return res.status(503).json({
       success: false,
       code: "PRODUCTION_REVIEW_ONLY",
-      error: "This deployment is review-only while privacy and clinical-safety approval is pending.",
+      error: "This deployment is review-only while privacy, safety, and operational approval is pending.",
     });
   }
 

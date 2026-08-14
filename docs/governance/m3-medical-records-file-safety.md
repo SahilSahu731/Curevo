@@ -1,5 +1,7 @@
 # M3 Medical Records, Privacy Boundaries, and File Safety Record
 
+> Historical record: the medical-record, clinical-note, attachment, and clinician workflow described below was removed on 2026-08-14. This document is retained only as an audit trail.
+
 ## Field visibility matrix
 
 | Field | Patient | Authoring clinician | Support/admin | Public listing |

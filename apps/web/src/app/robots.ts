@@ -8,7 +8,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: indexingApproved ? {
       userAgent: "*",
       allow: "/",
-      disallow: ["/admin-dashboard", "/doctor-dashboard", "/patient-dashboard", "/profile", "/queue"],
+      disallow: ["/admin-dashboard", "/dashboard", "/profile"],
     } : {
       userAgent: "*",
       disallow: "/",

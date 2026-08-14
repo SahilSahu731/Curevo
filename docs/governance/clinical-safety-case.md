@@ -1,16 +1,19 @@
-# Interim clinical safety case
+# Product safety case
 
-Safety conclusion: **NOT ACCEPTABLE FOR CLINICAL OR PATIENT USE**. The software may be evaluated only with synthetic information. No named clinical-safety reviewer has approved intended use, hazards, content, provider verification, or residual risk.
+Safety conclusion: **NOT APPROVED FOR PUBLIC OR CLINICAL USE**. The prototype may
+be evaluated with synthetic information only. The historical filename is retained
+so existing evidence links do not break.
 
-| Hazard | Harm | Current control | Required before launch | Residual status |
-|---|---|---|---|---|
-| Wellness score is wrong or interpreted as diagnosis/risk | Delayed care, anxiety, unsafe self-treatment | Limitation before entry, fixed-rule disclosure, emergency copy, PDF disclaimer | Clinical review, intended-use decision, validation or disable feature | Unaccepted |
-| Emergency symptoms entered into assessment/booking | Delay in emergency response | Pre-entry and telehealth urgent-symptom warning; no specific emergency number while jurisdiction undecided | Jurisdiction-specific escalation and tested interrupt logic | Unaccepted |
-| Clinician incorrectly marked approved | Care from unqualified person | Public pages make no verification claim | Primary-source credentialing, expiry/sanctions checks, human SOP and audit | Unaccepted |
-| Duplicate slot/token race | Missed/delayed visit, wrong order | Conflict query and unique compound index | Atomic allocation and concurrency tests | Unaccepted |
-| Emergency priority/queue reordering | Less urgent user displaces urgent care or emergency waits in app | No UI claim that queue is triage; role-limited changes | Remove emergency category or clinician-approved triage protocol | Unaccepted |
-| Stale clinic/clinician availability | Missed or delayed visit | Availability described as request only | Source of truth, freshness timestamps, confirmation workflow | Unaccepted |
-| Wrong-patient record | Privacy breach and clinical harm | Appointment ownership and one-record-per-appointment | Two-identifier confirmation, immutable provenance, correction workflow, audit | Unaccepted |
-| Video failure or wrong participant | Missed visit/disclosure | Appointment authorization, eligible statuses, room cap, consent | TURN/availability plan, participant identity confirmation, reconnect/fallback SOP | Unaccepted |
+| Hazard | Current control | Required before release | Status |
+|---|---|---|---|
+| Product interpreted as diagnosis, therapy, or treatment | Repeated non-medical boundary; no diagnostic outputs or health scores | Independent claims and product-safety review | Unaccepted |
+| Person in crisis waits for the product | Landing/terms state that Curevo is not crisis response | Jurisdiction/age decision, reviewed escalation copy and test | Unaccepted |
+| Reflection labels are interpreted as a wellbeing score | No aggregate health score; language calls inputs private self-description | Usability and accessibility study; content review | Unaccepted |
+| Streaks or reminders intensify shame/compulsion | No streak penalty; reminders are optional invitations | Notification-frequency limits and member research | Unaccepted |
+| Private notes exposed to another user/admin | Owner-scoped queries; aggregate-only admin overview | Database-backed IDOR tests and privacy review | Unaccepted |
+| Focus timer loses state or records wrong duration | Explicit finish action; bounded durations; saved history | Browser interruption/reconnect testing | Unaccepted |
+| Old clinical data is assumed deleted because code was removed | Migration does not import or delete it; documentation requires quarantine | External data inventory and approved disposal plan | Unaccepted |
 
-The deterministic health-check names, thresholds, summaries, and recommendations still resemble clinical outputs. The safest launch decision is to keep the feature disabled until a clinical reviewer either narrows it to non-medical education or approves evidence and validation.
+Distraction, procrastination, low energy, and overwhelm can coexist with conditions
+that require qualified care. Curevo must not infer those conditions or present its
+tools as a substitute for assessment or support from a qualified professional.

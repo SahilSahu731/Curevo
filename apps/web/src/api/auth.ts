@@ -22,6 +22,7 @@ export const authAPI = {
 
   logout: async () => apiClient.post("/auth/logout"),
   logoutAll: async () => apiClient.post("/auth/logout-all"),
+  resendVerification: async () => apiClient.post("/auth/verify-email/resend"),
   verifyMfa: async (data: { code?: string; recoveryCode?: string }) =>
     (await apiClient.post<{ data: AuthData }>("/auth/mfa/verify", data)).data.data,
   setupMfa: async () =>

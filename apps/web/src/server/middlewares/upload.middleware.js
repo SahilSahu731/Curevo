@@ -1,14 +1,14 @@
 import multer from "multer";
 
 const storage = multer.memoryStorage();
-const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "application/pdf"]);
+const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 const fileFilter = (req, file, cb) => {
   if (allowedMimeTypes.has(file.mimetype)) return cb(null, true);
   return cb(new Error("Unsupported file type."), false);
 };
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: 10 * 1024 * 1024, files: 1, fields: 30, parts: 35 } });
+const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024, files: 1, fields: 20, parts: 25 } });
 
 const signatureType = (buffer) => {
   if (!buffer?.length) return null;
@@ -16,7 +16,6 @@ const signatureType = (buffer) => {
   if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return "image/png";
   if (["GIF87a", "GIF89a"].includes(buffer.subarray(0, 6).toString("ascii"))) return "image/gif";
   if (buffer.subarray(0, 4).toString("ascii") === "RIFF" && buffer.subarray(8, 12).toString("ascii") === "WEBP") return "image/webp";
-  if (buffer.subarray(0, 5).toString("ascii") === "%PDF-") return "application/pdf";
   return null;
 };
 
@@ -38,22 +37,22 @@ const imageDimensions = (type, buffer) => {
 };
 
 export const inspectUpload = (file) => {
-  if (!file?.buffer) return { type: null, dimensions: null, pageCount: 0, malware: false };
+  if (!file?.buffer) return { type: null, dimensions: null, malware: false };
   const type = signatureType(file.buffer);
-  const pageCount = type === "application/pdf" ? (file.buffer.toString("latin1").match(/\/Type\s*\/Page(?:\s|\/|>)/g) || []).length : 0;
-  return { type, dimensions: imageDimensions(type, file.buffer), pageCount, malware: file.buffer.toString("latin1").includes("EICAR-STANDARD-ANTIVIRUS-TEST-FILE") };
+  return { type, dimensions: imageDimensions(type, file.buffer), malware: file.buffer.toString("latin1").includes("EICAR-STANDARD-ANTIVIRUS-TEST-FILE") };
 };
 
 export const validateUploadSignature = (req, res, next) => {
   const file = req.file;
   const inspected = inspectUpload(file);
   const valid = file && inspected.type === file.mimetype && !inspected.malware
-    && (!inspected.dimensions || (inspected.dimensions.width > 0 && inspected.dimensions.height > 0 && inspected.dimensions.width * inspected.dimensions.height <= 25_000_000))
-    && (!inspected.pageCount || inspected.pageCount <= 100);
+    && inspected.dimensions
+    && inspected.dimensions.width > 0 && inspected.dimensions.height > 0
+    && inspected.dimensions.width * inspected.dimensions.height <= 25_000_000;
   if (!valid) {
     if (file?.buffer) file.buffer.fill(0);
     req.file = undefined;
-    return res.status(415).json({ success: false, error: "File signature, dimensions, page count, or malware checks failed." });
+    return res.status(415).json({ success: false, error: "Image signature, dimensions, or malware checks failed." });
   }
   req.file.detectedType = inspected.type;
   return next();
@@ -61,11 +60,6 @@ export const validateUploadSignature = (req, res, next) => {
 
 export const validateProfileImage = (req, res, next) => {
   if (!req.file || !req.file.detectedType?.startsWith("image/")) return res.status(415).json({ success: false, error: "A supported image is required." });
-  return next();
-};
-
-export const validateLicenseDocument = (req, res, next) => {
-  if (!req.file || req.file.detectedType !== "application/pdf") return res.status(415).json({ success: false, error: "A PDF license document is required." });
   return next();
 };
 

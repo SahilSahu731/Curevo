@@ -42,9 +42,8 @@ const publicLinks = [
 ];
 
 function dashboardFor(role?: User["role"]) {
-  if (role === "doctor") return "/doctor-dashboard";
   if (role === "admin") return "/admin-dashboard";
-  return "/";
+  return "/dashboard";
 }
 
 function initials(name?: string) {
@@ -78,7 +77,7 @@ export default function GlobalNavbar() {
   };
 
   const dashboard = dashboardFor(user?.role);
-  const dashboardLabel = user?.role === "patient" ? "Home" : "Dashboard";
+  const dashboardLabel = user?.role === "member" ? "My space" : "Dashboard";
   const isCurrentPage = (href: string) => href === "/blog" && pathname.startsWith("/blog");
 
   return (

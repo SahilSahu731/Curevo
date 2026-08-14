@@ -7,9 +7,8 @@ import { useRouter } from "next/navigation"
 import { useAuthStore, type User } from "@/store/authStore"
 
 function dashboardFor(user: User) {
-  if (user.role === "doctor") return "/doctor-dashboard"
   if (user.role === "admin") return "/admin-dashboard"
-  return "/"
+  return "/dashboard"
 }
 
 export default function GoogleAuthCallbackPage() {

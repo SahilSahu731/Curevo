@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-background z-10 sticky top-0">
                     <SidebarTrigger className="-ml-1" />
                     <Separator orientation="vertical" className="mr-2 h-4" />
-                    <h1 className="text-lg font-semibold text-foreground">System Administration</h1>
+                    <h1 className="text-lg font-semibold text-foreground">Curevo operations</h1>
                 </header>
                 <div className="flex flex-1 flex-col gap-4 p-4">
                     {children}

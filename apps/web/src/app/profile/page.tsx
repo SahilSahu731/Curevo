@@ -1,483 +1,62 @@
 "use client";
 
-import { useAuthStore } from "@/store/authStore";
-import { 
-    Mail, 
-    Shield, 
-    Calendar, 
-    MapPin, 
-    Phone, 
-    Edit2,
-    Camera,
-    Loader2,
-    User as UserIcon,
-    FileCheck,
-    Upload,
-    Download,
-    Trash2,
-    Video
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { 
-    Card, 
-    CardContent, 
-    CardHeader, 
-    CardTitle,
-} from "@/components/ui/card";
+import { useRef, useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import { format } from "date-fns";
+import { Camera, Download, Edit2, KeyRound, Loader2, Mail, MapPin, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+
+import apiClient from "@/api/client";
+import { UpdateProfileDialog } from "@/components/profile/UpdateProfileDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { useState, useRef } from "react";
-import { motion } from "framer-motion";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { updateProfileImage } from "@/lib/services/authService";
-import { doctorService } from "@/lib/services/doctorService";
-import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { UpdateProfileDialog } from "@/components/profile/UpdateProfileDialog";
-import { format } from "date-fns";
-import apiClient from "@/api/client";
-import { useRouter } from "next/navigation";
+import { useAuthStore } from "@/store/authStore";
+
+const initials = (name = "") => name.split(" ").map((word) => word[0]).join("").toUpperCase().slice(0, 2) || "U";
 
 export default function ProfilePage() {
-    const { user, setUser, logout } = useAuthStore();
-    const router = useRouter();
-    const queryClient = useQueryClient();
-    const [isEditOpen, setIsEditOpen] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    
-    // Image Upload State
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [licenseFile, setLicenseFile] = useState<File | null>(null);
-    const [licenseNumber, setLicenseNumber] = useState("");
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-    const [deleteEmail, setDeleteEmail] = useState("");
-    const [deletePassword, setDeletePassword] = useState("");
-    const [privacyActionPending, setPrivacyActionPending] = useState(false);
+  const { user, setUser, logout } = useAuthStore();
+  const router = useRouter();
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [photoOpen, setPhotoOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteEmail, setDeleteEmail] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
+  const [privacyPending, setPrivacyPending] = useState(false);
 
-    const { data: verificationData } = useQuery({
-        queryKey: ["doctor-verification-me"],
-        queryFn: doctorService.getMyVerification,
-        enabled: user?.role === "doctor",
-    });
+  const imageMutation = useMutation({
+    mutationFn: updateProfileImage,
+    onSuccess: (updatedUser) => { setUser(updatedUser); toast.success("Profile photo updated"); closePhoto(); },
+    onError: () => toast.error("Could not update your photo"),
+  });
 
-    const verification = verificationData?.data;
+  function choosePhoto(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file); setSelectedFile(file); setPreview(url); setPhotoOpen(true); event.target.value = "";
+  }
+  function closePhoto() { if (preview) URL.revokeObjectURL(preview); setPhotoOpen(false); setPreview(null); setSelectedFile(null); }
+  function uploadPhoto() { if (!selectedFile) return; const data = new FormData(); data.append("image", selectedFile); imageMutation.mutate(data); }
 
-    const getInitials = (name: string) => {
-        return name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'U';
-    };
+  async function downloadData() {
+    setPrivacyPending(true);
+    try { const response = await apiClient.get("/auth/export", { responseType: "blob" }); const url = URL.createObjectURL(response.data); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `curevo-export-${new Date().toISOString().slice(0, 10)}.json`; anchor.click(); URL.revokeObjectURL(url); toast.success("Account export downloaded"); } catch { toast.error("Account export failed"); } finally { setPrivacyPending(false); }
+  }
+  async function deleteAccount() {
+    setPrivacyPending(true);
+    try { await apiClient.delete("/auth/account", { data: { confirmEmail: deleteEmail, password: deletePassword } }); await logout(); router.replace("/"); toast.success("Account deleted"); } catch (error: unknown) { const message = (error as { response?: { data?: { error?: string } } }).response?.data?.error; toast.error(message || "Account deletion failed"); } finally { setPrivacyPending(false); }
+  }
 
-    const imageMutation = useMutation({
-        mutationFn: updateProfileImage,
-        onSuccess: (updatedUser) => {
-            setUser(updatedUser);
-            toast.success("Profile photo updated successfully");
-            closeUploadDialog();
-        },
-        onError: () => {
-            toast.error("Failed to update profile photo");
-        }
-    });
-
-    const verificationMutation = useMutation({
-        mutationFn: doctorService.submitVerification,
-        onSuccess: () => {
-            toast.success("License submitted for admin review");
-            setLicenseFile(null);
-            setLicenseNumber("");
-            queryClient.invalidateQueries({ queryKey: ["doctor-verification-me"] });
-        },
-        onError: (error: any) => {
-            toast.error(error.response?.data?.error || "License upload failed");
-        }
-    });
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setSelectedFile(file);
-            setPreviewUrl(URL.createObjectURL(file));
-            setIsDialogOpen(true);
-            e.target.value = ""; 
-        }
-    };
-
-    const closeUploadDialog = () => {
-        setIsDialogOpen(false);
-        setPreviewUrl(null);
-        setSelectedFile(null);
-    };
-
-    const handleConfirmUpload = () => {
-        if (selectedFile) {
-            const formData = new FormData();
-            formData.append('image', selectedFile);
-            imageMutation.mutate(formData);
-        }
-    };
-
-    const handleVerificationSubmit = () => {
-        if (!licenseFile || !licenseNumber.trim()) {
-            toast.error("License number and file are required");
-            return;
-        }
-        const formData = new FormData();
-        formData.append("licenseNumber", licenseNumber);
-        formData.append("license", licenseFile);
-        verificationMutation.mutate(formData);
-    };
-
-    const triggerFileInput = () => {
-        fileInputRef.current?.click();
-    };
-
-    const downloadAccountData = async () => {
-        setPrivacyActionPending(true);
-        try {
-            const response = await apiClient.get("/auth/export", { responseType: "blob" });
-            const url = URL.createObjectURL(response.data);
-            const anchor = document.createElement("a");
-            anchor.href = url;
-            anchor.download = `curevo-export-${new Date().toISOString().slice(0, 10)}.json`;
-            anchor.click();
-            URL.revokeObjectURL(url);
-            toast.success("Account export downloaded");
-        } catch {
-            toast.error("Account export failed");
-        } finally {
-            setPrivacyActionPending(false);
-        }
-    };
-
-    const deleteAccount = async () => {
-        setPrivacyActionPending(true);
-        try {
-            await apiClient.delete("/auth/account", { data: { confirmEmail: deleteEmail, password: deletePassword } });
-            logout();
-            router.replace("/");
-            toast.success("Account deleted");
-        } catch (error: any) {
-            toast.error(error.response?.data?.error || "Account deletion failed");
-        } finally {
-            setPrivacyActionPending(false);
-        }
-    };
-
-    const revokeTelehealthConsent = async () => {
-        setPrivacyActionPending(true);
-        try {
-            await apiClient.post("/auth/consents", { type: "telehealth", accepted: false, policyVersion: "2026-08-03" });
-            toast.success("Video-visit consent revoked");
-        } catch {
-            toast.error("Consent revocation failed");
-        } finally {
-            setPrivacyActionPending(false);
-        }
-    };
-
-    // Format address helper
-    const formattedAddress = user?.address 
-        ? [user.address.street, user.address.city, user.address.state, user.address.country].filter(Boolean).join(", ") 
-        : "No address provided";
-
-    return (
-        <div className="container mx-auto max-w-7xl py-10 animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-8">
-            
-            {/* Top Identity Section */}
-            <div className="grid lg:grid-cols-12 gap-8">
-                {/* Main Profile Card */}
-                <Card className="lg:col-span-8 border-none shadow-xl bg-gradient-to-br from-white to-zinc-50 dark:from-zinc-900 dark:to-zinc-950 overflow-hidden relative">
-                    <div className="absolute top-0 right-0 p-3 opacity-5">
-                       <UserIcon className="w-64 h-64 text-primary" />
-                    </div>
-                    
-                    <CardContent className="p-8 md:p-10 flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
-                        {/* Avatar Section */}
-                        <div className="relative group shrink-0">
-                            <div className="h-40 w-40 rounded-full p-1.5 bg-background shadow-2xl ring-1 ring-zinc-200 dark:ring-zinc-800">
-                                <Avatar className="h-full w-full rounded-full">
-                                    <AvatarImage src={user?.profileImage || ""} alt={user?.name} className="object-cover" />
-                                    <AvatarFallback className="text-4xl font-bold bg-primary/10 text-primary">
-                                        {getInitials(user?.name || "")}
-                                    </AvatarFallback>
-                                </Avatar>
-                            </div>
-
-                            {/* Camera Edit Button */}
-                            <button 
-                                onClick={triggerFileInput}
-                                className="absolute bottom-1 right-1 p-2.5 bg-primary text-primary-foreground rounded-full shadow-lg hover:scale-110 transition-transform duration-200 border-4 border-background"
-                            >
-                                {imageMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-                            </button>
-                            
-                            {/* Hidden Input */}
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                className="hidden" 
-                                accept="image/*"
-                                onChange={handleFileChange}
-                            />
-                        </div>
-
-                        {/* Identity Info */}
-                        <div className="flex-1 text-center md:text-left space-y-4">
-                            <div>
-                                <div className="flex flex-col md:flex-row items-center md:items-end gap-3 justify-center md:justify-start">
-                                    <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">{user?.name}</h1>
-                                    <Badge variant="secondary" className="mb-1.5 px-3 py-0.5 text-xs uppercase tracking-wider font-semibold bg-primary/10 text-primary border-primary/20">
-                                        {user?.role}
-                                    </Badge>
-                                </div>
-                                <p className="text-muted-foreground mt-2 flex items-center justify-center md:justify-start gap-2">
-                                    <Mail className="w-4 h-4" /> {user?.email}
-                                </p>
-                            </div>
-
-                            <div className="flex flex-wrap justify-center md:justify-start gap-4 text-sm text-muted-foreground pt-2">
-                                <div className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1.5 rounded-full">
-                                    <Phone className="w-3.5 h-3.5" />
-                                    <span>{user?.phone || "No phone"}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1.5 rounded-full">
-                                    <MapPin className="w-3.5 h-3.5" />
-                                    <span>{user?.address?.city || "Location not set"}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5 bg-secondary/50 px-3 py-1.5 rounded-full">
-                                    <Calendar className="w-3.5 h-3.5" />
-                                    <span>Member since {format(new Date(user?.createdAt || new Date()), 'MMM yyyy')}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Edit Button */}
-                        <div className="absolute top-6 right-6">
-                            <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)} className="gap-2">
-                                <Edit2 className="w-3.5 h-3.5" /> Edit
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Right Side Stats / Quick Actions */}
-                <div className="lg:col-span-4 space-y-6">
-                     <Card className="border shadow-lg bg-card">
-                        <CardHeader className="pb-2">
-                            <CardTitle className="text-lg font-medium flex items-center gap-2">
-                                <Shield className="w-5 h-5 text-primary" /> Privacy & account
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-3">
-                            <p className="text-sm leading-6 text-muted-foreground">Download the data linked to this account or permanently delete it.</p>
-                            <Button variant="outline" className="w-full justify-start" onClick={downloadAccountData} disabled={privacyActionPending}>
-                                <Download className="mr-2 h-4 w-4" /> Download my data
-                            </Button>
-                            <Button variant="outline" className="w-full justify-start" onClick={revokeTelehealthConsent} disabled={privacyActionPending}>
-                                <Video className="mr-2 h-4 w-4" /> Revoke video-visit consent
-                            </Button>
-                            <Button variant="destructive" className="w-full justify-start" onClick={() => setIsDeleteOpen(true)} disabled={privacyActionPending}>
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete account
-                            </Button>
-                        </CardContent>
-                    </Card>
-
-                    {user?.role === "doctor" && (
-                        <Card className="shadow-lg border-l-4 border-l-emerald-500">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-base flex items-center justify-between">
-                                    <span className="flex items-center gap-2"><FileCheck className="w-4 h-4 text-emerald-500" /> Doctor Verification</span>
-                                    <Badge variant="outline" className="capitalize">{verification?.status || "not-submitted"}</Badge>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {verification?.notes && (
-                                    <p className="rounded-md bg-muted/50 p-2 text-xs text-muted-foreground">{verification.notes}</p>
-                                )}
-                                <input
-                                    value={licenseNumber}
-                                    onChange={(event) => setLicenseNumber(event.target.value)}
-                                    placeholder="Medical license number"
-                                    className="border-input bg-background h-10 w-full rounded-md border px-3 text-sm"
-                                />
-                                <input
-                                    type="file"
-                                    accept="image/*,application/pdf"
-                                    onChange={(event) => setLicenseFile(event.target.files?.[0] || null)}
-                                    className="block w-full text-sm"
-                                />
-                                <Button className="w-full" onClick={handleVerificationSubmit} disabled={verificationMutation.isPending}>
-                                    <Upload className="mr-2 h-4 w-4" />
-                                    {verificationMutation.isPending ? "Submitting..." : "Submit License"}
-                                </Button>
-                            </CardContent>
-                        </Card>
-                    )}
-                </div>
-            </div>
-
-            {/* Bottom Grid Section */}
-            <div className="grid lg:grid-cols-2 gap-8">
-                {/* About Section */}
-                <Card className="border-none shadow-md">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <UserIcon className="w-5 h-5 text-primary" /> About Me
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-6">
-                         <div className="bg-secondary/30 p-4 rounded-xl">
-                            <p className="text-muted-foreground leading-relaxed italic">
-                                "{user?.bio || "No bio information provided. Click edit to tell us about yourself."}"
-                            </p>
-                        </div>
-
-                        <div className="grid sm:grid-cols-2 gap-y-6 gap-x-12">
-                            <div className="space-y-1">
-                                <div className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">Full Name</div>
-                                <div className="font-medium">{user?.name}</div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">Date of Birth</div>
-                                <div className="font-medium">{user?.dateOfBirth ? format(new Date(user.dateOfBirth), 'MMMM d, yyyy') : "Not set"}</div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">Gender</div>
-                                <div className="font-medium capitalize">{user?.gender || "Not set"}</div>
-                            </div>
-                            <div className="space-y-1">
-                                <div className="text-xs uppercase text-muted-foreground font-semibold tracking-wider">Language</div>
-                                <div className="font-medium">English (Primary)</div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                {/* Detailed Address Section */}
-                <Card className="border-none shadow-md">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg">
-                            <MapPin className="w-5 h-5 text-primary" /> Address Details
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors">
-                                <div className="mt-1 bg-primary/10 p-2 rounded-full text-primary">
-                                    <MapPin className="w-4 h-4" />
-                                </div>
-                                <div>
-                                    <div className="font-medium text-sm text-foreground">Full Address</div>
-                                    <div className="text-sm text-muted-foreground mt-1 max-w-sm">
-                                        {formattedAddress}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="p-3 rounded-lg border bg-card">
-                                    <div className="text-xs text-muted-foreground">City</div>
-                                    <div className="font-medium mt-1">{user?.address?.city || "-"}</div>
-                                </div>
-                                <div className="p-3 rounded-lg border bg-card">
-                                    <div className="text-xs text-muted-foreground">State/Province</div>
-                                    <div className="font-medium mt-1">{user?.address?.state || "-"}</div>
-                                </div>
-                                <div className="p-3 rounded-lg border bg-card">
-                                    <div className="text-xs text-muted-foreground">Country</div>
-                                    <div className="font-medium mt-1">{user?.address?.country || "-"}</div>
-                                </div>
-                                <div className="p-3 rounded-lg border bg-card">
-                                    <div className="text-xs text-muted-foreground">Postal Code</div>
-                                    <div className="font-medium mt-1">{user?.address?.zipCode || "-"}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* Dialogs remain unchanged */}
-            <UpdateProfileDialog 
-                open={isEditOpen} 
-                onOpenChange={setIsEditOpen} 
-                user={user} 
-            />
-
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Update Profile Photo</DialogTitle>
-                        <DialogDescription>
-                            Preview your new look before saving changes.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="flex items-center justify-center p-6 bg-secondary/20 rounded-xl my-2">
-                        {previewUrl && (
-                            <div className="relative h-48 w-48 rounded-full overflow-hidden border-4 border-background shadow-xl ring-4 ring-secondary">
-                                <img 
-                                    src={previewUrl} 
-                                    alt="Preview" 
-                                    className="h-full w-full object-cover"
-                                />
-                            </div>
-                        )}
-                    </div>
-                    <DialogFooter className="sm:justify-between gap-2">
-                        <Button
-                            type="button"
-                            variant="secondary"
-                            onClick={closeUploadDialog}
-                            disabled={imageMutation.isPending}
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            type="button"
-                            onClick={handleConfirmUpload}
-                            disabled={imageMutation.isPending}
-                            className="bg-primary"
-                        >
-                            {imageMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                            Confirm & Upload
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                <DialogContent className="sm:max-w-md">
-                    <DialogHeader>
-                        <DialogTitle>Delete this account?</DialogTitle>
-                        <DialogDescription>This removes linked database records and tracked uploads and cannot be undone. Removal from provider backups is not yet verified.</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-2">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium" htmlFor="delete-email">Type {user?.email} to confirm</label>
-                            <input id="delete-email" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={deleteEmail} onChange={(event) => setDeleteEmail(event.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium" htmlFor="delete-password">Current password (leave blank for Google accounts)</label>
-                            <input id="delete-password" type="password" className="h-10 w-full rounded-md border bg-background px-3 text-sm" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} />
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancel</Button>
-                        <Button variant="destructive" onClick={deleteAccount} disabled={privacyActionPending || deleteEmail.trim().toLowerCase() !== user?.email?.toLowerCase()}>
-                            {privacyActionPending ? "Deleting..." : "Permanently delete"}
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-        </div>
-    );
+  const location = [user?.address?.city, user?.address?.country].filter(Boolean).join(", ") || "Location not added";
+  return <div className="mx-auto max-w-7xl space-y-7"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Account</p><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em] sm:text-5xl">Your space, your information.</h1><p className="mt-3 max-w-2xl text-muted-foreground">Manage the details that identify your account and the data you choose to keep in Curevo.</p></div><div className="grid gap-6 lg:grid-cols-[1.15fr_.85fr]"><Card className="relative overflow-hidden rounded-[2rem]"><div className="absolute -right-20 -top-20 size-72 rounded-full bg-primary/5" /><CardContent className="relative flex flex-col gap-7 p-7 sm:flex-row sm:items-center sm:p-9"><div className="relative shrink-0"><Avatar className="size-32 border-4 border-background shadow-xl"><AvatarImage src={user?.profileImage || ""} alt="" /><AvatarFallback className="bg-primary/10 text-3xl font-semibold text-primary">{initials(user?.name)}</AvatarFallback></Avatar><button onClick={() => fileRef.current?.click()} aria-label="Change profile photo" className="absolute bottom-0 right-0 grid size-10 place-items-center rounded-full border-4 border-background bg-primary text-primary-foreground"><Camera className="size-4" /></button><input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={choosePhoto} /></div><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-3"><h2 className="truncate text-3xl font-semibold">{user?.name}</h2><Badge variant="secondary" className="capitalize">{user?.role}</Badge></div><p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><Mail className="size-4" />{user?.email}</p><p className="mt-2 flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="size-4" />{location}</p><p className="mt-4 text-sm leading-6 text-muted-foreground">{user?.bio || "Add a short note about what you want this space to support."}</p><Button variant="outline" className="mt-5 rounded-full" onClick={() => setEditOpen(true)}><Edit2 className="mr-2 size-4" />Edit profile</Button></div></CardContent></Card><Card className="rounded-[2rem] bg-[#284c3c] text-white"><CardHeader><ShieldCheck className="size-5 text-[#f4c66f]" /><CardTitle className="mt-3 text-white">Account safety</CardTitle></CardHeader><CardContent className="space-y-4 text-sm"><div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="font-semibold">Email verification</p><p className="mt-1 text-white/65">{user?.emailVerifiedAt ? "Verified" : "Still needs verification"}</p></div><div className="rounded-2xl border border-white/10 bg-white/5 p-4"><p className="font-semibold">Multi-factor authentication</p><p className="mt-1 text-white/65">{user?.mfa?.enabled ? "Enabled" : "Not enabled"}</p></div><Button asChild variant="secondary" className="w-full rounded-full"><a href="/mfa-setup"><KeyRound className="mr-2 size-4" />Manage MFA</a></Button></CardContent></Card></div><div className="grid gap-6 lg:grid-cols-2"><Card className="rounded-[2rem]"><CardHeader><UserRound className="size-5 text-primary" /><CardTitle className="mt-3">Personal details</CardTitle></CardHeader><CardContent className="grid gap-5 sm:grid-cols-2">{[["Member since", format(new Date(user?.createdAt || new Date()), "MMMM yyyy")], ["Phone", user?.phone || "Not added"], ["Date of birth", user?.dateOfBirth ? format(new Date(user.dateOfBirth), "MMMM d, yyyy") : "Not added"], ["Location", location]].map(([label, value]) => <div key={label}><p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">{label}</p><p className="mt-1 font-medium">{value}</p></div>)}</CardContent></Card><Card className="rounded-[2rem]"><CardHeader><ShieldCheck className="size-5 text-primary" /><CardTitle className="mt-3">Privacy controls</CardTitle><p className="text-sm text-muted-foreground">Your export contains account details, focus sessions, routines, reflections, feedback, and notifications.</p></CardHeader><CardContent className="space-y-3"><Button variant="outline" className="w-full justify-start rounded-full" disabled={privacyPending} onClick={downloadData}><Download className="mr-2 size-4" />Download my data</Button><Button variant="destructive" className="w-full justify-start rounded-full" disabled={privacyPending} onClick={() => setDeleteOpen(true)}><Trash2 className="mr-2 size-4" />Delete my account and data</Button></CardContent></Card></div><UpdateProfileDialog open={editOpen} onOpenChange={setEditOpen} user={user} /><Dialog open={photoOpen} onOpenChange={(open) => { if (!open) closePhoto(); }}><DialogContent><DialogHeader><DialogTitle>Use this profile photo?</DialogTitle><DialogDescription>Images are resized and stored with your account.</DialogDescription></DialogHeader><div className="grid place-items-center py-6"><Avatar className="size-44"><AvatarImage src={preview || ""} alt="Profile preview" /><AvatarFallback>{initials(user?.name)}</AvatarFallback></Avatar></div><DialogFooter><Button variant="outline" onClick={closePhoto}>Cancel</Button><Button disabled={imageMutation.isPending} onClick={uploadPhoto}>{imageMutation.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}Save photo</Button></DialogFooter></DialogContent></Dialog><Dialog open={deleteOpen} onOpenChange={setDeleteOpen}><DialogContent><DialogHeader><DialogTitle>Delete this account?</DialogTitle><DialogDescription>This permanently removes your focus sessions, routines, reflections, feedback, notifications, and personal account data. This cannot be undone.</DialogDescription></DialogHeader><div className="space-y-4"><div className="space-y-2"><Label htmlFor="delete-email">Type {user?.email} to confirm</Label><Input id="delete-email" value={deleteEmail} onChange={(event) => setDeleteEmail(event.target.value)} /></div><div className="space-y-2"><Label htmlFor="delete-password">Current password <span className="font-normal text-muted-foreground">(leave blank for Google accounts)</span></Label><Input id="delete-password" type="password" value={deletePassword} onChange={(event) => setDeletePassword(event.target.value)} /></div></div><DialogFooter><Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button><Button variant="destructive" disabled={privacyPending || deleteEmail.trim().toLowerCase() !== user?.email.toLowerCase()} onClick={deleteAccount}>{privacyPending ? "Deleting..." : "Permanently delete"}</Button></DialogFooter></DialogContent></Dialog></div>;
 }

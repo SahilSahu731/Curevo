@@ -2,39 +2,31 @@
 
 ## Feature freeze
 
-Only trust, safety, privacy, security, accessibility, and reliability remediation in M0-M4 is permitted until every release gate is signed. In production, all mutating API requests are denied by default with `PRODUCTION_REVIEW_ONLY`. The only exceptions are sign-in and sign-out; creation of a new Google account is separately blocked. Enabling writes requires `ALLOW_PRODUCTION_WRITES=true` and completed release approval. Search indexing is disabled unless `NEXT_PUBLIC_ALLOW_INDEXING=true`.
-
-The wellness calculators are also disabled unless `NEXT_PUBLIC_ENABLE_WELLNESS_TOOLS=true`. That flag requires clinical-safety approval; the repository deployment configuration explicitly sets it to `false`.
+Production mutations are denied by default with `PRODUCTION_REVIEW_ONLY` except
+existing-account login, logout, and MFA completion. Enabling writes requires
+`ALLOW_PRODUCTION_WRITES=true` and completed release approval. Search indexing is
+disabled unless `NEXT_PUBLIC_ALLOW_INDEXING=true`.
 
 ## Deployment inventory
 
-| Surface | Evidence | URL / location | Data source | Intended audience | Accountable owner | Status |
-|---|---|---|---|---|---|---|
-| Local full-stack workspace | root `package.json`; `apps/web/package.json`; `apps/web/server.mjs` | `http://localhost:3000` | Same-origin Next.js pages, Express REST API, Socket.IO, and local MongoDB | Developer only | UNASSIGNED | Review only; writes remain governed by the production freeze |
-| Local MongoDB container | `docker-compose.yml`; observed container `curevo-mongo` | `127.0.0.1:27017/curevo` | Docker volume `curevo-mongo-data` | Developer only | UNASSIGNED | Contains generated demonstration records; inspect before reuse |
-| Render persistent web-service configuration | `render.yaml`, service `curevo` | Live URL and account not discoverable from repository | Same-origin web/API/socket process; secret `MONGO_URI` | Must remain private/review-only | UNASSIGNED | Repository configuration exists; deployed state and collected data remain unverified |
-| Legacy split deployments | Previous Render API and Vercel client configuration; current repository no longer configures the split | URLs, projects, previews, and accounts not discoverable from repository | Any prior database, logs, browser deployment, or API origin | None until independently inventoried and approved | UNASSIGNED | Must be found, access-reviewed, write-frozen, and decommissioned or documented; absence from source does not prove deletion |
-| GitHub repository | git remote `SahilSahu731/Curevo` | SSH remote; visibility not verified | Source only | Maintainers | Repository account owner | Access review required |
-| Cloudinary | `apps/web/src/server/config/cloudinary.js` and upload controllers | Account, region, objects, and logs not discoverable | Profile photos, clinician license files, and medical attachments | Authorized workflow users/admin | UNASSIGNED | Deletion and contract unverified |
-| Google OAuth | Passport configuration under `apps/web/src/server` | OAuth project/consent screen not discoverable | Name, email, Google subject, photo | Account users | UNASSIGNED | Same-origin callback, production settings, and consent review required |
+| Surface | Evidence | Audience | Status |
+|---|---|---|---|
+| Local full-stack workspace | root workspace; `apps/web/server.mjs`; local Mongo container | Developers | Review-only; synthetic data |
+| Render service configuration | `render.yaml`; URL/account not discoverable from source | Private reviewers only | Deployment and collected data unverified |
+| MongoDB | `MONGO_URI`; local Docker volume; provider not identified | Application | Database/backup owners and regions unassigned |
+| Cloudinary | Profile-image integration | Authenticated members | Account, objects, logs, region, deletion and contract unverified |
+| Google OAuth | Optional provider configuration | Members | Project ownership, consent screen and lifecycle unverified |
+| SMTP | Optional account/support/reminder email | Members/operators | Provider, region, logs and retry operations unverified |
+| Former deployments/stores | Not discoverable from current source | None approved | Inventory and quarantine required |
 
-The project owner must add every current or legacy preview, Render or Vercel instance, database, object store, domain, log sink, backup, and OAuth project before release. The repository migration does not delete an external deployment. Unknown does not mean absent.
+The active runtime contains focus sessions, routines, reflections, accounts,
+notifications, feedback/support, consents, sessions, audit events, and privacy
+requests. Removed clinical source does not prove older databases, objects, logs, or
+backups were deleted.
 
-## Existing data determination
+## Hard gates
 
-The local database target observed on 2026-08-03 was `mongodb://127.0.0.1:27017/curevo`. A read-only audit found the legacy generated graph, then a reference-constrained migration tagged exactly 251 seed identities, 100 clinics, 100 clinicians, 800 appointments, 100 queues, 200 records, 300 clinician reviews, 300 clinic reviews, 150 feedback items, and 500 notifications as synthetic. A repeat audit left one separate `gmail.com` account, one consent row, and two minimal privacy-request audits unmarked. The account/consent must be treated as potentially real until its owner and collection context are confirmed; it was not opened, modified, or classified by this remediation. The two privacy audits were generated by the controlled export/deletion smoke test, retain no account content, and expire through the 90-day TTL.
-
-Remote databases, Cloudinary objects, host logs, and backups could not be inspected. Run `npm run audit:data` for the non-content local summary. New seed runs attach `isSynthetic` and `seedBatch` to every fixture and refuse to overwrite unmarked data without a local-only explicit override.
-
-Required operator action before any reset or release:
-
-1. Export collection counts and distinct email domains without exposing record contents.
-2. Identify unexpected domains, free-text records, uploads, and OAuth-created users.
-3. Quarantine rather than delete possible real records; obtain privacy/security review.
-4. Record the result, reviewer, date, and evidence location here.
-
-## Product and jurisdiction decision
-
-Current classification is **prototype only**. Target country/region, patient/clinic/direct-to-consumer customer type, operator identity, healthcare provider relationship, controller/processor role, and medical-device/telehealth/marketplace classification are all `UNDECIDED`. The requested self-guided focus and wellbeing direction is a proposal, not an approval or a change to this classification. The UI uses jurisdiction-neutral emergency language because it cannot safely name a number without this decision.
-
-The workspace migration colocates the browser, API, and realtime code; it does not remove or approve the legacy clinician, appointment, medical-record, queue, review, or telehealth domains. Those domains remain review-only and must not be relabeled as a non-clinical product without a documented disposition for their routes, data, retention, and users.
+- No public launch, indexing, or real personal data until the release checklist is signed.
+- No cure, diagnosis, treatment, therapy, crisis, outcome, compliance, partner, or social-proof claim without evidence and approval.
+- No deletion or transformation of old clinical stores without inventory, owner, backup, retention decision, and rollback.
+- No new Next-owned mutating API may bypass the guarded Express boundary.

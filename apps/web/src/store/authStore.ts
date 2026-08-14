@@ -7,8 +7,7 @@ export interface User {
   name: string
   email: string
   emailVerifiedAt?: string
-  role: "patient" | "doctor" | "admin"
-  adminScope?: "operations" | "compliance" | "super-admin"
+  role: "member" | "admin"
   status?: "active" | "suspended"
   provider?: "local" | "google" | "facebook"
   profileImage?: string
@@ -149,7 +148,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 export function clearSessionState(broadcast = false) {
   useAuthStore.setState({ user: null, isLoading: false, initialized: true, mfaRequired: false, mfaEnrollmentRequired: false })
   clearCsrfToken()
-  import("@/store/socketStore").then(({ useSocketStore }) => useSocketStore.getState().disconnect()).catch(() => {})
   import("@/app/providers").then(({ queryClient }) => queryClient.clear()).catch(() => {})
   if (broadcast && typeof BroadcastChannel !== "undefined") {
     const channel = new BroadcastChannel("curevo-auth")

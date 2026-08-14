@@ -10,7 +10,7 @@ const FeedbackSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["complaint", "bug", "billing", "feature", "clinical", "other"],
+      enum: ["complaint", "bug", "billing", "feature", "content", "other"],
       default: "other",
       index: true,
     },

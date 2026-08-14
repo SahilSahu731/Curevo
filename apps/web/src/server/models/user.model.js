@@ -51,15 +51,10 @@ const UserSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: {
-        values: ["patient", "doctor", "admin"],
+        values: ["member", "admin"],
         message: "{VALUE} is not a valid role"
       },
-      default: "patient"
-    },
-    adminScope: {
-      type: String,
-      enum: ["operations", "compliance", "super-admin"],
-      default() { return this.role === "admin" ? "operations" : undefined; },
+      default: "member"
     },
     profileImage: { type: String },
     profileImagePublicId: { type: String, select: false },
@@ -89,8 +84,7 @@ const UserSchema = new mongoose.Schema(
     notificationPreferences: {
       inApp: { type: Boolean, default: true },
       email: { type: Boolean, default: false },
-      sms: { type: Boolean, default: false },
-      appointmentUpdates: { type: Boolean, default: true },
+      focusUpdates: { type: Boolean, default: true },
       reminders: { type: Boolean, default: true },
       locale: { type: String, default: "en-IN" },
     },

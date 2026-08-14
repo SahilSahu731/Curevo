@@ -16,7 +16,7 @@ export function EditUserDialog({ user, open, onOpenChange }: { user: any; open: 
   const queryClient = useQueryClient();
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [role, setRole] = useState("patient");
+  const [role, setRole] = useState("member");
   const [status, setStatus] = useState("active");
   const [targetEmail, setTargetEmail] = useState("");
   const [reason, setReason] = useState("");
@@ -25,7 +25,7 @@ export function EditUserDialog({ user, open, onOpenChange }: { user: any; open: 
     if (!user || !open) return;
     setName(user.name || "");
     setPhone(user.phone || "");
-    setRole(user.role || "patient");
+    setRole(user.role || "member");
     setStatus(user.status || "active");
     setTargetEmail("");
     setReason("");
@@ -49,7 +49,7 @@ export function EditUserDialog({ user, open, onOpenChange }: { user: any; open: 
           <div className="space-y-2"><Label htmlFor="admin-edit-name">Name</Label><Input id="admin-edit-name" value={name} minLength={2} maxLength={80} onChange={(event) => setName(event.target.value)} /></div>
           <div className="space-y-2"><Label htmlFor="admin-edit-phone">Phone</Label><Input id="admin-edit-phone" value={phone} placeholder="+919876543210" onChange={(event) => setPhone(event.target.value)} /></div>
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2"><Label htmlFor="admin-edit-role">Role</Label><Select value={role} onValueChange={setRole}><SelectTrigger id="admin-edit-role"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="patient">Patient</SelectItem><SelectItem value="doctor">Doctor</SelectItem><SelectItem value="admin">Administrator</SelectItem></SelectContent></Select></div>
+            <div className="space-y-2"><Label htmlFor="admin-edit-role">Role</Label><Select value={role} onValueChange={setRole}><SelectTrigger id="admin-edit-role"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="member">Member</SelectItem><SelectItem value="admin">Administrator</SelectItem></SelectContent></Select></div>
             <div className="space-y-2"><Label htmlFor="admin-edit-status">Status</Label><Select value={status} onValueChange={setStatus}><SelectTrigger id="admin-edit-status"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Active</SelectItem><SelectItem value="suspended">Suspended</SelectItem></SelectContent></Select></div>
           </div>
           <div className="space-y-2"><Label htmlFor="admin-edit-confirm">Type {user?.email} to confirm the target</Label><Input id="admin-edit-confirm" value={targetEmail} onChange={(event) => setTargetEmail(event.target.value)} /></div>

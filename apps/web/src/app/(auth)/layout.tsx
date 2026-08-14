@@ -12,9 +12,8 @@ import { useAuthStore } from "@/store/authStore"
 import "./auth.css"
 
 function destinationFor(role: string) {
-  if (role === "doctor") return "/doctor-dashboard"
   if (role === "admin") return "/admin-dashboard"
-  return "/"
+  return "/dashboard"
 }
 
 function requestedDestination() {

@@ -27,9 +27,8 @@ function safeRedirect(value: string | null) {
 }
 
 function destinationFor(role: string) {
-  if (role === "doctor") return "/doctor-dashboard"
   if (role === "admin") return "/admin-dashboard"
-  return "/"
+  return "/dashboard"
 }
 
 function requestedDestination() {

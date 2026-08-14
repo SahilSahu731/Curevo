@@ -30,9 +30,8 @@ if (development && (!process.env.CLIENT_URL || legacyLocalOrigin(process.env.CLI
   process.env.CLIENT_URL = process.env.RENDER_EXTERNAL_URL.replace(/\/$/, "");
 }
 
-const [{ default: connectDB }, { initSocket }, { createApplication }] = await Promise.all([
+const [{ default: connectDB }, { createApplication }] = await Promise.all([
   import("./src/server/config/db.js"),
-  import("./src/server/config/socket.js"),
   import("./src/server/index.js"),
 ]);
 
@@ -41,7 +40,6 @@ await nextApplication.prepare();
 
 const application = createApplication({ nextHandler: nextApplication.getRequestHandler() });
 const httpServer = createServer(application);
-const socketServer = initSocket(httpServer);
 try {
   await connectDB();
 } catch {
@@ -59,11 +57,6 @@ const close = async (signal) => {
   closing = true;
   console.log(`Received ${signal}; closing Curevo cleanly.`);
   const timeout = new Promise((resolve) => setTimeout(resolve, 10_000));
-  socketServer.disconnectSockets(true);
-  await Promise.race([
-    new Promise((resolve) => socketServer.close(resolve)),
-    timeout,
-  ]);
   if (httpServer.listening) {
     await Promise.race([
       new Promise((resolve) => httpServer.close(resolve)),

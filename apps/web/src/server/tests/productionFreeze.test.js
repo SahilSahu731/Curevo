@@ -21,20 +21,20 @@ const invoke = ({ method, path, allowWrites = false }) => {
   return { response, nextCalled };
 };
 
-test("production freeze blocks health-data writes", () => {
-  const { response, nextCalled } = invoke({ method: "POST", path: "/appointments" });
+test("production freeze blocks personal-data writes", () => {
+  const { response, nextCalled } = invoke({ method: "POST", path: "/focus/sessions" });
   assert.equal(nextCalled, false);
   assert.equal(response.statusCode, 503);
   assert.equal(response.body.code, "PRODUCTION_REVIEW_ONLY");
 });
 
 test("production freeze permits reads and existing-account sign-in", () => {
-  assert.equal(invoke({ method: "GET", path: "/appointments" }).nextCalled, true);
+  assert.equal(invoke({ method: "GET", path: "/focus/sessions" }).nextCalled, true);
   assert.equal(invoke({ method: "POST", path: "/auth/login" }).nextCalled, true);
   assert.equal(invoke({ method: "POST", path: "/auth/mfa/verify" }).nextCalled, true);
   assert.equal(invoke({ method: "GET", path: "/auth/logout" }).nextCalled, true);
 });
 
 test("explicit approval flag enables writes", () => {
-  assert.equal(invoke({ method: "POST", path: "/appointments", allowWrites: true }).nextCalled, true);
+  assert.equal(invoke({ method: "POST", path: "/focus/sessions", allowWrites: true }).nextCalled, true);
 });

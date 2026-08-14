@@ -1,24 +1,26 @@
-# M0 release checklist
+# Release checklist
 
-Every item requires evidence and a named signer. Empty or role-only sign-off means no release.
+Every item requires evidence and a named signer. Empty or role-only sign-off means
+no release.
 
-- [ ] Product owner: name, authority, date, target users/customer, product classification, intended use
-- [ ] Security owner: threat-model review, penetration test, upload/session/socket controls, logging/backup access, residual acceptance
-- [ ] Privacy owner: complete deployment/data inventory, lawful basis/authorization, controller/processor roles, retention, subprocessors, export/deletion verification
-- [ ] Clinical-safety reviewer: credentials, intended-use statement, hazard review, emergency copy, provider verification, assessment disposition
-- [ ] Legal approver: operating entity, jurisdictions, terms/notices/consents, complaint channel, contracts, breach/law-enforcement process
-- [ ] All live/preview URLs, domains, accounts, stores, logs, backups, regions, audiences, and owners recorded
-- [ ] Real-data audit completed and evidence linked; synthetic fixtures clearly distinguishable
-- [ ] `ALLOW_PRODUCTION_WRITES` remains false until all approvals are complete
-- [ ] Indexing remains disabled on review/preview environments
-- [ ] Content claims inventory has evidence/owner/approval/expiry for every claim
-- [ ] `npm run verify` and `npm run verify:m0 --workspace @curevo/web` pass, and rendered desktop/mobile pages are reviewed
-- [ ] Export and deletion tested against database, object store, logs, and backups
-- [ ] Incident exercise and emergency escalation test completed
-- [ ] `npm audit --omit=dev --audit-level=high` passes against the root workspace lockfile; dependency review record is current
-- [ ] Session, CSRF, OAuth state/callback, recovery-token, MFA, logout-all, and Socket.IO tests pass on the deployed same-origin layout; any legacy split origins are disabled or explicitly inventoried
-- [ ] The Express `/api` fallback and Next App Router handlers are integration-tested so neither routing layer shadows the other
-- [ ] `NEXT_PUBLIC_ENABLE_WELLNESS_TOOLS` remains false until the clinical-safety reviewer approves a documented intended use or the legacy tools are removed
-- [ ] Residual risks signed individually with scope and expiry
+- [ ] Product owner approves target users, age range, jurisdictions, intended use, and non-medical classification
+- [ ] Product-safety reviewer approves crisis boundaries, reflection labels, reminders, and residual risks
+- [ ] Security owner reviews sessions, MFA, CSRF, ownership, uploads, logs, backups, and penetration evidence
+- [ ] Privacy owner approves data map, lawful basis, retention, providers, exports/deletion, and legacy-data disposition
+- [ ] Legal owner approves operating entity, terms/notices, complaint channel, provider agreements, and jurisdictions
+- [ ] Accessibility owner verifies keyboard, screen reader, zoom/reflow, motion, contrast, errors, and responsive states
+- [ ] All current/former deployments, stores, logs, backups, OAuth/SMTP projects, domains, regions, and owners are inventoried
+- [ ] Synthetic-data audit is complete and unclassified records remain quarantined
+- [ ] `ALLOW_PRODUCTION_WRITES=false` and indexing remains disabled until all approvals complete
+- [ ] Claims inventory contains evidence/owner/approval/expiry for every factual or outcome claim
+- [ ] `npm ci`, `npm audit --omit=dev --audit-level=high`, and `npm run verify` pass on the release commit
+- [ ] Register, verify, login/MFA, recovery, logout-all, Google OAuth, and account suspension pass on the deployed origin
+- [ ] Focus session, routine, reflection, notification, export, and deletion ownership tests pass against MongoDB
+- [ ] Profile upload and Cloudinary replace/delete behavior is tested, including failure recovery
+- [ ] Routine reminder scheduling, retry, frequency, unsubscribe, and delivery ownership are approved
+- [ ] Incident, privacy-request, backup/restore, and emergency-language exercises are complete
+- [ ] The Express `/api` boundary and Next blog-preview handler cannot shadow or bypass each other
+- [ ] External legacy clinical data has an approved quarantine/retention/disposal decision
+- [ ] Residual risks are signed individually with scope and expiry
 
-Final decision: **BLOCKED** until all boxes are complete.
+Final decision: **BLOCKED** until every box is complete.

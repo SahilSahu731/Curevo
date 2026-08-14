@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import * as React from "react"
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  Calendar,
-  Home,
-  Inbox,
-  Search,
-  Settings,
-  User,
-  Stethoscope,
-  Users,
-  Activity,
-  Clock,
-  LogOut,
-  Building2,
-  LayoutDashboard,
+  BarChart3,
   Bell,
-} from "lucide-react"
+  BookHeart,
+  CircleUserRound,
+  Focus,
+  LayoutDashboard,
+  ListChecks,
+  LogOut,
+  MessageSquareText,
+  Settings,
+  Sparkles,
+  Users,
+} from "lucide-react";
 
+import { BrandLogo } from "@/components/brand/BrandLogo";
 import {
   Sidebar,
   SidebarContent,
@@ -31,109 +31,92 @@ import {
   SidebarMenuItem,
   SidebarRail,
   SidebarSeparator,
-} from "@/components/ui/sidebar"
-import { useAuthStore } from "@/store/authStore"
-import { usePathname, useRouter } from "next/navigation"
-import { BrandLogo } from "@/components/brand/BrandLogo"
+} from "@/components/ui/sidebar";
+import { useAuthStore } from "@/store/authStore";
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
-  const { user, logout } = useAuthStore()
-  const pathname = usePathname()
-  const router = useRouter()
+const memberItems = [
+  { title: "Today", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Focus space", url: "/dashboard/focus", icon: Focus },
+  { title: "Routines", url: "/dashboard/routines", icon: ListChecks },
+  { title: "Reflections", url: "/dashboard/reflections", icon: BookHeart },
+  { title: "Progress", url: "/dashboard/progress", icon: BarChart3 },
+  { title: "Notifications", url: "/dashboard/notifications", icon: Bell },
+  { title: "Feedback", url: "/dashboard/feedback", icon: MessageSquareText },
+];
 
-  const doctorItems = [
-    { title: "Dashboard", url: "/doctor-dashboard", icon: Home },
-    { title: "Queue Management", url: "/doctor-dashboard", icon: Clock },
-    { title: "Patients", url: "/doctor-dashboard/appointments", icon: Users },
-    { title: "Appointments", url: "/doctor-dashboard/appointments", icon: Calendar },
-    { title: "Notifications", url: "/doctor-dashboard/notifications", icon: Bell },
-    { title: "Profile", url: "/profile", icon: User },
-    { title: "Settings", url: "/profile", icon: Settings },
-  ]
+const adminItems = [
+  { title: "Overview", url: "/admin-dashboard", icon: LayoutDashboard },
+  { title: "Members", url: "/admin-dashboard/users", icon: Users },
+  { title: "Feedback", url: "/admin-dashboard/feedback", icon: MessageSquareText },
+  { title: "Notifications", url: "/admin-dashboard/notifications", icon: Bell },
+];
 
-  const patientItems = [
-    { title: "Home", url: "/patient-dashboard", icon: Home },
-    { title: "My Appointments", url: "/patient-dashboard/appointments", icon: Calendar },
-    { title: "Find Doctors", url: "/doctors", icon: Search },
-    { title: "Medical Records", url: "/patient-dashboard/records", icon: Activity },
-    { title: "Feedback", url: "/patient-dashboard/feedback", icon: Inbox },
-    { title: "Notifications", url: "/patient-dashboard/notifications", icon: Bell },
-    { title: "Profile", url: "/profile", icon: User },
-    { title: "Settings", url: "/profile", icon: Settings },
-  ]
-
-  const adminItems = [
-    { title: "Dashboard", url: "/admin-dashboard", icon: LayoutDashboard },
-    { title: "Appointments", url: "/admin-dashboard/appointments", icon: Calendar },
-    { title: "Clinics", url: "/admin-dashboard/clinics", icon: Building2 },
-    { title: "Doctors", url: "/admin-dashboard/doctors", icon: Stethoscope },
-    { title: "Users", url: "/admin-dashboard/users", icon: Users },
-    { title: "Feedback", url: "/admin-dashboard/feedback", icon: Inbox },
-    { title: "Notifications", url: "/admin-dashboard/notifications", icon: Bell },
-    { title: "Profile", url: "/profile", icon: User },
-    { title: "Settings", url: "/profile", icon: Settings },
-  ]
-  
-  let items = patientItems;
-  if (user?.role === 'doctor') items = doctorItems;
-  else if (user?.role === 'admin') items = adminItems;
-
-  const getPortalName = () => {
-      switch(user?.role) {
-          case 'doctor': return 'Doctor Portal';
-          case 'admin': return 'Admin Console';
-          default: return 'Patient Portal';
-      }
-  }
+export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
+  const { user, logout } = useAuthStore();
+  const pathname = usePathname();
+  const router = useRouter();
+  const items = user?.role === "admin" ? adminItems : memberItems;
+  const isActive = (url: string) => pathname === url || (url !== "/dashboard" && url !== "/admin-dashboard" && pathname.startsWith(`${url}/`));
 
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader>
-        <div className="flex items-center gap-2 px-2 py-1">
+      <SidebarHeader className="px-2 py-3">
+        <div className="flex items-center gap-2 px-2">
           <BrandLogo compact />
-          <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
-            <span className="text-xs text-muted-foreground">{getPortalName()}</span>
+          <div className="min-w-0 group-data-[collapsible=icon]:hidden">
+            <p className="truncate text-xs font-semibold text-muted-foreground">{user?.role === "admin" ? "Operations" : "Your focus space"}</p>
           </div>
         </div>
       </SidebarHeader>
       <SidebarSeparator />
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel>{user?.role === "admin" ? "Manage" : "Practice"}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={pathname === item.url} tooltip={item.title}>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
+                <SidebarMenuItem key={item.url}>
+                  <SidebarMenuButton asChild isActive={isActive(item.url)} tooltip={item.title}>
+                    <Link href={item.url}><item.icon /><span>{item.title}</span></Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {user?.role !== "admin" && (
+          <SidebarGroup className="mt-auto group-data-[collapsible=icon]:hidden">
+            <div className="mx-2 rounded-2xl border border-primary/15 bg-primary/5 p-4">
+              <Sparkles className="size-4 text-primary" />
+              <p className="mt-3 text-sm font-semibold">A missed day is not a broken streak.</p>
+              <p className="mt-1 text-xs leading-5 text-muted-foreground">Return with the smallest step that fits today.</p>
+            </div>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter>
-         <SidebarMenu>
-            <SidebarMenuItem>
-                <SidebarMenuButton 
-                    onClick={() => {
-                        logout();
-                        router.push('/login');
-                    }}
-                    tooltip="Log out"
-                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
-                >
-                    <LogOut />
-                    <span>Log out</span>
-                </SidebarMenuButton>
-            </SidebarMenuItem>
-         </SidebarMenu>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild isActive={pathname === "/profile"} tooltip="Profile and settings">
+              <Link href="/profile"><CircleUserRound /><span>Profile</span></Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Settings"><Link href="/profile"><Settings /><span>Settings</span></Link></SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tooltip="Log out"
+              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              onClick={async () => { await logout(); router.push("/login"); }}
+            >
+              <LogOut /><span>Log out</span>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }

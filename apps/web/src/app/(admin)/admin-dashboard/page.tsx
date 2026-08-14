@@ -1,118 +1,25 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { 
-    Users, 
-    Building2, 
-    Stethoscope, 
-    Activity,
-    AlertCircle,
-    CheckCircle2,
-    MessageSquare
-} from "lucide-react";
-import { 
-    Card, 
-    CardContent, 
-    CardHeader, 
-    CardTitle 
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { BookHeart, Focus, ListChecks, MessageSquareText, Users } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { adminService } from "@/lib/services/adminService";
 
 export default function AdminDashboard() {
-    const { data, isLoading } = useQuery({
-        queryKey: ["admin-dashboard"],
-        queryFn: adminService.getDashboardStats,
-    });
+  const { data, isLoading } = useQuery({ queryKey: ["admin-dashboard"], queryFn: adminService.getDashboardStats });
+  const stats = data?.stats || {};
+  const recentFeedback = data?.recentFeedback || [];
+  const cards = [
+    { label: "Active members", value: stats.members || 0, note: "personal accounts", icon: Users },
+    { label: "Focus blocks", value: stats.completedSessions || 0, note: "completed overall", icon: Focus },
+    { label: "Active routines", value: stats.activeRoutines || 0, note: "member-created", icon: ListChecks },
+    { label: "Reflections", value: stats.reflections || 0, note: "private entries", icon: BookHeart },
+  ];
+  const maxMinutes = Math.max(30, ...(stats.usageByDay || []).map((day: { minutes: number }) => day.minutes));
 
-    const statsData = data?.stats || {};
-    const pendingDoctors = data?.pendingDoctors || [];
-    const recentFeedback = data?.recentFeedback || [];
-
-    const stats = [
-        { title: "Patients", value: statsData.patients || 0, icon: Users, sub: "registered patients", color: "text-blue-500" },
-        { title: "Active Clinics", value: statsData.clinics || 0, icon: Building2, sub: "clinics in network", color: "text-emerald-500" },
-        { title: "Verified Doctors", value: statsData.verifiedDoctors || 0, icon: Stethoscope, sub: `${statsData.pendingVerifications || 0} pending`, color: "text-purple-500" },
-        { title: "Appointments", value: statsData.totalAppointments || 0, icon: Activity, sub: `${statsData.todayAppointments || 0} today`, color: "text-amber-500" },
-    ];
-
-    return (
-        <div className="flex flex-col gap-8 p-4">
-             {/* Welcome Section */}
-             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Admin Console</h1>
-                    <p className="text-muted-foreground">System overview and management controls.</p>
-                </div>
-                <Button variant="outline" asChild>
-                    <Link href="/admin-dashboard/feedback">Open feedback: {statsData.openFeedback || 0}</Link>
-                </Button>
-            </div>
-
-            {/* Stats Grid */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                {stats.map((stat, i) => (
-                    <Card key={i}>
-                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                            <stat.icon className={`h-4 w-4 ${stat.color}`} />
-                        </CardHeader>
-                        <CardContent>
-                            <div className="text-2xl font-bold">{isLoading ? "..." : stat.value}</div>
-                            <p className="text-xs text-muted-foreground">{stat.sub}</p>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-
-            {/* Activity & Verification */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="col-span-2">
-                    <CardHeader>
-                         <CardTitle>Recent Feedback & Complaints</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            {recentFeedback.length ? recentFeedback.map((item: any) => (
-                                <div key={item._id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <MessageSquare className="h-4 w-4 text-primary" />
-                                        <div>
-                                            <p className="text-sm font-medium">{item.subject}</p>
-                                            <p className="text-xs text-muted-foreground">{item.userId?.name} • {item.category}</p>
-                                        </div>
-                                    </div>
-                                    <Badge variant="outline" className="capitalize">{item.status}</Badge>
-                                </div>
-                            )) : <div className="py-8 text-center text-sm text-muted-foreground">No feedback yet.</div>}
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Pending Verifications</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                         {pendingDoctors.length ? pendingDoctors.map((doctor: any) => (
-                            <div key={doctor._id} className="space-y-3 rounded-lg border p-3">
-                                <div className="flex items-center gap-2">
-                                    <AlertCircle className="h-4 w-4 text-amber-500" />
-                                    <div>
-                                        <p className="text-sm font-bold">{doctor.userId?.name}</p>
-                                        <p className="text-xs text-muted-foreground">{doctor.verification?.licenseNumber}</p>
-                                    </div>
-                                </div>
-                                <div className="flex gap-2">
-                                    <Button size="sm" className="flex-1" asChild><Link href="/admin-dashboard/doctors"><CheckCircle2 className="mr-1 h-4 w-4" /> Review</Link></Button>
-                                </div>
-                            </div>
-                         )) : <div className="py-8 text-center text-sm text-muted-foreground">No pending doctors.</div>}
-                    </CardContent>
-                </Card>
-            </div>
-        </div>
-    );
+  return <div className="mx-auto max-w-7xl space-y-7 p-2 sm:p-4"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Administration</p><h1 className="mt-2 text-4xl font-semibold tracking-[-0.04em]">Product overview</h1><p className="mt-2 text-muted-foreground">Account operations and aggregate product activity. Private reflection content is not exposed here.</p></div><Button asChild variant="outline" className="rounded-full"><Link href="/admin-dashboard/feedback">Open feedback · {stats.openFeedback || 0}</Link></Button></div><section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{cards.map((card) => <Card key={card.label} className="rounded-3xl"><CardContent className="p-5"><div className="grid size-10 place-items-center rounded-2xl bg-primary/10 text-primary"><card.icon className="size-4" /></div><p className="mt-5 text-sm text-muted-foreground">{card.label}</p><p className="mt-1 text-3xl font-semibold">{isLoading ? "…" : card.value}</p><p className="text-xs text-muted-foreground">{card.note}</p></CardContent></Card>)}</section><div className="grid gap-6 lg:grid-cols-[1.15fr_.85fr]"><Card className="rounded-[2rem]"><CardHeader><CardTitle>Aggregate focused minutes</CardTitle><p className="text-sm text-muted-foreground">Seven-day product activity without member-level content.</p></CardHeader><CardContent><div className="flex h-52 items-end gap-3">{(stats.usageByDay || []).length ? stats.usageByDay.map((day: { _id: string; minutes: number; sessions: number }) => <div key={day._id} className="flex h-full flex-1 flex-col justify-end gap-2"><span className="text-center text-xs font-semibold">{day.minutes}</span><div className="relative h-36 overflow-hidden rounded-xl bg-muted"><div className="absolute inset-x-0 bottom-0 rounded-xl bg-primary" style={{ height: `${Math.max(4, (day.minutes / maxMinutes) * 100)}%` }} /></div><span className="text-center text-[10px] text-muted-foreground">{day._id.slice(5)}</span></div>) : <div className="grid h-full w-full place-items-center text-sm text-muted-foreground">No focus activity recorded this week.</div>}</div></CardContent></Card><Card className="rounded-[2rem]"><CardHeader><MessageSquareText className="size-5 text-primary" /><CardTitle className="mt-3">Recent feedback</CardTitle></CardHeader><CardContent className="space-y-3">{recentFeedback.length ? recentFeedback.map((item: { _id: string; subject: string; category: string; status: string; userId?: { name?: string } }) => <div key={item._id} className="rounded-2xl border p-4"><div className="flex items-start justify-between gap-3"><div><p className="font-semibold">{item.subject}</p><p className="text-xs capitalize text-muted-foreground">{item.userId?.name || "Member"} · {item.category}</p></div><Badge variant="outline" className="capitalize">{item.status}</Badge></div></div>) : <p className="py-10 text-center text-sm text-muted-foreground">No feedback yet.</p>}</CardContent></Card></div></div>;
 }

@@ -1,5 +1,7 @@
 # M5 workflow integrity and scope decisions
 
+> Historical record: the clinical workflows and control counts described here predate the 2026-08-14 focus-domain rebuild. The current interaction inventory is `docs/audits/m5-interactive-controls.json` (203 controls, zero unresolved).
+
 Status: implemented and technically verified on 2026-08-03. Workspace paths and generated control evidence were refreshed on 2026-08-14. Public launch remains blocked by the M0 governance gates.
 
 ## Control and route audit

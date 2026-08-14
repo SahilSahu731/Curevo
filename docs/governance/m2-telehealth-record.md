@@ -1,5 +1,7 @@
 # M2 Telehealth Privacy, Reliability, and Safety Record
 
+> Historical record: the telehealth, appointment, queue, WebRTC, and Socket.IO runtime described below was removed on 2026-08-14. This document is retained only as an audit trail.
+
 ## Implemented controls
 
 - `apps/web/server.mjs` attaches Next.js, the Express API, and Socket.IO to one persistent HTTP server. Pages, REST requests, OAuth callbacks, and WebSocket upgrades therefore use one configured origin by default; additional browser origins remain denied unless explicitly allowlisted.

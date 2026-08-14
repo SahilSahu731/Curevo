@@ -19,6 +19,8 @@ import {
 
 export const safeUser = (user) => {
   const value = user.toObject ? user.toObject() : { ...user };
+  value.role = value.role === "admin" ? "admin" : "member";
+  delete value.adminScope;
   delete value.password;
   delete value.providerId;
   delete value.profileImagePublicId;
@@ -32,7 +34,7 @@ const authResponse = (res, status, user, extra = {}) => res.status(status).json(
 });
 
 export const register = async (req, res) => {
-  const { name, email, password, role, acceptedTerms, policyVersion, remember = false } = req.body;
+  const { name, email, password, acceptedTerms, policyVersion, remember = false } = req.body;
   try {
     if (!acceptedTerms || policyVersion !== POLICY_VERSION) {
       return res.status(400).json({ success: false, error: "Review and accept the current Terms and Privacy Notice", requestId: req.id });
@@ -44,7 +46,7 @@ export const register = async (req, res) => {
       return res.status(400).json({ success: false, error: "Unable to create an account with these details", requestId: req.id });
     }
 
-    const user = await User.create({ name, email, password, role, provider: "local" });
+    const user = await User.create({ name, email, password, role: "member", provider: "local" });
     try {
       await Consent.create({
         userId: user._id,
@@ -115,8 +117,6 @@ export const login = async (req, res) => {
 
 export const logout = async (req, res) => {
   await revokeSessionToken(req.cookies[SESSION_COOKIE], "logout");
-  const { disconnectSession } = await import("../config/socket.js");
-  disconnectSession(req.authSession?._id?.toString());
   clearAuthCookie(res);
   clearAuthCookie(res, MFA_COOKIE);
   await writeAuditEvent(req, "session-revocation", "success", { metadata: { scope: "current" } });
@@ -125,8 +125,6 @@ export const logout = async (req, res) => {
 
 export const logoutAll = async (req, res) => {
   await revokeUserSessions(req.user._id, "logout-all");
-  const { disconnectUserSessions } = await import("../config/socket.js");
-  disconnectUserSessions(req.user._id.toString());
   clearAuthCookie(res);
   clearAuthCookie(res, MFA_COOKIE);
   await writeAuditEvent(req, "session-revocation", "success", { metadata: { scope: "all" } });

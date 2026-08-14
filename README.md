@@ -1,24 +1,24 @@
 # Curevo
 
-Curevo is a single full-stack Next.js workspace. The browser application, REST API,
-MongoDB domain layer, and Socket.IO realtime server all live in `apps/web` and run
-from one persistent Node process.
+Curevo is a single full-stack Next.js workspace for self-guided focus and everyday
+wellbeing. Members can run distraction-aware focus sessions, build flexible
+routines, write private reflections, and review descriptive patterns without
+scores, streak penalties, or diagnostic labels.
 
-The requested product direction is self-guided wellbeing and focus support for
-everyday overwhelm, distraction, and procrastination. That direction has not been
-approved as a wellness product or for public launch. Curevo is not a medical service,
-crisis service, diagnostic tool, treatment, cure, or substitute for professional
-care. Existing clinical workflow code remains review-only while it is separated from
-the proposed product domain.
+The browser application, Express API adapter, MongoDB domain layer, and operational
+scripts all live in `apps/web` and run from one Node process. The former doctor,
+clinic, appointment, queue, telehealth, and medical-record product domains have
+been removed from the runtime.
+
+Curevo is not medical care, therapy, crisis response, diagnosis, or treatment.
+The current deployment remains review-only until privacy, safety, and operational
+release gates are approved.
 
 ## Workspace
 
-- `apps/web` — the complete Next.js application and server runtime
+- `apps/web` — complete Next.js application and server runtime
 - `apps/app` — reserved for a future app; intentionally empty except for `.gitkeep`
 - `docs` — governance, safety, and architecture records
-
-See the [repository analysis](docs/repository-analysis.md) for the migration
-decision, audited inventory, retained legacy risks, and verification boundaries.
 
 ## Local development
 
@@ -29,19 +29,19 @@ npm run dev
 ```
 
 Open `http://localhost:3000`. Copy `apps/web/.env.example` to
-`apps/web/.env.local` and provide the required local values before exercising
-authenticated API flows.
+`apps/web/.env.local` and set a local Mongo URI and session secret before testing
+authenticated flows.
 
-## Verification
+## Verification and operations
 
 ```bash
 npm run verify
 npm run test:e2e:m6 --workspace @curevo/web
+npm run seed
+npm run migrate:focus-domain
+npm run notifications:routines
 ```
 
-The second command runs the refreshed responsive landing, navigation, pathfinder,
-theme, reduced-motion, and auth-hydration browser suite.
-
-Production writes, search indexing, and the existing wellness calculators stay
-disabled until their respective governance gates are completed. The controlling
-status remains **PUBLIC LAUNCH BLOCKED**.
+`migrate:focus-domain` converts legacy non-admin account roles to `member`; it does
+not import any clinical records into the new focus domain. Keep production writes
+and search indexing disabled until the documented release gates are complete.

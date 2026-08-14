@@ -18,8 +18,8 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
 const sessionSecretKey = ["SESSION", "SECRET"].join("_");
 
 test("OAuth redirects accept only same-site relative paths", () => {
-  assert.equal(safeRelativeRedirect("/book?doctorId=123"), "/book?doctorId=123");
-  assert.equal(safeRelativeRedirect("/queue/abc#status"), "/queue/abc#status");
+  assert.equal(safeRelativeRedirect("/dashboard/focus?duration=25"), "/dashboard/focus?duration=25");
+  assert.equal(safeRelativeRedirect("/dashboard/routines#morning"), "/dashboard/routines#morning");
   assert.equal(safeRelativeRedirect("https://attacker.example/phish"), "");
   assert.equal(safeRelativeRedirect("//attacker.example/phish"), "");
   assert.equal(safeRelativeRedirect("/\\\\attacker.example"), "");

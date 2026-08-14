@@ -20,7 +20,7 @@ export default async function BlogArticlePage({ params }: { params: Promise<{ sl
           <div><dt className="font-semibold">Published</dt><dd className="mt-1 text-muted-foreground">{post.publishedAt}</dd></div>
           <div><dt className="font-semibold">Updated</dt><dd className="mt-1 text-muted-foreground">{post.updatedAt}</dd></div>
         </dl>
-        <p className="mt-6 border-l-4 border-border pl-4 text-sm leading-6 text-muted-foreground"><strong className="text-foreground">Medical review:</strong> {post.medicalReview}</p>
+        <p className="mt-6 border-l-4 border-border pl-4 text-sm leading-6 text-muted-foreground"><strong className="text-foreground">Safety review:</strong> {post.safetyReview}</p>
         <div className="mt-10 space-y-6 text-lg leading-8 text-muted-foreground">{post.paragraphs.map((paragraph) => <p key={paragraph}>{paragraph}</p>)}</div>
         <section className="mt-12"><h2 className="text-2xl font-semibold">Sources</h2><ul className="mt-4 space-y-2">{post.citations.map((citation) => <li key={citation.href}><Link className="text-primary underline" href={citation.href}>{citation.label}</Link></li>)}</ul></section>
         <section className="mt-10"><h2 className="text-2xl font-semibold">Corrections</h2>{post.corrections.length ? <ul className="mt-4 space-y-2">{post.corrections.map((item) => <li key={`${item.date}-${item.note}`}>{item.date}: {item.note}</li>)}</ul> : <p className="mt-3 text-muted-foreground">No corrections recorded.</p>}</section>

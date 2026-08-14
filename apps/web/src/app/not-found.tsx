@@ -14,7 +14,7 @@ export default function NotFound() {
         <p className="mt-3 text-muted-foreground">The address may be incorrect, or this workflow may no longer be available.</p>
         <div className="mt-7 flex flex-wrap justify-center gap-3">
           <Button asChild><Link href="/">Go home</Link></Button>
-          <Button asChild variant="outline"><Link href="/doctors">Find doctors</Link></Button>
+          <Button asChild variant="outline"><Link href="/blog">Browse the journal</Link></Button>
         </div>
       </section>
     </main>

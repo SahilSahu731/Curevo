@@ -46,19 +46,6 @@ export const authorize = (...roles) => (req, res, next) => {
   next();
 };
 
-export const authorizeAdminScope = (...scopes) => (req, res, next) => {
-  if (!req.user) return res.status(401).json({ success: false, error: "Authentication required", requestId: req.id });
-  if (req.user.role !== "admin" || !scopes.includes(req.user.adminScope || "operations")) {
-    return res.status(403).json({ success: false, error: "Your administrator scope does not permit this action", requestId: req.id });
-  }
-  next();
-};
-
-export const requireClinicalAdminScope = (req, res, next) => {
-  if (req.user?.role !== "admin") return next();
-  return authorizeAdminScope("compliance", "super-admin")(req, res, next);
-};
-
 export const requireVerifiedEmail = (req, res, next) => {
   if (req.user?.role === "admin") return next();
   if (!req.user?.emailVerifiedAt) {

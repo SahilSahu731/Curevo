@@ -1,20 +1,22 @@
 # Content claims inventory
 
-Review date: 2026-08-03. Owner and approver: **UNASSIGNED**. Approval expires before any public launch or whenever authentication, records, uploads, video, infrastructure, assessment logic, seed content, or provider verification changes.
+Review date: 2026-08-14. Owner and approver: **UNASSIGNED**.
 
-| Surface / previous wording | Evidence found | Disposition | Approved replacement |
+| Surface | Evidence | Allowed wording | Prohibited implication |
 |---|---|---|---|
-| Auth: thousands, HIPAA security, enterprise protection, top-rated verified clinicians | None | Removed | Pre-release workflow description and emergency limitation |
-| Home: provider logos and trust strip | No permission or relationship records | Removed | Review environment / synthetic-data warning |
-| Home: patient, clinician, uptime, and wait-time metrics | No analytics or source dataset | Removed | Four workflow steps |
-| Home: enterprise security, encryption-at-rest, instant booking | No assurance package or provider configuration evidence | Removed | Implemented controls and explicit limitations |
-| Health check: AI, clinical validation, accuracy and usage metrics | Code is deterministic browser-side arithmetic | Removed | Unvalidated fixed-rule educational calculator |
-| Telehealth: AI triage, rating/usage metrics, secure HD, online diagnosis, prescriptions, insurance, encryption/compliance | No supporting operation, agreements, or controls | Removed | Authorized scheduled video prototype with known limitations |
-| Provider pages: world-class, top-rated, verified/board-certified, success rate, honors, response time | Profile/review fields do not support these claims | Removed | Submitted data, observed reviews, and independent-confirmation notice |
-| Clinic pages: accreditation, facilities, fixed rating, premium care, services | No source fields or verification | Removed | Submitted listing and confirmation notice |
-| About/blog/careers: history, founders, team, milestones, awards, jobs, authors | Placeholder content only | Removed | Prototype scope, governance status, maintainer product notes |
-| Contact/footer/legal: company identity, address, phone, social accounts, jurisdiction | No verified operator details | Removed | Explicitly unassigned contacts and product status |
-| Profile: 2FA, email verification, security level, vital signs | Features/data do not exist | Removed | Data export and deletion controls |
-| Seed: approved licenses, reviews, clinics, medical records | Generated fixtures only | Must never be presented as real | UI warns that seed records may be synthetic |
+| Focus sessions | Timer, session persistence, distraction count, optional note | “Protect one clear block”; “notice and return” | Improved condition, clinical outcome, guaranteed productivity |
+| Routines | User-defined cue, time, days, completion count | Flexible routines; no streak penalty | Behavior treatment or validated intervention |
+| Reflections | Private member-owned notes and 1–5 self-description inputs | Notice patterns without grading yourself | Diagnostic assessment, risk score, mood diagnosis |
+| Progress | Descriptive aggregation of the member's stored activity | Minutes, sessions, patterns, recent activity | Health score, comparison, prognosis, efficacy |
+| Notifications | In-app/email preferences and routine reminders | Gentle invitation controlled by the member | Urgent monitoring, adherence supervision, clinician oversight |
+| Privacy | Export/deletion code and current data map | Describe the implemented controls exactly | Compliance certification or guaranteed provider deletion |
+| Product boundary | Terms, footer, landing safety section | Self-guided focus and everyday-wellbeing support | Cure, medical care, therapy, diagnosis, treatment, crisis response |
 
-No quantified, partner, regulatory, security, clinical, rating, availability, or social-proof wording may be added without an evidence link, evidence owner, approval date, exact approved wording, and review/expiry date in this table.
+Removed wording and surfaces include provider/clinic trust claims, patient and
+appointment metrics, clinical validation, health scores, telehealth security or
+availability claims, credential verification, prescriptions, care outcomes, and
+synthetic reviews/listings.
+
+No quantified outcome, partner, regulatory, security, clinical, rating,
+availability, or social-proof wording may be added without an evidence link, named
+owner, approval date, exact wording, and review/expiry date.

@@ -29,9 +29,8 @@ function safeRedirect(value: string | null) {
 }
 
 function destinationFor(role: string) {
-  if (role === "doctor") return "/doctor-dashboard"
   if (role === "admin") return "/admin-dashboard"
-  return "/"
+  return "/dashboard"
 }
 
 export default function RegisterPage() {
@@ -49,7 +48,7 @@ export default function RegisterPage() {
       formData.append("name", data.name)
       formData.append("email", data.email)
       formData.append("password", data.password)
-      formData.append("role", "patient")
+      formData.append("role", "member")
       formData.append("acceptedTerms", String(data.acceptedTerms))
       formData.append("policyVersion", "2026-08-03")
 

@@ -47,7 +47,7 @@ export default function AdminFeedbackPage() {
   const reset = (setter: (value: string) => void) => (value: string) => { setter(value); setPage(1); };
   const categories = source === "support"
     ? ["product", "account", "privacy", "accessibility", "complaint", "other"]
-    : ["complaint", "bug", "billing", "feature", "clinical", "other"];
+    : ["complaint", "bug", "billing", "feature", "content", "other"];
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-6 p-4 lg:p-8">

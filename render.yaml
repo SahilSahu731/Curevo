@@ -13,8 +13,6 @@ services:
         value: "false"
       - key: NEXT_PUBLIC_ALLOW_INDEXING
         value: "false"
-      - key: NEXT_PUBLIC_ENABLE_WELLNESS_TOOLS
-        value: "false"
       - key: CLIENT_URL
         sync: false
       - key: NEXT_PUBLIC_SITE_URL

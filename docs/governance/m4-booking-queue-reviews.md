@@ -1,5 +1,7 @@
 # M4 booking, queue, review, and notification record
 
+> Historical record: booking, clinic, clinician, queue, appointment, review, and related notification logic was removed on 2026-08-14. This document is retained only as an audit trail.
+
 Review date: 2026-08-03
 
 ## Implemented controls

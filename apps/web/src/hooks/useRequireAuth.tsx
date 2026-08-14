@@ -5,15 +5,14 @@ import { useRouter } from 'next/navigation'
 import { useAuthStore } from '@/store/authStore'
 
 type Options = {
-  role?: 'patient' | 'doctor' | 'admin'
+  role?: 'member' | 'admin'
   redirectTo?: string
   redirectIfAuthenticated?: boolean
 }
 
 const dashboardFor = (role?: string) => {
-  if (role === 'doctor') return '/doctor-dashboard'
   if (role === 'admin') return '/admin-dashboard'
-  return '/patient-dashboard'
+  return '/dashboard'
 }
 
 export default function useRequireAuth({ role, redirectTo = '/login', redirectIfAuthenticated = false }: Options = {}) {

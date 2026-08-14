@@ -46,7 +46,7 @@ const registration = new FormData();
 registration.set("name", "Runtime Check");
 registration.set("email", email);
 registration.set("password", password);
-registration.set("role", "patient");
+registration.set("role", "member");
 registration.set("acceptedTerms", "true");
 registration.set("policyVersion", "2026-08-03");
 

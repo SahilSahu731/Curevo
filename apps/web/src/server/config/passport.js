@@ -49,7 +49,7 @@ if (process.env.GOOGLE_CLIENT_ID) {
         profileImage: profile.photos?.[0]?.value,
         provider: "google",
         providerId: profile.id,
-        role: "patient",
+        role: "member",
       });
       return done(null, newUser);
     } catch (error) {

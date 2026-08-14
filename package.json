@@ -15,26 +15,17 @@
     "verify": "npm run verify --workspace @curevo/web",
     "seed": "npm run seed --workspace @curevo/web",
     "audit:data": "npm run audit:data --workspace @curevo/web",
-    "tag:legacy-seed": "npm run tag:legacy-seed --workspace @curevo/web",
-    "migrate:m3-records": "npm run migrate:m3-records --workspace @curevo/web",
     "retention:sweep": "npm run retention:sweep --workspace @curevo/web",
-    "notifications:reminders": "npm run notifications:reminders --workspace @curevo/web",
-    "migrate:m4-integrity": "npm run migrate:m4-integrity --workspace @curevo/web",
-    "migrate:m5-workflows": "npm run migrate:m5-workflows --workspace @curevo/web",
-    "doctors:verification-expiry": "npm run doctors:verification-expiry --workspace @curevo/web",
-    "verify:m4-concurrency": "npm run verify:m4-concurrency --workspace @curevo/web",
+    "notifications:routines": "npm run notifications:routines --workspace @curevo/web",
+    "migrate:focus-domain": "npm run migrate:focus-domain --workspace @curevo/web",
     "smoke:auth": "npm run smoke:auth --workspace @curevo/web"
   },
   "overrides": {
     "dompurify": "3.4.13",
-    "engine.io": "6.6.9",
     "form-data": "4.0.6",
     "path-to-regexp": "8.4.2",
     "postcss": "8.5.26",
-    "sharp": "0.35.3",
-    "socket.io-adapter": "2.5.8",
-    "socket.io-parser": "4.2.7",
-    "ws": "8.21.3"
+    "sharp": "0.35.3"
   },
   "engines": {
     "node": ">=22.0.0"
