@@ -48,7 +48,7 @@ are excluded from these source counts.
 
 - Root `package.json` owns the workspace scripts, lockfile, Node requirement, and
   security overrides.
-- `apps/web/server.mjs` prepares Next, creates the Express application, connects
+- `apps/web/server.ts` prepares Next, creates the Express application, connects
   MongoDB, and serves both page and API traffic from one persistent Node process.
 - Express owns `/api` except the explicit GET-only `/api/blog/preview` pass-through.
   Mutating APIs retain origin checks, CSRF protection, request limits, operator-key

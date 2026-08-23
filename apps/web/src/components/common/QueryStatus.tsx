@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { onlineManager, useIsFetching, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useSyncExternalStore } from "react";
+import { notifyManager, onlineManager, useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, RefreshCw, WifiOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,24 @@ export function QueryStatus() {
   const queryCache = queryClient.getQueryCache();
   const isFetching = useIsFetching();
   const online = useSyncExternalStore(subscribeToOnlineStatus, getOnlineStatus, () => true);
+  const subscribeToQueryCache = useCallback(
+    (callback: () => void) => queryCache.subscribe(notifyManager.batchCalls(callback)),
+    [queryCache],
+  );
+  const getQueryCacheSnapshot = useCallback(
+    () =>
+      queryCache
+        .getAll()
+        .map(
+          (query) =>
+            `${query.queryHash}:${query.state.status}:${query.state.dataUpdatedAt}:${query.state.errorUpdatedAt}`,
+        )
+        .join("|"),
+    [queryCache],
+  );
   const cacheVersion = useSyncExternalStore(
-    (callback) => queryCache.subscribe(callback),
-    () => queryCache.getAll().map((query) => `${query.queryHash}:${query.state.status}:${query.state.dataUpdatedAt}:${query.state.errorUpdatedAt}`).join("|"),
+    subscribeToQueryCache,
+    getQueryCacheSnapshot,
     () => "",
   );
 

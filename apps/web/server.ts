@@ -7,18 +7,21 @@ import mongoose from "mongoose";
 import next from "next";
 
 const webRoot = path.dirname(fileURLToPath(import.meta.url));
-const development = process.env.NODE_ENV !== "production";
 
 // Local-only values may override the shared file; deployed environment variables
 // continue to take precedence because dotenv does not overwrite process.env.
 dotenv.config({ path: path.join(webRoot, ".env.local"), quiet: true });
 dotenv.config({ path: path.join(webRoot, ".env"), quiet: true });
 
+// Runtime URLs must be derived only after the project environment has loaded.
+// Otherwise a configured port (for example localhost:5000) silently falls back
+// to 3000 and Google OAuth returns to the wrong Next.js origin.
+const development = process.env.NODE_ENV !== "production";
 const port = Number(process.env.PORT || 3000);
 const hostname = process.env.BIND_HOST || "0.0.0.0";
 const localOrigin = `http://localhost:${port}`;
 
-const legacyLocalOrigin = (value) => /^http:\/\/(?:localhost|127\.0\.0\.1):5000\/?$/.test(value || "");
+const legacyLocalOrigin = (value?: string) => /^http:\/\/(?:localhost|127\.0\.0\.1):5000\/?$/.test(value || "");
 if (development && (!process.env.CLIENT_URL || legacyLocalOrigin(process.env.CLIENT_URL))) {
   // The former split app may still have port 5000 values in a developer's ignored
   // env files. Same-origin development deliberately normalizes those values.
@@ -52,7 +55,7 @@ httpServer.listen(port, hostname, () => {
 });
 
 let closing = false;
-const close = async (signal) => {
+const close = async (signal: string) => {
   if (closing) return;
   closing = true;
   console.log(`Received ${signal}; closing Curevo cleanly.`);

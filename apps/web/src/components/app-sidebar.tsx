@@ -6,6 +6,7 @@ import {
   BarChart3,
   Bell,
   BookHeart,
+  BookOpenText,
   CircleUserRound,
   Focus,
   LayoutDashboard,
@@ -46,6 +47,8 @@ const memberItems = [
 
 const adminItems = [
   { title: "Overview", url: "/admin-dashboard", icon: LayoutDashboard },
+  { title: "Content", url: "/admin-dashboard/content", icon: BookOpenText },
+  { title: "Analytics", url: "/admin-dashboard/analytics", icon: BarChart3 },
   { title: "Members", url: "/admin-dashboard/users", icon: Users },
   { title: "Feedback", url: "/admin-dashboard/feedback", icon: MessageSquareText },
   { title: "Notifications", url: "/admin-dashboard/notifications", icon: Bell },

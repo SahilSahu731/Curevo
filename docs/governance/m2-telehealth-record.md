@@ -4,7 +4,7 @@
 
 ## Implemented controls
 
-- `apps/web/server.mjs` attaches Next.js, the Express API, and Socket.IO to one persistent HTTP server. Pages, REST requests, OAuth callbacks, and WebSocket upgrades therefore use one configured origin by default; additional browser origins remain denied unless explicitly allowlisted.
+- `apps/web/server.ts` attaches Next.js and the Express API to one persistent HTTP server. Pages, REST requests, and OAuth callbacks therefore use one configured origin by default; additional browser origins remain denied unless explicitly allowlisted.
 - Socket.IO authenticates the `curevo_session` cookie against the revocable `Session` collection on handshake and on every protected event. Expired, revoked, missing, inactive-user, cross-origin, and malformed connections are rejected.
 - Event payloads use strict Zod schemas, bounded SDP/candidate sizes, a socket buffer limit, connection/join/signaling/malformed-payload budgets, and correlation IDs. Production audit metadata stores hashes and identifiers only; media and health content are never logged.
 - Queue rooms require appointment ownership or the assigned clinician/admin scope. Telehealth rooms are appointment-backed and require a short-lived HMAC grant bound to appointment, opaque room ID, user, role, and grant version. Status/cancellation changes revoke grants. A room has at most two participants, and join/leave/denial/start/end events are audited.

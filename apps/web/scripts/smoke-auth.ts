@@ -1,11 +1,13 @@
+export {};
+
 const baseUrl = (process.env.TEST_API_URL || "http://127.0.0.1:3000").replace(/\/$/, "");
 const origin = process.env.TEST_ORIGIN || "http://localhost:3000";
 const email = `migration-smoke-${Date.now()}@example.com`;
 const password = "A9!VioletHarbor2026";
-const cookies = new Map();
+const cookies = new Map<string, string>();
 let csrfToken = "";
 
-const updateCookies = (response) => {
+const updateCookies = (response: Response) => {
   for (const value of response.headers.getSetCookie()) {
     const [pair] = value.split(";");
     const separator = pair.indexOf("=");
@@ -16,7 +18,7 @@ const updateCookies = (response) => {
   }
 };
 
-const request = async (path, options = {}) => {
+const request = async (path: string, options: RequestInit = {}) => {
   const method = options.method || "GET";
   const headers = new Headers(options.headers);
   headers.set("Origin", origin);
@@ -30,11 +32,11 @@ const request = async (path, options = {}) => {
     signal: options.signal || AbortSignal.timeout(30_000),
   });
   updateCookies(response);
-  const body = await response.json().catch(() => ({}));
+  const body = await response.json().catch(() => ({})) as Record<string, any>;
   return { response, body };
 };
 
-const expect = (condition, message) => {
+const expect = (condition: unknown, message: string) => {
   if (!condition) throw new Error(message);
 };
 

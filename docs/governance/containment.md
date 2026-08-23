@@ -11,7 +11,7 @@ disabled unless `NEXT_PUBLIC_ALLOW_INDEXING=true`.
 
 | Surface | Evidence | Audience | Status |
 |---|---|---|---|
-| Local full-stack workspace | root workspace; `apps/web/server.mjs`; local Mongo container | Developers | Review-only; synthetic data |
+| Local full-stack workspace | root workspace; `apps/web/server.ts`; local Mongo container | Developers | Review-only; synthetic data |
 | Render service configuration | `render.yaml`; URL/account not discoverable from source | Private reviewers only | Deployment and collected data unverified |
 | MongoDB | `MONGO_URI`; local Docker volume; provider not identified | Application | Database/backup owners and regions unassigned |
 | Cloudinary | Profile-image integration | Authenticated members | Account, objects, logs, region, deletion and contract unverified |

@@ -58,3 +58,13 @@ test("review deployments are noindex and production writes are opt-in", () => {
   assert.match(read("src/app/robots.ts"), /NEXT_PUBLIC_ALLOW_INDEXING/);
   assert.match(readRepo("render.yaml"), /ALLOW_PRODUCTION_WRITES[\s\S]*"false"/);
 });
+
+test("runtime origin is resolved after env loading so OAuth returns to the configured port", () => {
+  const server = read("server.ts");
+  const envLoadedAt = server.indexOf('dotenv.config({ path: path.join(webRoot, ".env")');
+  const portResolvedAt = server.indexOf("const port = Number(process.env.PORT || 3000)");
+  assert.ok(envLoadedAt >= 0, "server must load its project environment");
+  assert.ok(portResolvedAt > envLoadedAt, "server must resolve PORT after loading the environment");
+  assert.match(server, /process\.env\.CLIENT_URL = localOrigin/);
+  assert.match(server, /process\.env\.GOOGLE_CALLBACK_URL = `\$\{localOrigin\}\/api\/auth\/google\/callback`/);
+});

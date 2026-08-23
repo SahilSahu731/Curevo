@@ -5,6 +5,8 @@ import FocusSession from "../models/focusSession.model.js";
 import Reflection from "../models/reflection.model.js";
 import Routine from "../models/routine.model.js";
 import User from "../models/user.model.js";
+import BlogPost from "../models/blogPost.model.js";
+import SupportTicket from "../models/supportTicket.model.js";
 import { writeAuditEvent } from "../utils/audit.js";
 import { revokeUserSessions } from "../utils/session.js";
 
@@ -19,20 +21,42 @@ export const getDashboardStats = async (req, res) => {
     const weekStart = new Date();
     weekStart.setDate(weekStart.getDate() - 6);
     weekStart.setHours(0, 0, 0, 0);
-    const [members, activeRoutines, completedSessions, reflections, openFeedback, usageByDay, recentFeedback] = await Promise.all([
+    const growthStart = new Date();
+    growthStart.setDate(growthStart.getDate() - 13);
+    growthStart.setHours(0, 0, 0, 0);
+    const [members, totalUsers, suspendedUsers, activeRoutines, completedSessions, reflections, openFeedback, openSupport, usageByDay, recentFeedback, userGrowth, blogSummary, recentPosts] = await Promise.all([
       User.countDocuments({ role: { $ne: "admin" }, status: "active" }),
+      User.countDocuments(),
+      User.countDocuments({ status: "suspended" }),
       Routine.countDocuments({ active: true }),
       FocusSession.countDocuments({ status: "completed" }),
       Reflection.countDocuments(),
       Feedback.countDocuments({ status: { $in: ["open", "in-review"] } }),
+      SupportTicket.countDocuments({ status: { $in: ["accepted", "in-review"] } }),
       FocusSession.aggregate([
         { $match: { status: "completed", startedAt: { $gte: weekStart } } },
         { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$startedAt" } }, minutes: { $sum: "$durationMinutes" }, sessions: { $sum: 1 } } },
         { $sort: { _id: 1 } },
       ]),
       Feedback.find({}).populate("userId", "name email role").sort({ createdAt: -1 }).limit(5).lean(),
+      User.aggregate([
+        { $match: { createdAt: { $gte: growthStart } } },
+        { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, users: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]),
+      BlogPost.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 }, views: { $sum: "$viewCount" } } },
+      ]),
+      BlogPost.find({ status: { $ne: "archived" } }).select("title slug status updatedAt viewCount").sort({ updatedAt: -1 }).limit(5).lean(),
     ]);
-    res.json({ success: true, stats: { members, activeRoutines, completedSessions, reflections, openFeedback, usageByDay }, recentFeedback });
+    const content = Object.fromEntries(blogSummary.map((item) => [item._id, item.count]));
+    const totalViews = blogSummary.reduce((sum, item) => sum + item.views, 0);
+    res.json({
+      success: true,
+      stats: { members, totalUsers, suspendedUsers, activeRoutines, completedSessions, reflections, openFeedback, openSupport, usageByDay, userGrowth, content: { ...content, totalViews } },
+      recentFeedback,
+      recentPosts,
+    });
   } catch {
     res.status(500).json({ success: false, error: "Could not load the administration overview" });
   }

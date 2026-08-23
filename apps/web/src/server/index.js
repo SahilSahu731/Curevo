@@ -14,6 +14,7 @@ import feedbackRoutes from "./routes/feedback.routes.js";
 import focusRoutes from "./routes/focus.routes.js";
 import notificationRoutes from "./routes/notification.routes.js";
 import supportRoutes from "./routes/support.routes.js";
+import blogRoutes from "./routes/blog.routes.js";
 import { validateCsrf } from "./middlewares/csrf.middleware.js";
 import { enforceProductionFreeze } from "./middlewares/productionFreeze.middleware.js";
 import { correlationId, noStore, rejectOperatorInjection } from "./middlewares/requestSecurity.middleware.js";
@@ -86,6 +87,7 @@ export function createApplication({ nextHandler } = {}) {
   app.use("/api/admin", adminRoutes);
   app.use("/api/notifications", notificationRoutes);
   app.use("/api/support", supportRoutes);
+  app.use("/api/blog", blogRoutes);
 
   app.use("/api", (req, res) => {
     res.status(404).json({ success: false, error: "Route not found", requestId: req.id });

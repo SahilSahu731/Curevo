@@ -5,12 +5,12 @@ const root = path.resolve(import.meta.dirname, "..");
 const appRoot = path.join(root, "src/app");
 const sourceRoot = path.join(root, "src");
 
-const walk = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+const walk = (directory: string): string[] => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
   const full = path.join(directory, entry.name);
   return entry.isDirectory() ? walk(full) : [full];
 });
 
-const routeForPage = (file) => {
+const routeForPage = (file: string) => {
   const relative = path.relative(appRoot, path.dirname(file));
   const segments = relative.split(path.sep).filter((part) => part && !part.startsWith("("));
   return `/${segments.join("/")}`.replace(/\/$/, "") || "/";
@@ -21,8 +21,8 @@ const routePatterns = walk(appRoot).filter((file) => file.endsWith("page.tsx")).
   pattern: new RegExp(`^${route.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\[[^/]+\\\]/g, "[^/]+")}/?$`),
 }));
 const sourceFiles = walk(sourceRoot).filter((file) => /\.(tsx?|css)$/.test(file));
-const links = [];
-const assets = [];
+const links: Array<{ file: string; target: string }> = [];
+const assets: Array<{ file: string; target: string }> = [];
 
 for (const file of sourceFiles) {
   const text = fs.readFileSync(file, "utf8");

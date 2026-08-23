@@ -4,13 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "node server.mjs",
+    "dev": "node --import tsx server.ts",
     "build": "next build",
-    "start": "NODE_ENV=production node server.mjs",
+    "start": "NODE_ENV=production node --import tsx server.ts",
     "lint": "eslint",
     "test": "node --test src/server/tests/*.test.js",
-    "check:links": "node scripts/check-internal-links.mjs",
-    "audit:controls": "node scripts/audit-controls.mjs",
+    "check:links": "node --import tsx scripts/check-internal-links.ts",
+    "audit:controls": "node --import tsx scripts/audit-controls.ts",
     "test:e2e:m6": "playwright test tests/e2e/m6-responsive.spec.ts",
     "verify:m0": "npm test",
     "verify:m1": "npm test",
@@ -22,7 +22,8 @@
     "retention:sweep": "node src/server/scripts/retentionSweep.js",
     "notifications:routines": "node src/server/scripts/sendRoutineReminders.js",
     "migrate:focus-domain": "node src/server/scripts/migrateFocusDomain.js",
-    "smoke:auth": "node scripts/smoke-auth.mjs"
+    "migrate:blog": "node src/server/scripts/migrateBlogContent.js",
+    "smoke:auth": "node --import tsx scripts/smoke-auth.ts"
   },
   "dependencies": {
     "@fontsource/outfit": "^5.2.8",
@@ -54,8 +55,8 @@
     "axios": "1.18.0",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
-    "clsx": "^2.1.1",
     "cloudinary": "2.10.0",
+    "clsx": "^2.1.1",
     "compression": "^1.8.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -82,6 +83,7 @@
     "recharts": "3.10.1",
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.4.0",
+    "tsx": "^4.23.12",
     "vaul": "^1.1.2",
     "zod": "^4.4.3",
     "zustand": "^5.0.8"

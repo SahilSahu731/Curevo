@@ -5,8 +5,8 @@ const root = path.resolve(import.meta.dirname, "..");
 const sourceRoot = path.join(root, "src");
 const output = path.resolve(root, "../../docs/audits/m5-interactive-controls.json");
 const tags = ["form", "Link", "a", "Button", "button", "Input", "Textarea", "Select", "DropdownMenuItem", "Dialog", "AlertDialog", "Card"];
-const walk = (directory) => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? walk(path.join(directory, entry.name)) : [path.join(directory, entry.name)]);
-const records = [];
+const walk = (directory: string): string[] => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => entry.isDirectory() ? walk(path.join(directory, entry.name)) : [path.join(directory, entry.name)]);
+const records: Array<{ file: string; line: number; control: string; classification: string }> = [];
 
 for (const file of walk(sourceRoot).filter((item) => item.endsWith(".tsx"))) {
   const text = fs.readFileSync(file, "utf8");

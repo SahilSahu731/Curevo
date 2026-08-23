@@ -6,7 +6,7 @@ This package is the complete Curevo runtime:
 - Browser state and same-origin API clients live in `src/store`, `src/api`, and `src/lib`.
 - The existing REST, MongoDB, upload, auth, and Socket.IO implementation lives in
   `src/server`.
-- `server.mjs` starts Next.js and the API on one HTTP server so pages, `/api/*`, and
+- `server.ts` starts Next.js and the API on one HTTP server so pages, `/api/*`, and
   Socket.IO share a single origin and deployment.
 
 Run commands from the repository root:

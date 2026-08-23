@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import LandingPathfinder from "@/components/home/LandingPathfinder";
+import LatestJournal from "@/components/home/LatestJournal";
 
 const paths = [
   {
@@ -74,6 +75,19 @@ const principles = [
   "No clinical labels or automated risk scores",
   "Short practices with a clear beginning and end",
   "Honest boundaries around what the product cannot do",
+];
+
+const everydayMoments = [
+  { label: "08:42", title: "The task has been open for an hour.", copy: "Shrink the doorway until beginning feels almost ordinary.", tone: "bg-[#dce9d7] text-[#244c3a] dark:bg-emerald-950 dark:text-emerald-100" },
+  { label: "14:10", title: "Everything suddenly feels equally urgent.", copy: "Take the pile out of your head and choose what actually belongs to now.", tone: "bg-[#f7dfb8] text-[#70471e] dark:bg-amber-950 dark:text-amber-100" },
+  { label: "22:36", title: "Your mind keeps reopening the same thought.", copy: "Make a little distance without demanding that the thought disappear.", tone: "bg-[#eadcf0] text-[#5c3c68] dark:bg-violet-950 dark:text-violet-100" },
+];
+
+const commonQuestions = [
+  ["Is Curevo therapy?", "No. Curevo offers self-guided practices for everyday focus and wellbeing. It does not diagnose, treat, provide therapy, or respond to emergencies."],
+  ["What happens if I miss days?", "Nothing punitive. There are no streak penalties. Return whenever the product feels useful and start from where you are."],
+  ["Do my reflections receive a score?", "No. Reflections remain descriptive. Curevo does not turn your words into a clinical, productivity, or risk score."],
+  ["How long does a practice take?", "Most are designed around a small container—from two minutes to a short focus block—with a clear stopping point."],
 ];
 
 export default function LandingPage() {
@@ -296,7 +310,16 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section id="safety" className="scroll-mt-24 px-5 pb-24 sm:px-8 lg:pb-32">
+      <section className="px-5 pb-24 sm:px-8 lg:pb-32">
+        <div className="mx-auto max-w-[1400px]">
+          <div className="grid gap-10 lg:grid-cols-[.72fr_1.28fr] lg:items-end"><div><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Built for the middle of real life</p><h2 className="mt-4 text-balance text-4xl font-semibold leading-[1.05] tracking-[-0.045em] sm:text-6xl">Support that meets the moment, not the ideal day.</h2></div><p className="max-w-xl text-lg leading-8 text-muted-foreground lg:justify-self-end">Curevo is not reserved for calm mornings and perfect routines. It is designed for the awkward minutes when attention, energy, and intention stop lining up.</p></div>
+          <div className="mt-14 grid gap-4 lg:grid-cols-3">{everydayMoments.map((moment, index) => <article key={moment.label} className={`flex min-h-80 flex-col rounded-[2rem] p-7 sm:p-8 ${moment.tone} ${index === 1 ? "lg:-translate-y-5" : ""}`}><div className="flex items-center justify-between"><span className="font-mono text-xs font-bold opacity-65">{moment.label}</span><span className="size-2 rounded-full bg-current opacity-45" /></div><div className="mt-auto"><h3 className="text-3xl font-semibold leading-tight tracking-[-0.03em]">{moment.title}</h3><p className="mt-4 leading-7 opacity-75">{moment.copy}</p></div></article>)}</div>
+        </div>
+      </section>
+
+      <LatestJournal />
+
+      <section id="safety" className="scroll-mt-24 px-5 py-24 sm:px-8 lg:py-32">
         <div className="mx-auto max-w-[1400px] overflow-hidden rounded-[2rem] bg-[#1f382d] text-white dark:bg-[#12251c]">
           <div className="grid lg:grid-cols-[.8fr_1.2fr]">
             <div className="relative overflow-hidden border-b border-white/10 p-8 sm:p-12 lg:border-b-0 lg:border-r lg:p-14">
@@ -314,6 +337,13 @@ export default function LandingPage() {
               <p className="mt-6 text-sm leading-6 text-white/55">For ongoing or worsening distress, consider speaking with a licensed mental health professional who can understand your situation.</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="border-t border-border px-5 py-24 sm:px-8 lg:py-32">
+        <div className="mx-auto grid max-w-[1200px] gap-12 lg:grid-cols-[.72fr_1.28fr] lg:gap-24">
+          <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Questions, answered plainly</p><h2 className="mt-4 text-balance text-4xl font-semibold leading-[1.05] tracking-[-0.045em] sm:text-6xl">Know what this space is—and what it is not.</h2></div>
+          <div className="divide-y divide-border border-y border-border">{commonQuestions.map(([question, answer], index) => <details key={question} className="group py-6"><summary className="flex cursor-pointer list-none items-center gap-5 font-semibold"><span className="font-mono text-xs text-[#bd624b] dark:text-[#ef9f88]">0{index + 1}</span><span className="text-xl tracking-tight sm:text-2xl">{question}</span><span className="ml-auto text-2xl font-light text-muted-foreground transition group-open:rotate-45">+</span></summary><p className="ml-11 mt-4 max-w-2xl leading-7 text-muted-foreground">{answer}</p></details>)}</div>
         </div>
       </section>
 

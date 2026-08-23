@@ -3,7 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "workspaces": [
-    "apps/web"
+    "apps/web",
+    "apps/app"
   ],
   "scripts": {
     "dev": "npm run dev --workspace @curevo/web",
@@ -18,7 +19,11 @@
     "retention:sweep": "npm run retention:sweep --workspace @curevo/web",
     "notifications:routines": "npm run notifications:routines --workspace @curevo/web",
     "migrate:focus-domain": "npm run migrate:focus-domain --workspace @curevo/web",
-    "smoke:auth": "npm run smoke:auth --workspace @curevo/web"
+    "migrate:blog": "npm run migrate:blog --workspace @curevo/web",
+    "smoke:auth": "npm run smoke:auth --workspace @curevo/web",
+    "mobile:start": "npm run start --workspace @curevo/app",
+    "mobile:android": "npm run android --workspace @curevo/app",
+    "mobile:ios": "npm run ios --workspace @curevo/app"
   },
   "overrides": {
     "dompurify": "3.4.13",

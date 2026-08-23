@@ -1,6 +1,29 @@
 import { z } from "zod";
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+const blogBlock = z.object({
+  blockId: z.string().trim().min(1).max(80),
+  type: z.enum(["paragraph", "heading-2", "heading-3", "quote", "callout", "bulleted-list", "numbered-list", "divider"]),
+  content: z.string().trim().max(10_000).default(""),
+  items: z.array(z.string().trim().max(500)).max(100).default([]),
+  tone: z.enum(["sage", "amber", "rose", "violet"]).default("sage"),
+}).strict();
+
+const blogFields = {
+  title: z.string().trim().min(3).max(180),
+  slug: z.string().trim().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/).max(180).optional(),
+  excerpt: z.string().trim().min(20).max(500),
+  category: z.string().trim().min(2).max(50),
+  tags: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
+  status: z.enum(["draft", "published", "archived"]).default("draft"),
+  featured: z.boolean().default(false),
+  coverImage: z.union([z.string().trim().url().max(2_000), z.literal("")]).default(""),
+  coverAlt: z.string().trim().max(240).default(""),
+  blocks: z.array(blogBlock).max(200).default([]),
+  metaTitle: z.string().trim().max(70).default(""),
+  metaDescription: z.string().trim().max(170).default(""),
+  canonicalUrl: z.union([z.string().trim().url().max(2_000), z.literal("")]).default(""),
+};
 
 export const authSchemas = {
   register: z.object({
@@ -135,5 +158,12 @@ export const adminSchemas = {
       targetEmail: z.string().trim().email().toLowerCase(),
       reason: z.string().trim().min(10).max(500),
     }).strict(),
+  }),
+  blogId: z.object({ params: z.object({ id: objectId }) }),
+  blogCreate: z.object({ body: z.object(blogFields).strict() }),
+  blogUpdate: z.object({
+    params: z.object({ id: objectId }),
+    body: z.object(Object.fromEntries(Object.entries(blogFields).map(([key, schema]) => [key, schema.optional()]))).strict()
+      .refine((value) => Object.keys(value).length > 0, "Provide at least one content update"),
   }),
 };
