@@ -16,7 +16,7 @@ export function AppearanceControl({ className }: { className?: string }) {
 
   return (
     <fieldset className={cn("space-y-2", className)}>
-      <legend className="text-sm font-semibold text-foreground">Appearance</legend>
+      {/* <legend className="text-sm font-semibold text-foreground">Appearance</legend> */}
       <div className="grid grid-cols-3 gap-1 rounded-md bg-muted p-1" role="radiogroup" aria-label="Appearance">
         {options.map(({ value, label, icon: Icon }) => {
           const selected = theme === value || (!theme && value === "light");

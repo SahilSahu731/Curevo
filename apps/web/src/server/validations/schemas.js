@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 const objectId = z.string().regex(/^[a-f\d]{24}$/i, "Invalid ObjectId");
+const blogImage = z.union([
+  z.string().trim().url().max(2_000),
+  z.string().trim().regex(/^\/(?!\/)[a-z0-9/_-]+\.(?:avif|gif|jpe?g|png|webp)$/i, "Invalid local image path").max(2_000),
+  z.literal(""),
+]);
 const blogBlock = z.object({
   blockId: z.string().trim().min(1).max(80),
   type: z.enum(["paragraph", "heading-2", "heading-3", "quote", "callout", "bulleted-list", "numbered-list", "divider"]),
@@ -17,7 +22,7 @@ const blogFields = {
   tags: z.array(z.string().trim().min(1).max(40)).max(12).default([]),
   status: z.enum(["draft", "published", "archived"]).default("draft"),
   featured: z.boolean().default(false),
-  coverImage: z.union([z.string().trim().url().max(2_000), z.literal("")]).default(""),
+  coverImage: blogImage.default(""),
   coverAlt: z.string().trim().max(240).default(""),
   blocks: z.array(blogBlock).max(200).default([]),
   metaTitle: z.string().trim().max(70).default(""),

@@ -33,7 +33,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem storageKey="curevo-theme" disableTransitionOnChange>
+      <ThemeProvider
+        attribute="class"
+        defaultTheme="light"
+        forcedTheme="light"
+        enableSystem={false}
+        storageKey="curevo-theme"
+        disableTransitionOnChange
+      >
         {children}
         <QueryStatus />
         <SonnerToaster position="top-right" />

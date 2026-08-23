@@ -6,7 +6,6 @@ import { toast } from "sonner";
 
 import { authAPI } from "@/api/auth";
 import { AppSidebar } from "@/components/app-sidebar";
-import { AppearanceControl } from "@/components/common/AppearanceControl";
 import { PageLoader } from "@/components/common/Loader";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -42,7 +41,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <p className="truncate text-sm font-semibold">Curevo workspace</p>
             <p className="flex items-center gap-1.5 text-xs text-muted-foreground"><CalendarDays className="size-3" />{today}</p>
           </div>
-          <AppearanceControl />
+          {/* Appearance controls can return when multiple themes are enabled. */}
         </header>
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
           {!user?.emailVerifiedAt && (

@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 
 import { BrandLogo } from "@/components/brand/BrandLogo";
-import { AppearanceControl } from "@/components/common/AppearanceControl";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -204,10 +203,6 @@ export default function GlobalNavbar() {
                     <Button asChild><Link href="/register">Create account</Link></Button>
                   </div>
                 )}
-              </div>
-
-              <div className="mt-auto border-t border-border px-5 py-5">
-                <AppearanceControl />
               </div>
             </SheetContent>
           </Sheet>
