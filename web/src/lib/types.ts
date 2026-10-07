@@ -1,0 +1,10 @@
+export type Emotion = { slug: string; name: string; symbol: string; color: string; category: 'warm' | 'heavy' | 'quiet' };
+export type Thought = { id: string; emotion: string; intensity: number; cause: string; thought: string; intention: string; createdAt: string; sameCount: number; hasSame?: boolean; saved?: boolean; visibility?: 'public' | 'private'; moderation?: string; outcome?: string; outcomeEligible?: boolean; eventSlug?: string };
+export type Distribution = { label: string; count: number; percentage: number };
+export type Pulse = { total: number; participants: number; window: string; emotions: { emotion: string; count: number; percentage: number }[]; causes: Distribution[]; intentions: Distribution[]; cohortMinimum: number; sufficientData: boolean; updatedAt: string };
+export type CheckInInput = { emotion: string; intensity: number; cause: string; thought: string; intention: string; visibility: 'public' | 'private'; participateInAggregates: boolean; ageConfirmed: boolean; eventSlug?: string; nowEventId?: string; turnstileToken?: string };
+export type CheckInResult = { checkin: Thought; mirror: Thought[]; pulse: Pulse; safety?: boolean; message?: string };
+export type FeedResult = { thoughts: Thought[]; nextCursor: string | null };
+export type Identity = { authenticated: boolean; googleEnabled: boolean; user?: { name: string; email: string; image?: string }; admin?: boolean; analyticsEnabled?: boolean; realtimeEnabled?: boolean; turnstileSiteKey?: string; betaRequired?: boolean };
+export type NowEvent = { id: string; startsAt: string; endsAt: string; status: 'upcoming' | 'active' | 'completed'; participantCount: number; pulse: Pulse };
+export type CurevoEvent = { slug: string; title: string; description: string; question: string; createdAt: string; active: boolean; sponsored?: boolean };

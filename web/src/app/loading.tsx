@@ -1,0 +1,1 @@
+export default function Loading(){return <section className="page-shell loading-page" aria-label="Loading Curevo"><div className="eyebrow">MAKING A LITTLE SPACE</div><div className="skeleton-heading"/><div className="thought-grid">{[1,2,3].map(i=><div className="skeleton-card" key={i}/>)}</div></section>;}
