@@ -11,7 +11,7 @@ type CheckInDoc = { _id: ObjectId; actorId: string; actorType: string; emotion: 
 type FeedOptions = { emotion?: string; cause?: string; q?: string; recent?: string; limit?: number; event?: string; cursor?: string; own?: boolean; saved?: boolean; ids?: string[] };
 export class DomainError extends Error { constructor(message: string, public status = 400) { super(message); } }
 export const DAY = 86_400_000;
-export const PUBLIC_FILTER = { visibility: 'public', 'moderation.status': 'approved' };
+export const PUBLIC_FILTER = { visibility: 'public', 'moderation.status': 'approved' } as const;
 
 export function objectId(id: string) {
   if (!/^[a-f0-9]{24}$/i.test(id)) throw new DomainError('That thought could not be found.', 404);
@@ -103,10 +103,12 @@ export async function getPulse(options: { emotion?: string; event?: string; nowE
   // and deletion, opt-out, or moderation changes cannot leave stale public counters.
   const [result] = await db.collection('checkins').aggregate<{ total: { count: number; participants: number }[]; emotions: Bucket[]; causes: Bucket[]; intentions: Bucket[] }>([
     { $match: filter },
-    { $facet: {
-      total: [{ $group: { _id: '$actorId', count: { $sum: 1 } } }, { $group: { _id: null, count: { $sum: '$count' }, participants: { $sum: 1 } } }],
-      emotions: distributionPipeline('emotion'), causes: distributionPipeline('cause'), intentions: distributionPipeline('intention'),
-    } },
+    {
+      $facet: {
+        total: [{ $group: { _id: '$actorId', count: { $sum: 1 } } }, { $group: { _id: null, count: { $sum: '$count' }, participants: { $sum: 1 } } }],
+        emotions: distributionPipeline('emotion'), causes: distributionPipeline('cause'), intentions: distributionPipeline('intention'),
+      }
+    },
   ], { maxTimeMS: 8000 }).toArray();
   const total = result?.total[0]?.count || 0;
   const participants = result?.total[0]?.participants || 0;
@@ -151,7 +153,7 @@ export async function createCheckIn(input: CheckInInput, actor: Actor): Promise<
     if (doc.nowEventId && input.participateInAggregates) await notify('curevo-now.updated', { id: doc.nowEventId });
   }
   const [mirror, pulse] = await Promise.all([getMirror(doc, actor), getPulse({ emotion: input.emotion, event: input.eventSlug })]);
-  return { checkin: toThought(doc, true), mirror, pulse, safety: moderation.safety, message: moderation.status === 'approved' ? (input.visibility === 'private' ? 'Your thought is saved privately.' : 'Your thought is part of the Pulse.') : moderation.status === 'pending' ? 'Your thought is saved and awaiting moderation before it can enter the public Pulse.' : 'Your thought is saved for you and will not enter public discovery. You can find support on our Safety page.' };
+  return { checkin: toThought(doc, true), mirror, pulse, safety: moderation.safety, message: input.visibility === 'private' ? 'Your thought is saved privately.' : moderation.status === 'approved' ? 'Your thought is part of the Pulse.' : moderation.status === 'pending' ? 'Your thought is saved and awaiting moderation before it can enter the public Pulse.' : 'Your thought is saved for you and will not enter public discovery. You can find support on our Safety page.' };
 }
 export async function getPublicThought(id: string): Promise<Thought | null> {
   if (!/^[a-f0-9]{24}$/i.test(id)) return null;
@@ -306,23 +308,25 @@ export async function deleteData(actor: Actor, scope: 'history' | 'account') {
 }
 export async function exportData(actor: Actor): Promise<Response> {
   const db = await getDb();
-  const collections = [ ['thoughts', 'checkins', { actorId: actor.id }], ['outcomes', 'outcomes', { actorId: actor.id }], ['reactions', 'reactions', { actorId: actor.id }], ['saved', 'savedThoughts', { userId: actor.id }], ['reports', 'reports', { reporterActorId: actor.id }] ] as const;
+  const collections = [['thoughts', 'checkins', { actorId: actor.id }], ['outcomes', 'outcomes', { actorId: actor.id }], ['reactions', 'reactions', { actorId: actor.id }], ['saved', 'savedThoughts', { userId: actor.id }], ['reports', 'reports', { reporterActorId: actor.id }]] as const;
   const encoder = new TextEncoder();
-  const stream = new ReadableStream({ async start(controller) {
-    try {
-      controller.enqueue(encoder.encode(`{"exportedAt":${JSON.stringify(new Date().toISOString())},"format":"curevo-v1"`));
-      for (const [label, collection, filter] of collections) {
-        controller.enqueue(encoder.encode(`,${JSON.stringify(label)}:[`));
-        let first = true;
-        for await (const doc of db.collection(collection).find(filter).batchSize(100)) {
-          const safe = { ...doc }; delete safe.actorId; delete safe.reporterActorId; delete safe.userId; delete safe.actorType;
-          controller.enqueue(encoder.encode(`${first ? '' : ','}${JSON.stringify(safe)}`)); first = false;
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        controller.enqueue(encoder.encode(`{"exportedAt":${JSON.stringify(new Date().toISOString())},"format":"curevo-v1"`));
+        for (const [label, collection, filter] of collections) {
+          controller.enqueue(encoder.encode(`,${JSON.stringify(label)}:[`));
+          let first = true;
+          for await (const doc of db.collection(collection).find(filter).batchSize(100)) {
+            const safe = { ...doc }; delete safe.actorId; delete safe.reporterActorId; delete safe.userId; delete safe.actorType;
+            controller.enqueue(encoder.encode(`${first ? '' : ','}${JSON.stringify(safe)}`)); first = false;
+          }
+          controller.enqueue(encoder.encode(']'));
         }
-        controller.enqueue(encoder.encode(']'));
-      }
-      controller.enqueue(encoder.encode('}')); controller.close();
-    } catch (error) { controller.error(error); }
-  } });
+        controller.enqueue(encoder.encode('}')); controller.close();
+      } catch (error) { controller.error(error); }
+    }
+  });
   return new Response(stream, { headers: { 'Content-Type': 'application/json', 'Content-Disposition': 'attachment; filename="curevo-data.json"', 'Cache-Control': 'no-store' } });
 }
 
@@ -336,7 +340,8 @@ export function nowSchedule(date: Date): Pick<NowEvent, 'id' | 'startsAt' | 'end
 }
 async function ensureNowEvent(event: Pick<NowEvent, 'id' | 'startsAt' | 'endsAt'>) {
   const db = await getDb();
-  await db.collection('curevoNowEvents').updateOne({ id: event.id }, { $setOnInsert: { id: event.id, startsAt: new Date(event.startsAt), endsAt: new Date(event.endsAt), createdAt: new Date() } }, { upsert: true });
+  try { await db.collection('curevoNowEvents').updateOne({ id: event.id }, { $setOnInsert: { id: event.id, startsAt: new Date(event.startsAt), endsAt: new Date(event.endsAt), createdAt: new Date() } }, { upsert: true }); }
+  catch (error) { if ((error as { code?: number }).code !== 11000) throw error; }
 }
 async function hydrateNow(event: { id: string; startsAt: Date; endsAt: Date }): Promise<NowEvent> {
   const pulse = await getPulse({ nowEventId: event.id, startsAt: event.startsAt, endsAt: event.endsAt });
@@ -372,7 +377,7 @@ export async function getAdmin(actor: Actor) {
   const db = await getDb();
   const [checkins, publicThoughts, pending, reports, participants, events] = await Promise.all([
     db.collection('checkins').countDocuments(), db.collection('checkins').countDocuments(PUBLIC_FILTER),
-    db.collection('checkins').countDocuments({ 'moderation.status': { $in: ['pending', 'limited', 'blocked'] } }),
+    db.collection('checkins').countDocuments({ visibility: 'public', 'moderation.status': { $in: ['pending', 'limited', 'blocked'] }, 'moderation.reviewedAt': { $exists: false } }),
     db.collection('reports').countDocuments({ status: 'open' }),
     db.collection('checkins').aggregate<{ count: number }>([{ $group: { _id: '$actorId' } }, { $count: 'count' }]).toArray(), getEvents(true),
   ]);
@@ -382,9 +387,9 @@ export async function moderationQueue(actor: Actor, cursor?: string) {
   if (!actor.admin) throw new DomainError('Administrator access required.', 403);
   const db = await getDb();
   const docs = await db.collection<CheckInDoc>('checkins').aggregate<CheckInDoc & { _reports: { reason: string; description?: string }[] }>([
-    { $match: cursorFilter(cursor) }, { $sort: { createdAt: -1, _id: -1 } },
+    { $match: { visibility: 'public', ...cursorFilter(cursor) } }, { $sort: { createdAt: -1, _id: -1 } },
     { $lookup: { from: 'reports', let: { id: { $toString: '$_id' } }, pipeline: [{ $match: { status: 'open', $expr: { $eq: ['$checkInId', '$$id'] } } }, { $project: { reason: 1, description: 1, _id: 0 } }, { $limit: 50 }], as: '_reports' } },
-    { $match: { $or: [{ 'moderation.status': { $in: ['pending', 'limited', 'blocked'] } }, { '_reports.0': { $exists: true } }] } }, { $limit: 21 },
+    { $match: { $or: [{ 'moderation.status': { $in: ['pending', 'limited', 'blocked'] }, 'moderation.reviewedAt': { $exists: false } }, { '_reports.0': { $exists: true } }] } }, { $limit: 21 },
   ]).toArray();
   const page = docs.slice(0, 20);
   return { items: page.map(doc => ({ ...toThought(doc, true), reasons: doc.moderation.reasons, reportCount: doc._reports.length, reports: doc._reports })), nextCursor: docs.length > 20 ? encodeCursor(page[page.length - 1]) : null };
@@ -392,10 +397,10 @@ export async function moderationQueue(actor: Actor, cursor?: string) {
 export async function moderateAction(input: { checkInId: string; action: 'approve' | 'limit' | 'remove' | 'ban'; reason: string; durationHours?: number }, actor: Actor) {
   if (!actor.admin) throw new DomainError('Administrator access required.', 403);
   const db = await getDb();
-  const doc = await db.collection<CheckInDoc>('checkins').findOne({ _id: objectId(input.checkInId) });
+  const doc = await db.collection<CheckInDoc>('checkins').findOne({ _id: objectId(input.checkInId), visibility: 'public' });
   if (!doc) throw new DomainError('This thought no longer exists.', 404);
   const status = input.action === 'approve' ? 'approved' : input.action === 'limit' ? 'limited' : 'blocked';
-  const moderation = { status, reasons: [input.reason], source: 'human', safety: doc.moderation.safety };
+  const moderation = { status, reasons: [input.reason], source: 'human', safety: doc.moderation.safety, reviewedAt: new Date() };
   await db.collection('checkins').updateOne({ _id: doc._id }, { $set: { moderation, updatedAt: new Date() } });
   if (input.action === 'ban') {
     await db.collection('actorBans').updateOne({ actorId: doc.actorId }, { $set: { permanent: !input.durationHours, expiresAt: input.durationHours ? new Date(Date.now() + input.durationHours * 3_600_000) : null, reason: input.reason, createdAt: new Date() } }, { upsert: true });
@@ -414,7 +419,8 @@ export async function getInvites(actor: Actor, generate = false) {
   if (!access) throw new DomainError('Redeem a beta invitation before inviting a friend.', 403);
   if (generate) {
     for (let slot = 1; slot <= 3; slot++) {
-      await db.collection('invitations').updateOne({ issuerActorId: actor.id, slot }, { $setOnInsert: { token: randomBytes(24).toString('base64url'), redeemedBy: null, createdAt: new Date(), expiresAt: new Date(Date.now() + 30 * DAY) } }, { upsert: true });
+      try { await db.collection('invitations').updateOne({ issuerActorId: actor.id, slot }, { $setOnInsert: { token: randomBytes(24).toString('base64url'), redeemedBy: null, createdAt: new Date(), expiresAt: new Date(Date.now() + 30 * DAY) } }, { upsert: true }); }
+      catch (error) { if ((error as { code?: number }).code !== 11000) throw error; }
     }
   }
   const invitations = await db.collection('invitations').find({ issuerActorId: actor.id }).sort({ slot: 1 }).limit(3).toArray();

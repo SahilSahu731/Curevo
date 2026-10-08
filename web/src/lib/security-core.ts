@@ -60,6 +60,7 @@ export const RATE_RULES: Record<string, { limit: number; seconds: number }> = {
   realtime: { limit: 20, seconds: 60 }, invite: { limit: 10, seconds: 600 },
   export: { limit: 5, seconds: 600 }, account: { limit: 10, seconds: 600 },
   outcome: { limit: 30, seconds: 600 }, admin: { limit: 120, seconds: 60 },
+  data: { limit: 15, seconds: 600 }, save: { limit: 90, seconds: 600 }, read: { limit: 120, seconds: 60 },
   default: { limit: 90, seconds: 60 },
 };
 

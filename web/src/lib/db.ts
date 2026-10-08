@@ -46,6 +46,7 @@ async function createIndexes(db: Db) {
     db.collection('actorBans').createIndex({ actorId: 1 }, { unique: true }),
     db.collection('events').createIndex({ slug: 1 }, { unique: true }),
     db.collection('curevoNowEvents').createIndex({ startsAt: -1 }, { unique: true }),
+    db.collection('curevoNowEvents').createIndex({ id: 1 }, { unique: true }),
     db.collection('moderationActions').createIndex({ createdAt: -1 }),
     db.collection('invitations').createIndex({ token: 1 }, { unique: true }),
     db.collection('invitations').createIndex({ issuerActorId: 1, slot: 1 }, { unique: true }),

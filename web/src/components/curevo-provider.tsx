@@ -41,11 +41,11 @@ export default function CurevoProvider({children}:{children:React.ReactNode}) {
     let dispose:(()=>void)|undefined; let cancelled=false;
     import('ably').then(({Realtime})=>{
       if(cancelled)return;
-      const client=new Realtime({authUrl:'/api/realtime/auth',authMethod:'GET'});
+      const client=new Realtime({authUrl:'/api/realtime/auth',authMethod:'POST'});
       client.connection.on('connected',()=>setConnection('Connected live'));
       client.connection.on('disconnected',()=>setConnection('Reconnecting · updates every 15s'));
       client.connection.on('failed',()=>setConnection('Updates every 15s'));
-      void client.channels.get('pulse:global').subscribe(()=>refresh());
+      void client.channels.get('curevo:public').subscribe('change',()=>refresh());
       dispose=()=>client.close();
     }).catch(()=>setConnection('Updates every 15s'));
     return()=>{cancelled=true;dispose?.();};

@@ -26,6 +26,20 @@ export async function migrateGuestToUser(guestId: string, userId: string) {
       await claims.insertOne({ guestId, userId, completedAt: new Date() }, { session });
       await db.collection('checkins').updateMany({ actorId: guestId }, { $set: { actorId: userId, actorType: 'user' } }, { session });
       await db.collection('outcomes').updateMany({ actorId: guestId }, { $set: { actorId: userId } }, { session });
+      await db.collection('invitations').updateMany({ redeemedBy: guestId }, { $set: { redeemedBy: userId } }, { session });
+      for await (const invitation of db.collection('invitations').find({ issuerActorId: guestId }, { session })) {
+        const collision = await db.collection('invitations').findOne({ issuerActorId: userId, slot: invitation.slot }, { session });
+        await db.collection('invitations').updateOne({ _id: invitation._id, issuerActorId: guestId }, { $set: { issuerActorId: userId, slot: collision ? `migrated:${guestId}:${invitation.slot}` : invitation.slot } }, { session });
+      }
+      for (const name of ['betaAccess', 'actorSettings']) {
+        const source = await db.collection(name).findOne({ actorId: guestId }, { session });
+        if (!source) continue;
+        const destination = await db.collection(name).findOne({ actorId: userId }, { session });
+        if (destination) {
+          if (name === 'actorSettings' && source.participateInAggregates === false) await db.collection(name).updateOne({ _id: destination._id }, { $set: { participateInAggregates: false } }, { session });
+          await db.collection(name).deleteOne({ _id: source._id, actorId: guestId }, { session });
+        } else await db.collection(name).updateOne({ _id: source._id, actorId: guestId }, { $set: { actorId: userId } }, { session });
+      }
 
       for (const { collection, field, key } of [
         { collection: 'reactions', field: 'actorId', key: 'checkInId' },
@@ -44,6 +58,12 @@ export async function migrateGuestToUser(guestId: string, userId: string) {
             await records.updateOne({ _id: record._id, [field]: guestId }, { $set: { [field]: userId } }, { session });
           }
         }
+      }
+      // Preserve other people's blocks when the blocked guest signs in.
+      for await (const block of db.collection('blockedActors').find({ blockedActorId: guestId }, { session })) {
+        const duplicate = await db.collection('blockedActors').findOne({ ownerActorId: block.ownerActorId, blockedActorId: userId }, { session });
+        if (duplicate) await db.collection('blockedActors').deleteOne({ _id: block._id, blockedActorId: guestId }, { session });
+        else await db.collection('blockedActors').updateOne({ _id: block._id, blockedActorId: guestId }, { $set: { blockedActorId: userId } }, { session });
       }
       const ban = await db.collection('actorBans').findOne({ actorId: guestId, $or: [{ permanent: true }, { expiresAt: { $gt: new Date() } }] }, { session });
       if (ban) {

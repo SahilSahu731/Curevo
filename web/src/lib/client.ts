@@ -1,7 +1,20 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
+export { track } from '@/lib/analytics';
+
+let identityBootstrap: Promise<unknown> | undefined;
+function initializeGuest() {
+  if (!identityBootstrap) identityBootstrap = fetch('/api/identity', { credentials: 'same-origin', cache: 'no-store' }).then(response => { if (!response.ok) throw new Error('Unable to initialize Curevo.'); return response.json(); }).catch(error => { identityBootstrap = undefined; throw error; });
+  return identityBootstrap;
+}
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+  // Finish the HttpOnly identity cookie before parallel resource requests. This
+  // prevents first-visit races from assigning multiple guest histories.
+  if (typeof window !== 'undefined') {
+    const identity = await initializeGuest();
+    if (path === '/api/identity') return identity as T;
+  }
   const res = await fetch(path, { ...init, headers: { 'Content-Type': 'application/json', ...init.headers }, credentials: 'same-origin', cache: 'no-store' });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || 'Something went wrong. Please try again.');
@@ -30,10 +43,6 @@ export function useResource<T>(path: string | null) {
     return () => { active = false; controller.abort(); clearInterval(timer); window.removeEventListener('curevo:update', updated); window.removeEventListener('online', updated); };
   }, [path, revision]);
   return { data, error, loading, refresh };
-}
-export function track(event: string) {
-  if (typeof window === 'undefined' || localStorage.getItem('curevo-analytics') !== 'yes') return;
-  void fetch('/api/analytics', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({event}) }).catch(()=>{});
 }
 export function formatTime(value: string) {
   const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000));

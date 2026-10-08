@@ -47,8 +47,11 @@ export async function guardRequest(request: Request, action: string) {
   const actor = await getActor();
   const rule = RATE_RULES[action] || RATE_RULES.default;
   await enforceRateLimit(`${action}:actor:${privateHash(actor.id)}`, rule.limit, rule.seconds);
-  const ban = await (await getDb()).collection('actorBans').findOne({ actorId: actor.id, $or: [{ permanent: true }, { expiresAt: { $gt: new Date() } }] });
-  if (ban) throw new ApiError('Posting is currently unavailable for this account. Please read the community guidelines.', 403);
+  // Moderation bans restrict participation, never access to export or deletion.
+  if (!['GET', 'HEAD'].includes(request.method) && !['data', 'analytics', 'realtime'].includes(action)) {
+    const ban = await (await getDb()).collection('actorBans').findOne({ actorId: actor.id, $or: [{ permanent: true }, { expiresAt: { $gt: new Date() } }] });
+    if (ban) throw new ApiError('Posting is currently unavailable for this account. Please read the community guidelines.', 403);
+  }
   return actor;
 }
 
